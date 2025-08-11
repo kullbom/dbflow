@@ -10,6 +10,9 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>.net;f#;sql;mssqlserver</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/kullbom/dbflow</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kullbom/dbflow.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
