@@ -1,0 +1,2 @@
+CREATE TYPE [dbo].[DateTime2Utc1] FROM [DATETIME2](3) NULL
+GO

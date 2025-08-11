@@ -1,0 +1,55 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>DbFlow</Title>
+    <Version>0.0.1-alpha02</Version>
+    <Copyright>2025 Johan Kullbom</Copyright>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>.net;f#;sql;mssqlserver</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Utils.fs" />
+    <Compile Include="SqlParser.fs" />
+    <Compile Include="DbTr.fs" />
+    <Compile Include="DbFlow.fs" />
+    <Compile Include="SqlServer\Schema\MSDescription.fs" />
+    <Compile Include="SqlServer\Schema\Objects.fs" />
+    <Compile Include="SqlServer\Schema\Types.fs" />
+    <Compile Include="SqlServer\Schema\Triggers.fs" />
+    <Compile Include="SqlServer\Schema\Sequences.fs" />
+    <Compile Include="SqlServer\Schema\Keys.fs" />
+    <Compile Include="SqlServer\Schema\Constraints.fs" />
+    <Compile Include="SqlServer\Schema\Index.fs" />
+    <Compile Include="SqlServer\Schema\Procedures.fs" />
+    <Compile Include="SqlServer\Schema\Tables.fs" />
+    <Compile Include="SqlServer\Schema\Database.fs" />
+    <Compile Include="SqlServer\Schema\Compare.fs" />
+    <Compile Include="SqlServer\Scripts\Script.fs" />
+    <Compile Include="SqlServer\Scripts\Generate.fs" />
+    <Compile Include="SqlServer\Scripts\Execute.fs" />
+    <Compile Include="SqlServer\LocalDatabase.fs" />
+    <Compile Include="SqlServer\Rules.fs" />
+    <Compile Include="SqlServer\RawOut.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="9.0.300" />
+  </ItemGroup>
+
+</Project>

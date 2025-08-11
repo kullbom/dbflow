@@ -1,0 +1,1329 @@
+SCHEMAS
+   Sales:dbo:-
+   Purchasing:dbo:-
+   Production:dbo:-
+   Person:dbo:-
+   HumanResources:dbo:-
+USER_DEFINED_TYPES
+   Phone:dbo:[NVARCHAR](25) NULL
+   OrderNumber:dbo:[NVARCHAR](25) NULL
+   Name:dbo:[NVARCHAR](50) NULL
+   NameStyle:dbo:[BIT] NOT NULL
+   Flag:dbo:[BIT] NOT NULL
+   AccountNumber:dbo:[NVARCHAR](15) NULL
+TABLES
+   Department:HumanResources
+      COLUMNS
+         [DepartmentID] [SMALLINT]
+         [Name] [NAME] ANSI_PADDED
+         [GroupName] [NAME] ANSI_PADDED
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_Department_ModifiedDate:ModifiedDate:(getdate())
+   Employee:HumanResources
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [NationalIDNumber] [NVARCHAR](15) ANSI_PADDED
+         [LoginID] [NVARCHAR](256) ANSI_PADDED
+         [OrganizationNode] [HIERARCHYID]
+         [OrganizationLevel] [SMALLINT]
+         [JobTitle] [NVARCHAR](50) ANSI_PADDED
+         [BirthDate] [DATE]
+         [MaritalStatus] [NCHAR](1) ANSI_PADDED
+         [Gender] [NCHAR](1) ANSI_PADDED
+         [HireDate] [DATE]
+         [SalariedFlag] [FLAG]
+         [VacationHours] [SMALLINT]
+         [SickLeaveHours] [SMALLINT]
+         [CurrentFlag] [FLAG]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_Employee_ModifiedDate:ModifiedDate:(getdate())
+         DF_Employee_rowguid:rowguid:(newid())
+         DF_Employee_CurrentFlag:CurrentFlag:((1))
+         DF_Employee_SickLeaveHours:SickLeaveHours:((0))
+         DF_Employee_VacationHours:VacationHours:((0))
+         DF_Employee_SalariedFlag:SalariedFlag:((1))
+      CHECK CONSTRAINTS
+         CK_Employee_SickLeaveHours:([SickLeaveHours]>=(0) AND [SickLeaveHours]<=(120))
+         CK_Employee_VacationHours:([VacationHours]>=(-40) AND [VacationHours]<=(240))
+         CK_Employee_Gender:(upper([Gender])='F' OR upper([Gender])='M')
+         CK_Employee_HireDate:([HireDate]>='1996-07-01' AND [HireDate]<=dateadd(day,(1),getdate()))
+         CK_Employee_MaritalStatus:(upper([MaritalStatus])='S' OR upper([MaritalStatus])='M')
+         CK_Employee_BirthDate:([BirthDate]>='1930-01-01' AND [BirthDate]<=dateadd(year,(-18),getdate()))
+      TRIGGERS
+         dEmployee INSTEAD_OF
+   EmployeeDepartmentHistory:HumanResources
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [DepartmentID] [SMALLINT]
+         [ShiftID] [TINYINT]
+         [StartDate] [DATE]
+         [EndDate] [DATE]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_EmployeeDepartmentHistory_ModifiedDate:ModifiedDate:(getdate())
+      CHECK CONSTRAINTS
+         CK_EmployeeDepartmentHistory_EndDate:([EndDate]>=[StartDate] OR [EndDate] IS NULL)
+   EmployeePayHistory:HumanResources
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [RateChangeDate] [DATETIME]
+         [Rate] [MONEY]
+         [PayFrequency] [TINYINT]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_EmployeePayHistory_ModifiedDate:ModifiedDate:(getdate())
+      CHECK CONSTRAINTS
+         CK_EmployeePayHistory_Rate:([Rate]>=(6.50) AND [Rate]<=(200.00))
+         CK_EmployeePayHistory_PayFrequency:([PayFrequency]=(2) OR [PayFrequency]=(1))
+   JobCandidate:HumanResources
+      COLUMNS
+         [JobCandidateID] [INT]
+         [BusinessEntityID] [INT]
+         [Resume] [XML]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_JobCandidate_ModifiedDate:ModifiedDate:(getdate())
+   Shift:HumanResources
+      COLUMNS
+         [ShiftID] [TINYINT]
+         [Name] [NAME] ANSI_PADDED
+         [StartTime] [TIME]
+         [EndTime] [TIME]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_Shift_ModifiedDate:ModifiedDate:(getdate())
+   Address:Person
+      COLUMNS
+         [AddressID] [INT]
+         [AddressLine1] [NVARCHAR](60) ANSI_PADDED
+         [AddressLine2] [NVARCHAR](60) ANSI_PADDED
+         [City] [NVARCHAR](30) ANSI_PADDED
+         [StateProvinceID] [INT]
+         [PostalCode] [NVARCHAR](15) ANSI_PADDED
+         [SpatialLocation] [GEOGRAPHY]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_Address_ModifiedDate:ModifiedDate:(getdate())
+         DF_Address_rowguid:rowguid:(newid())
+   AddressType:Person
+      COLUMNS
+         [AddressTypeID] [INT]
+         [Name] [NAME] ANSI_PADDED
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_AddressType_ModifiedDate:ModifiedDate:(getdate())
+         DF_AddressType_rowguid:rowguid:(newid())
+   BusinessEntity:Person
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_BusinessEntity_ModifiedDate:ModifiedDate:(getdate())
+         DF_BusinessEntity_rowguid:rowguid:(newid())
+   BusinessEntityAddress:Person
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [AddressID] [INT]
+         [AddressTypeID] [INT]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_BusinessEntityAddress_ModifiedDate:ModifiedDate:(getdate())
+         DF_BusinessEntityAddress_rowguid:rowguid:(newid())
+   BusinessEntityContact:Person
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [PersonID] [INT]
+         [ContactTypeID] [INT]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_BusinessEntityContact_ModifiedDate:ModifiedDate:(getdate())
+         DF_BusinessEntityContact_rowguid:rowguid:(newid())
+   ContactType:Person
+      COLUMNS
+         [ContactTypeID] [INT]
+         [Name] [NAME] ANSI_PADDED
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ContactType_ModifiedDate:ModifiedDate:(getdate())
+   CountryRegion:Person
+      COLUMNS
+         [CountryRegionCode] [NVARCHAR](3) ANSI_PADDED
+         [Name] [NAME] ANSI_PADDED
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_CountryRegion_ModifiedDate:ModifiedDate:(getdate())
+   EmailAddress:Person
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [EmailAddressID] [INT]
+         [EmailAddress] [NVARCHAR](50) ANSI_PADDED
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_EmailAddress_ModifiedDate:ModifiedDate:(getdate())
+         DF_EmailAddress_rowguid:rowguid:(newid())
+   Password:Person
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [PasswordHash] [VARCHAR](128) ANSI_PADDED
+         [PasswordSalt] [VARCHAR](10) ANSI_PADDED
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_Password_ModifiedDate:ModifiedDate:(getdate())
+         DF_Password_rowguid:rowguid:(newid())
+   Person:Person
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [PersonType] [NCHAR](2) ANSI_PADDED
+         [NameStyle] [NAMESTYLE]
+         [Title] [NVARCHAR](8) ANSI_PADDED
+         [FirstName] [NAME] ANSI_PADDED
+         [MiddleName] [NAME] ANSI_PADDED
+         [LastName] [NAME] ANSI_PADDED
+         [Suffix] [NVARCHAR](10) ANSI_PADDED
+         [EmailPromotion] [INT]
+         [AdditionalContactInfo] [XML]
+         [Demographics] [XML]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_Person_rowguid:rowguid:(newid())
+         DF_Person_EmailPromotion:EmailPromotion:((0))
+         DF_Person_NameStyle:NameStyle:((0))
+         DF_Person_ModifiedDate:ModifiedDate:(getdate())
+      CHECK CONSTRAINTS
+         CK_Person_PersonType:([PersonType] IS NULL OR (upper([PersonType])='GC' OR upper([PersonType])='SP' OR upper([PersonType])='EM' OR upper([PersonType])='IN' OR upper([PersonType])='VC' OR upper([PersonType])='SC'))
+         CK_Person_EmailPromotion:([EmailPromotion]>=(0) AND [EmailPromotion]<=(2))
+      TRIGGERS
+         iuPerson
+   PersonPhone:Person
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [PhoneNumber] [PHONE] ANSI_PADDED
+         [PhoneNumberTypeID] [INT]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_PersonPhone_ModifiedDate:ModifiedDate:(getdate())
+   PhoneNumberType:Person
+      COLUMNS
+         [PhoneNumberTypeID] [INT]
+         [Name] [NAME] ANSI_PADDED
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_PhoneNumberType_ModifiedDate:ModifiedDate:(getdate())
+   StateProvince:Person
+      COLUMNS
+         [StateProvinceID] [INT]
+         [StateProvinceCode] [NCHAR](3) ANSI_PADDED
+         [CountryRegionCode] [NVARCHAR](3) ANSI_PADDED
+         [IsOnlyStateProvinceFlag] [FLAG]
+         [Name] [NAME] ANSI_PADDED
+         [TerritoryID] [INT]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_StateProvince_ModifiedDate:ModifiedDate:(getdate())
+         DF_StateProvince_rowguid:rowguid:(newid())
+         DF_StateProvince_IsOnlyStateProvinceFlag:IsOnlyStateProvinceFlag:((1))
+   BillOfMaterials:Production
+      COLUMNS
+         [BillOfMaterialsID] [INT]
+         [ProductAssemblyID] [INT]
+         [ComponentID] [INT]
+         [StartDate] [DATETIME]
+         [EndDate] [DATETIME]
+         [UnitMeasureCode] [NCHAR](3) ANSI_PADDED
+         [BOMLevel] [SMALLINT]
+         [PerAssemblyQty] [DECIMAL](8,2)
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_BillOfMaterials_ModifiedDate:ModifiedDate:(getdate())
+         DF_BillOfMaterials_PerAssemblyQty:PerAssemblyQty:((1.00))
+         DF_BillOfMaterials_StartDate:StartDate:(getdate())
+      CHECK CONSTRAINTS
+         CK_BillOfMaterials_PerAssemblyQty:([PerAssemblyQty]>=(1.00))
+         CK_BillOfMaterials_BOMLevel:([ProductAssemblyID] IS NULL AND [BOMLevel]=(0) AND [PerAssemblyQty]=(1.00) OR [ProductAssemblyID] IS NOT NULL AND [BOMLevel]>=(1))
+         CK_BillOfMaterials_ProductAssemblyID:([ProductAssemblyID]<>[ComponentID])
+         CK_BillOfMaterials_EndDate:([EndDate]>[StartDate] OR [EndDate] IS NULL)
+   Culture:Production
+      COLUMNS
+         [CultureID] [NCHAR](6) ANSI_PADDED
+         [Name] [NAME] ANSI_PADDED
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_Culture_ModifiedDate:ModifiedDate:(getdate())
+   Document:Production
+      COLUMNS
+         [DocumentNode] [HIERARCHYID]
+         [DocumentLevel] [SMALLINT]
+         [Title] [NVARCHAR](50) ANSI_PADDED
+         [Owner] [INT]
+         [FolderFlag] [BIT]
+         [FileName] [NVARCHAR](400) ANSI_PADDED
+         [FileExtension] [NVARCHAR](8) ANSI_PADDED
+         [Revision] [NCHAR](5) ANSI_PADDED
+         [ChangeNumber] [INT]
+         [Status] [TINYINT]
+         [DocumentSummary] [NVARCHAR](MAX) ANSI_PADDED
+         [Document] [VARBINARY](MAX) ANSI_PADDED
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_Document_ModifiedDate:ModifiedDate:(getdate())
+         DF_Document_rowguid:rowguid:(newid())
+         DF_Document_ChangeNumber:ChangeNumber:((0))
+         DF_Document_FolderFlag:FolderFlag:((0))
+      CHECK CONSTRAINTS
+         CK_Document_Status:([Status]>=(1) AND [Status]<=(3))
+   Illustration:Production
+      COLUMNS
+         [IllustrationID] [INT]
+         [Diagram] [XML]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_Illustration_ModifiedDate:ModifiedDate:(getdate())
+   Location:Production
+      COLUMNS
+         [LocationID] [SMALLINT]
+         [Name] [NAME] ANSI_PADDED
+         [CostRate] [SMALLMONEY]
+         [Availability] [DECIMAL](8,2)
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_Location_ModifiedDate:ModifiedDate:(getdate())
+         DF_Location_Availability:Availability:((0.00))
+         DF_Location_CostRate:CostRate:((0.00))
+      CHECK CONSTRAINTS
+         CK_Location_Availability:([Availability]>=(0.00))
+         CK_Location_CostRate:([CostRate]>=(0.00))
+   Product:Production
+      COLUMNS
+         [ProductID] [INT]
+         [Name] [NAME] ANSI_PADDED
+         [ProductNumber] [NVARCHAR](25) ANSI_PADDED
+         [MakeFlag] [FLAG]
+         [FinishedGoodsFlag] [FLAG]
+         [Color] [NVARCHAR](15) ANSI_PADDED
+         [SafetyStockLevel] [SMALLINT]
+         [ReorderPoint] [SMALLINT]
+         [StandardCost] [MONEY]
+         [ListPrice] [MONEY]
+         [Size] [NVARCHAR](5) ANSI_PADDED
+         [SizeUnitMeasureCode] [NCHAR](3) ANSI_PADDED
+         [WeightUnitMeasureCode] [NCHAR](3) ANSI_PADDED
+         [Weight] [DECIMAL](8,2)
+         [DaysToManufacture] [INT]
+         [ProductLine] [NCHAR](2) ANSI_PADDED
+         [Class] [NCHAR](2) ANSI_PADDED
+         [Style] [NCHAR](2) ANSI_PADDED
+         [ProductSubcategoryID] [INT]
+         [ProductModelID] [INT]
+         [SellStartDate] [DATETIME]
+         [SellEndDate] [DATETIME]
+         [DiscontinuedDate] [DATETIME]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_Product_ModifiedDate:ModifiedDate:(getdate())
+         DF_Product_rowguid:rowguid:(newid())
+         DF_Product_FinishedGoodsFlag:FinishedGoodsFlag:((1))
+         DF_Product_MakeFlag:MakeFlag:((1))
+      CHECK CONSTRAINTS
+         CK_Product_SellEndDate:([SellEndDate]>=[SellStartDate] OR [SellEndDate] IS NULL)
+         CK_Product_Style:(upper([Style])='U' OR upper([Style])='M' OR upper([Style])='W' OR [Style] IS NULL)
+         CK_Product_Class:(upper([Class])='H' OR upper([Class])='M' OR upper([Class])='L' OR [Class] IS NULL)
+         CK_Product_ProductLine:(upper([ProductLine])='R' OR upper([ProductLine])='M' OR upper([ProductLine])='T' OR upper([ProductLine])='S' OR [ProductLine] IS NULL)
+         CK_Product_DaysToManufacture:([DaysToManufacture]>=(0))
+         CK_Product_Weight:([Weight]>(0.00))
+         CK_Product_ListPrice:([ListPrice]>=(0.00))
+         CK_Product_StandardCost:([StandardCost]>=(0.00))
+         CK_Product_ReorderPoint:([ReorderPoint]>(0))
+         CK_Product_SafetyStockLevel:([SafetyStockLevel]>(0))
+   ProductCategory:Production
+      COLUMNS
+         [ProductCategoryID] [INT]
+         [Name] [NAME] ANSI_PADDED
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ProductCategory_ModifiedDate:ModifiedDate:(getdate())
+         DF_ProductCategory_rowguid:rowguid:(newid())
+   ProductCostHistory:Production
+      COLUMNS
+         [ProductID] [INT]
+         [StartDate] [DATETIME]
+         [EndDate] [DATETIME]
+         [StandardCost] [MONEY]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ProductCostHistory_ModifiedDate:ModifiedDate:(getdate())
+      CHECK CONSTRAINTS
+         CK_ProductCostHistory_StandardCost:([StandardCost]>=(0.00))
+         CK_ProductCostHistory_EndDate:([EndDate]>=[StartDate] OR [EndDate] IS NULL)
+   ProductDescription:Production
+      COLUMNS
+         [ProductDescriptionID] [INT]
+         [Description] [NVARCHAR](400) ANSI_PADDED
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ProductDescription_ModifiedDate:ModifiedDate:(getdate())
+         DF_ProductDescription_rowguid:rowguid:(newid())
+   ProductDocument:Production
+      COLUMNS
+         [ProductID] [INT]
+         [DocumentNode] [HIERARCHYID]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ProductDocument_ModifiedDate:ModifiedDate:(getdate())
+   ProductInventory:Production
+      COLUMNS
+         [ProductID] [INT]
+         [LocationID] [SMALLINT]
+         [Shelf] [NVARCHAR](10) ANSI_PADDED
+         [Bin] [TINYINT]
+         [Quantity] [SMALLINT]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ProductInventory_ModifiedDate:ModifiedDate:(getdate())
+         DF_ProductInventory_rowguid:rowguid:(newid())
+         DF_ProductInventory_Quantity:Quantity:((0))
+      CHECK CONSTRAINTS
+         CK_ProductInventory_Bin:([Bin]>=(0) AND [Bin]<=(100))
+         CK_ProductInventory_Shelf:([Shelf] like '[A-Za-z]' OR [Shelf]='N/A')
+   ProductListPriceHistory:Production
+      COLUMNS
+         [ProductID] [INT]
+         [StartDate] [DATETIME]
+         [EndDate] [DATETIME]
+         [ListPrice] [MONEY]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ProductListPriceHistory_ModifiedDate:ModifiedDate:(getdate())
+      CHECK CONSTRAINTS
+         CK_ProductListPriceHistory_ListPrice:([ListPrice]>(0.00))
+         CK_ProductListPriceHistory_EndDate:([EndDate]>=[StartDate] OR [EndDate] IS NULL)
+   ProductModel:Production
+      COLUMNS
+         [ProductModelID] [INT]
+         [Name] [NAME] ANSI_PADDED
+         [CatalogDescription] [XML]
+         [Instructions] [XML]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ProductModel_ModifiedDate:ModifiedDate:(getdate())
+         DF_ProductModel_rowguid:rowguid:(newid())
+   ProductModelIllustration:Production
+      COLUMNS
+         [ProductModelID] [INT]
+         [IllustrationID] [INT]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ProductModelIllustration_ModifiedDate:ModifiedDate:(getdate())
+   ProductModelProductDescriptionCulture:Production
+      COLUMNS
+         [ProductModelID] [INT]
+         [ProductDescriptionID] [INT]
+         [CultureID] [NCHAR](6) ANSI_PADDED
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ProductModelProductDescriptionCulture_ModifiedDate:ModifiedDate:(getdate())
+   ProductPhoto:Production
+      COLUMNS
+         [ProductPhotoID] [INT]
+         [ThumbNailPhoto] [VARBINARY](MAX) ANSI_PADDED
+         [ThumbnailPhotoFileName] [NVARCHAR](50) ANSI_PADDED
+         [LargePhoto] [VARBINARY](MAX) ANSI_PADDED
+         [LargePhotoFileName] [NVARCHAR](50) ANSI_PADDED
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ProductPhoto_ModifiedDate:ModifiedDate:(getdate())
+   ProductProductPhoto:Production
+      COLUMNS
+         [ProductID] [INT]
+         [ProductPhotoID] [INT]
+         [Primary] [FLAG]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ProductProductPhoto_ModifiedDate:ModifiedDate:(getdate())
+         DF_ProductProductPhoto_Primary:Primary:((0))
+   ProductReview:Production
+      COLUMNS
+         [ProductReviewID] [INT]
+         [ProductID] [INT]
+         [ReviewerName] [NAME] ANSI_PADDED
+         [ReviewDate] [DATETIME]
+         [EmailAddress] [NVARCHAR](50) ANSI_PADDED
+         [Rating] [INT]
+         [Comments] [NVARCHAR](3850) ANSI_PADDED
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ProductReview_ModifiedDate:ModifiedDate:(getdate())
+         DF_ProductReview_ReviewDate:ReviewDate:(getdate())
+      CHECK CONSTRAINTS
+         CK_ProductReview_Rating:([Rating]>=(1) AND [Rating]<=(5))
+   ProductSubcategory:Production
+      COLUMNS
+         [ProductSubcategoryID] [INT]
+         [ProductCategoryID] [INT]
+         [Name] [NAME] ANSI_PADDED
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ProductSubcategory_ModifiedDate:ModifiedDate:(getdate())
+         DF_ProductSubcategory_rowguid:rowguid:(newid())
+   ScrapReason:Production
+      COLUMNS
+         [ScrapReasonID] [SMALLINT]
+         [Name] [NAME] ANSI_PADDED
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ScrapReason_ModifiedDate:ModifiedDate:(getdate())
+   TransactionHistory:Production
+      COLUMNS
+         [TransactionID] [INT]
+         [ProductID] [INT]
+         [ReferenceOrderID] [INT]
+         [ReferenceOrderLineID] [INT]
+         [TransactionDate] [DATETIME]
+         [TransactionType] [NCHAR](1) ANSI_PADDED
+         [Quantity] [INT]
+         [ActualCost] [MONEY]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_TransactionHistory_ModifiedDate:ModifiedDate:(getdate())
+         DF_TransactionHistory_TransactionDate:TransactionDate:(getdate())
+         DF_TransactionHistory_ReferenceOrderLineID:ReferenceOrderLineID:((0))
+      CHECK CONSTRAINTS
+         CK_TransactionHistory_TransactionType:(upper([TransactionType])='P' OR upper([TransactionType])='S' OR upper([TransactionType])='W')
+   TransactionHistoryArchive:Production
+      COLUMNS
+         [TransactionID] [INT]
+         [ProductID] [INT]
+         [ReferenceOrderID] [INT]
+         [ReferenceOrderLineID] [INT]
+         [TransactionDate] [DATETIME]
+         [TransactionType] [NCHAR](1) ANSI_PADDED
+         [Quantity] [INT]
+         [ActualCost] [MONEY]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_TransactionHistoryArchive_ModifiedDate:ModifiedDate:(getdate())
+         DF_TransactionHistoryArchive_TransactionDate:TransactionDate:(getdate())
+         DF_TransactionHistoryArchive_ReferenceOrderLineID:ReferenceOrderLineID:((0))
+      CHECK CONSTRAINTS
+         CK_TransactionHistoryArchive_TransactionType:(upper([TransactionType])='P' OR upper([TransactionType])='S' OR upper([TransactionType])='W')
+   UnitMeasure:Production
+      COLUMNS
+         [UnitMeasureCode] [NCHAR](3) ANSI_PADDED
+         [Name] [NAME] ANSI_PADDED
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_UnitMeasure_ModifiedDate:ModifiedDate:(getdate())
+   WorkOrder:Production
+      COLUMNS
+         [WorkOrderID] [INT]
+         [ProductID] [INT]
+         [OrderQty] [INT]
+         [StockedQty] [INT]
+         [ScrappedQty] [SMALLINT]
+         [StartDate] [DATETIME]
+         [EndDate] [DATETIME]
+         [DueDate] [DATETIME]
+         [ScrapReasonID] [SMALLINT]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_WorkOrder_ModifiedDate:ModifiedDate:(getdate())
+      CHECK CONSTRAINTS
+         CK_WorkOrder_EndDate:([EndDate]>=[StartDate] OR [EndDate] IS NULL)
+         CK_WorkOrder_ScrappedQty:([ScrappedQty]>=(0))
+         CK_WorkOrder_OrderQty:([OrderQty]>(0))
+      TRIGGERS
+         uWorkOrder
+         iWorkOrder
+   WorkOrderRouting:Production
+      COLUMNS
+         [WorkOrderID] [INT]
+         [ProductID] [INT]
+         [OperationSequence] [SMALLINT]
+         [LocationID] [SMALLINT]
+         [ScheduledStartDate] [DATETIME]
+         [ScheduledEndDate] [DATETIME]
+         [ActualStartDate] [DATETIME]
+         [ActualEndDate] [DATETIME]
+         [ActualResourceHrs] [DECIMAL](9,4)
+         [PlannedCost] [MONEY]
+         [ActualCost] [MONEY]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_WorkOrderRouting_ModifiedDate:ModifiedDate:(getdate())
+      CHECK CONSTRAINTS
+         CK_WorkOrderRouting_ActualCost:([ActualCost]>(0.00))
+         CK_WorkOrderRouting_PlannedCost:([PlannedCost]>(0.00))
+         CK_WorkOrderRouting_ActualResourceHrs:([ActualResourceHrs]>=(0.0000))
+         CK_WorkOrderRouting_ActualEndDate:([ActualEndDate]>=[ActualStartDate] OR [ActualEndDate] IS NULL OR [ActualStartDate] IS NULL)
+         CK_WorkOrderRouting_ScheduledEndDate:([ScheduledEndDate]>=[ScheduledStartDate])
+   ProductVendor:Purchasing
+      COLUMNS
+         [ProductID] [INT]
+         [BusinessEntityID] [INT]
+         [AverageLeadTime] [INT]
+         [StandardPrice] [MONEY]
+         [LastReceiptCost] [MONEY]
+         [LastReceiptDate] [DATETIME]
+         [MinOrderQty] [INT]
+         [MaxOrderQty] [INT]
+         [OnOrderQty] [INT]
+         [UnitMeasureCode] [NCHAR](3) ANSI_PADDED
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ProductVendor_ModifiedDate:ModifiedDate:(getdate())
+      CHECK CONSTRAINTS
+         CK_ProductVendor_OnOrderQty:([OnOrderQty]>=(0))
+         CK_ProductVendor_MaxOrderQty:([MaxOrderQty]>=(1))
+         CK_ProductVendor_MinOrderQty:([MinOrderQty]>=(1))
+         CK_ProductVendor_LastReceiptCost:([LastReceiptCost]>(0.00))
+         CK_ProductVendor_StandardPrice:([StandardPrice]>(0.00))
+         CK_ProductVendor_AverageLeadTime:([AverageLeadTime]>=(1))
+   PurchaseOrderDetail:Purchasing
+      COLUMNS
+         [PurchaseOrderID] [INT]
+         [PurchaseOrderDetailID] [INT]
+         [DueDate] [DATETIME]
+         [OrderQty] [SMALLINT]
+         [ProductID] [INT]
+         [UnitPrice] [MONEY]
+         [LineTotal] [MONEY]
+         [ReceivedQty] [DECIMAL](8,2)
+         [RejectedQty] [DECIMAL](8,2)
+         [StockedQty] [DECIMAL](9,2)
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_PurchaseOrderDetail_ModifiedDate:ModifiedDate:(getdate())
+      CHECK CONSTRAINTS
+         CK_PurchaseOrderDetail_RejectedQty:([RejectedQty]>=(0.00))
+         CK_PurchaseOrderDetail_ReceivedQty:([ReceivedQty]>=(0.00))
+         CK_PurchaseOrderDetail_UnitPrice:([UnitPrice]>=(0.00))
+         CK_PurchaseOrderDetail_OrderQty:([OrderQty]>(0))
+      TRIGGERS
+         uPurchaseOrderDetail
+         iPurchaseOrderDetail
+   PurchaseOrderHeader:Purchasing
+      COLUMNS
+         [PurchaseOrderID] [INT]
+         [RevisionNumber] [TINYINT]
+         [Status] [TINYINT]
+         [EmployeeID] [INT]
+         [VendorID] [INT]
+         [ShipMethodID] [INT]
+         [OrderDate] [DATETIME]
+         [ShipDate] [DATETIME]
+         [SubTotal] [MONEY]
+         [TaxAmt] [MONEY]
+         [Freight] [MONEY]
+         [TotalDue] [MONEY]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_PurchaseOrderHeader_ModifiedDate:ModifiedDate:(getdate())
+         DF_PurchaseOrderHeader_Freight:Freight:((0.00))
+         DF_PurchaseOrderHeader_TaxAmt:TaxAmt:((0.00))
+         DF_PurchaseOrderHeader_SubTotal:SubTotal:((0.00))
+         DF_PurchaseOrderHeader_OrderDate:OrderDate:(getdate())
+         DF_PurchaseOrderHeader_Status:Status:((1))
+         DF_PurchaseOrderHeader_RevisionNumber:RevisionNumber:((0))
+      CHECK CONSTRAINTS
+         CK_PurchaseOrderHeader_Freight:([Freight]>=(0.00))
+         CK_PurchaseOrderHeader_TaxAmt:([TaxAmt]>=(0.00))
+         CK_PurchaseOrderHeader_SubTotal:([SubTotal]>=(0.00))
+         CK_PurchaseOrderHeader_ShipDate:([ShipDate]>=[OrderDate] OR [ShipDate] IS NULL)
+         CK_PurchaseOrderHeader_Status:([Status]>=(1) AND [Status]<=(4))
+      TRIGGERS
+         uPurchaseOrderHeader
+   ShipMethod:Purchasing
+      COLUMNS
+         [ShipMethodID] [INT]
+         [Name] [NAME] ANSI_PADDED
+         [ShipBase] [MONEY]
+         [ShipRate] [MONEY]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ShipMethod_ModifiedDate:ModifiedDate:(getdate())
+         DF_ShipMethod_rowguid:rowguid:(newid())
+         DF_ShipMethod_ShipRate:ShipRate:((0.00))
+         DF_ShipMethod_ShipBase:ShipBase:((0.00))
+      CHECK CONSTRAINTS
+         CK_ShipMethod_ShipRate:([ShipRate]>(0.00))
+         CK_ShipMethod_ShipBase:([ShipBase]>(0.00))
+   Vendor:Purchasing
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [AccountNumber] [ACCOUNTNUMBER] ANSI_PADDED
+         [Name] [NAME] ANSI_PADDED
+         [CreditRating] [TINYINT]
+         [PreferredVendorStatus] [FLAG]
+         [ActiveFlag] [FLAG]
+         [PurchasingWebServiceURL] [NVARCHAR](1024) ANSI_PADDED
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_Vendor_ModifiedDate:ModifiedDate:(getdate())
+         DF_Vendor_ActiveFlag:ActiveFlag:((1))
+         DF_Vendor_PreferredVendorStatus:PreferredVendorStatus:((1))
+      CHECK CONSTRAINTS
+         CK_Vendor_CreditRating:([CreditRating]>=(1) AND [CreditRating]<=(5))
+      TRIGGERS
+         dVendor INSTEAD_OF
+   CountryRegionCurrency:Sales
+      COLUMNS
+         [CountryRegionCode] [NVARCHAR](3) ANSI_PADDED
+         [CurrencyCode] [NCHAR](3) ANSI_PADDED
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_CountryRegionCurrency_ModifiedDate:ModifiedDate:(getdate())
+   CreditCard:Sales
+      COLUMNS
+         [CreditCardID] [INT]
+         [CardType] [NVARCHAR](50) ANSI_PADDED
+         [CardNumber] [NVARCHAR](25) ANSI_PADDED
+         [ExpMonth] [TINYINT]
+         [ExpYear] [SMALLINT]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_CreditCard_ModifiedDate:ModifiedDate:(getdate())
+   Currency:Sales
+      COLUMNS
+         [CurrencyCode] [NCHAR](3) ANSI_PADDED
+         [Name] [NAME] ANSI_PADDED
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_Currency_ModifiedDate:ModifiedDate:(getdate())
+   CurrencyRate:Sales
+      COLUMNS
+         [CurrencyRateID] [INT]
+         [CurrencyRateDate] [DATETIME]
+         [FromCurrencyCode] [NCHAR](3) ANSI_PADDED
+         [ToCurrencyCode] [NCHAR](3) ANSI_PADDED
+         [AverageRate] [MONEY]
+         [EndOfDayRate] [MONEY]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_CurrencyRate_ModifiedDate:ModifiedDate:(getdate())
+   Customer:Sales
+      COLUMNS
+         [CustomerID] [INT]
+         [PersonID] [INT]
+         [StoreID] [INT]
+         [TerritoryID] [INT]
+         [AccountNumber] [VARCHAR](10) ANSI_PADDED
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_Customer_ModifiedDate:ModifiedDate:(getdate())
+         DF_Customer_rowguid:rowguid:(newid())
+   PersonCreditCard:Sales
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [CreditCardID] [INT]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_PersonCreditCard_ModifiedDate:ModifiedDate:(getdate())
+   SalesOrderDetail:Sales
+      COLUMNS
+         [SalesOrderID] [INT]
+         [SalesOrderDetailID] [INT]
+         [CarrierTrackingNumber] [NVARCHAR](25) ANSI_PADDED
+         [OrderQty] [SMALLINT]
+         [ProductID] [INT]
+         [SpecialOfferID] [INT]
+         [UnitPrice] [MONEY]
+         [UnitPriceDiscount] [MONEY]
+         [LineTotal] [NUMERIC](38,6)
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_SalesOrderDetail_ModifiedDate:ModifiedDate:(getdate())
+         DF_SalesOrderDetail_rowguid:rowguid:(newid())
+         DF_SalesOrderDetail_UnitPriceDiscount:UnitPriceDiscount:((0.0))
+      CHECK CONSTRAINTS
+         CK_SalesOrderDetail_UnitPriceDiscount:([UnitPriceDiscount]>=(0.00))
+         CK_SalesOrderDetail_UnitPrice:([UnitPrice]>=(0.00))
+         CK_SalesOrderDetail_OrderQty:([OrderQty]>(0))
+      TRIGGERS
+         iduSalesOrderDetail
+   SalesOrderHeader:Sales
+      COLUMNS
+         [SalesOrderID] [INT]
+         [RevisionNumber] [TINYINT]
+         [OrderDate] [DATETIME]
+         [DueDate] [DATETIME]
+         [ShipDate] [DATETIME]
+         [Status] [TINYINT]
+         [OnlineOrderFlag] [FLAG]
+         [SalesOrderNumber] [NVARCHAR](25) ANSI_PADDED
+         [PurchaseOrderNumber] [ORDERNUMBER] ANSI_PADDED
+         [AccountNumber] [ACCOUNTNUMBER] ANSI_PADDED
+         [CustomerID] [INT]
+         [SalesPersonID] [INT]
+         [TerritoryID] [INT]
+         [BillToAddressID] [INT]
+         [ShipToAddressID] [INT]
+         [ShipMethodID] [INT]
+         [CreditCardID] [INT]
+         [CreditCardApprovalCode] [VARCHAR](15) ANSI_PADDED
+         [CurrencyRateID] [INT]
+         [SubTotal] [MONEY]
+         [TaxAmt] [MONEY]
+         [Freight] [MONEY]
+         [TotalDue] [MONEY]
+         [Comment] [NVARCHAR](128) ANSI_PADDED
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_SalesOrderHeader_ModifiedDate:ModifiedDate:(getdate())
+         DF_SalesOrderHeader_rowguid:rowguid:(newid())
+         DF_SalesOrderHeader_Freight:Freight:((0.00))
+         DF_SalesOrderHeader_TaxAmt:TaxAmt:((0.00))
+         DF_SalesOrderHeader_SubTotal:SubTotal:((0.00))
+         DF_SalesOrderHeader_OnlineOrderFlag:OnlineOrderFlag:((1))
+         DF_SalesOrderHeader_Status:Status:((1))
+         DF_SalesOrderHeader_OrderDate:OrderDate:(getdate())
+         DF_SalesOrderHeader_RevisionNumber:RevisionNumber:((0))
+      CHECK CONSTRAINTS
+         CK_SalesOrderHeader_Freight:([Freight]>=(0.00))
+         CK_SalesOrderHeader_TaxAmt:([TaxAmt]>=(0.00))
+         CK_SalesOrderHeader_SubTotal:([SubTotal]>=(0.00))
+         CK_SalesOrderHeader_ShipDate:([ShipDate]>=[OrderDate] OR [ShipDate] IS NULL)
+         CK_SalesOrderHeader_DueDate:([DueDate]>=[OrderDate])
+         CK_SalesOrderHeader_Status:([Status]>=(0) AND [Status]<=(8))
+      TRIGGERS
+         uSalesOrderHeader
+   SalesOrderHeaderSalesReason:Sales
+      COLUMNS
+         [SalesOrderID] [INT]
+         [SalesReasonID] [INT]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_SalesOrderHeaderSalesReason_ModifiedDate:ModifiedDate:(getdate())
+   SalesPerson:Sales
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [TerritoryID] [INT]
+         [SalesQuota] [MONEY]
+         [Bonus] [MONEY]
+         [CommissionPct] [SMALLMONEY]
+         [SalesYTD] [MONEY]
+         [SalesLastYear] [MONEY]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_SalesPerson_ModifiedDate:ModifiedDate:(getdate())
+         DF_SalesPerson_rowguid:rowguid:(newid())
+         DF_SalesPerson_SalesLastYear:SalesLastYear:((0.00))
+         DF_SalesPerson_SalesYTD:SalesYTD:((0.00))
+         DF_SalesPerson_CommissionPct:CommissionPct:((0.00))
+         DF_SalesPerson_Bonus:Bonus:((0.00))
+      CHECK CONSTRAINTS
+         CK_SalesPerson_SalesLastYear:([SalesLastYear]>=(0.00))
+         CK_SalesPerson_SalesYTD:([SalesYTD]>=(0.00))
+         CK_SalesPerson_CommissionPct:([CommissionPct]>=(0.00))
+         CK_SalesPerson_Bonus:([Bonus]>=(0.00))
+         CK_SalesPerson_SalesQuota:([SalesQuota]>(0.00))
+   SalesPersonQuotaHistory:Sales
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [QuotaDate] [DATETIME]
+         [SalesQuota] [MONEY]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_SalesPersonQuotaHistory_ModifiedDate:ModifiedDate:(getdate())
+         DF_SalesPersonQuotaHistory_rowguid:rowguid:(newid())
+      CHECK CONSTRAINTS
+         CK_SalesPersonQuotaHistory_SalesQuota:([SalesQuota]>(0.00))
+   SalesReason:Sales
+      COLUMNS
+         [SalesReasonID] [INT]
+         [Name] [NAME] ANSI_PADDED
+         [ReasonType] [NAME] ANSI_PADDED
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_SalesReason_ModifiedDate:ModifiedDate:(getdate())
+   SalesTaxRate:Sales
+      COLUMNS
+         [SalesTaxRateID] [INT]
+         [StateProvinceID] [INT]
+         [TaxType] [TINYINT]
+         [TaxRate] [SMALLMONEY]
+         [Name] [NAME] ANSI_PADDED
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_SalesTaxRate_ModifiedDate:ModifiedDate:(getdate())
+         DF_SalesTaxRate_rowguid:rowguid:(newid())
+         DF_SalesTaxRate_TaxRate:TaxRate:((0.00))
+      CHECK CONSTRAINTS
+         CK_SalesTaxRate_TaxType:([TaxType]>=(1) AND [TaxType]<=(3))
+   SalesTerritory:Sales
+      COLUMNS
+         [TerritoryID] [INT]
+         [Name] [NAME] ANSI_PADDED
+         [CountryRegionCode] [NVARCHAR](3) ANSI_PADDED
+         [Group] [NVARCHAR](50) ANSI_PADDED
+         [SalesYTD] [MONEY]
+         [SalesLastYear] [MONEY]
+         [CostYTD] [MONEY]
+         [CostLastYear] [MONEY]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_SalesTerritory_ModifiedDate:ModifiedDate:(getdate())
+         DF_SalesTerritory_rowguid:rowguid:(newid())
+         DF_SalesTerritory_CostLastYear:CostLastYear:((0.00))
+         DF_SalesTerritory_CostYTD:CostYTD:((0.00))
+         DF_SalesTerritory_SalesLastYear:SalesLastYear:((0.00))
+         DF_SalesTerritory_SalesYTD:SalesYTD:((0.00))
+      CHECK CONSTRAINTS
+         CK_SalesTerritory_CostLastYear:([CostLastYear]>=(0.00))
+         CK_SalesTerritory_CostYTD:([CostYTD]>=(0.00))
+         CK_SalesTerritory_SalesLastYear:([SalesLastYear]>=(0.00))
+         CK_SalesTerritory_SalesYTD:([SalesYTD]>=(0.00))
+   SalesTerritoryHistory:Sales
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [TerritoryID] [INT]
+         [StartDate] [DATETIME]
+         [EndDate] [DATETIME]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_SalesTerritoryHistory_ModifiedDate:ModifiedDate:(getdate())
+         DF_SalesTerritoryHistory_rowguid:rowguid:(newid())
+      CHECK CONSTRAINTS
+         CK_SalesTerritoryHistory_EndDate:([EndDate]>=[StartDate] OR [EndDate] IS NULL)
+   ShoppingCartItem:Sales
+      COLUMNS
+         [ShoppingCartItemID] [INT]
+         [ShoppingCartID] [NVARCHAR](50) ANSI_PADDED
+         [Quantity] [INT]
+         [ProductID] [INT]
+         [DateCreated] [DATETIME]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_ShoppingCartItem_ModifiedDate:ModifiedDate:(getdate())
+         DF_ShoppingCartItem_DateCreated:DateCreated:(getdate())
+         DF_ShoppingCartItem_Quantity:Quantity:((1))
+      CHECK CONSTRAINTS
+         CK_ShoppingCartItem_Quantity:([Quantity]>=(1))
+   SpecialOffer:Sales
+      COLUMNS
+         [SpecialOfferID] [INT]
+         [Description] [NVARCHAR](255) ANSI_PADDED
+         [DiscountPct] [SMALLMONEY]
+         [Type] [NVARCHAR](50) ANSI_PADDED
+         [Category] [NVARCHAR](50) ANSI_PADDED
+         [StartDate] [DATETIME]
+         [EndDate] [DATETIME]
+         [MinQty] [INT]
+         [MaxQty] [INT]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_SpecialOffer_ModifiedDate:ModifiedDate:(getdate())
+         DF_SpecialOffer_rowguid:rowguid:(newid())
+         DF_SpecialOffer_MinQty:MinQty:((0))
+         DF_SpecialOffer_DiscountPct:DiscountPct:((0.00))
+      CHECK CONSTRAINTS
+         CK_SpecialOffer_MaxQty:([MaxQty]>=(0))
+         CK_SpecialOffer_MinQty:([MinQty]>=(0))
+         CK_SpecialOffer_DiscountPct:([DiscountPct]>=(0.00))
+         CK_SpecialOffer_EndDate:([EndDate]>=[StartDate])
+   SpecialOfferProduct:Sales
+      COLUMNS
+         [SpecialOfferID] [INT]
+         [ProductID] [INT]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_SpecialOfferProduct_ModifiedDate:ModifiedDate:(getdate())
+         DF_SpecialOfferProduct_rowguid:rowguid:(newid())
+   Store:Sales
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [Name] [NAME] ANSI_PADDED
+         [SalesPersonID] [INT]
+         [Demographics] [XML]
+         [rowguid] [UNIQUEIDENTIFIER] ROWGUIDCOL
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_Store_ModifiedDate:ModifiedDate:(getdate())
+         DF_Store_rowguid:rowguid:(newid())
+   AWBuildVersion:dbo
+      COLUMNS
+         [SystemInformationID] [TINYINT]
+         [Database Version] [NVARCHAR](25) ANSI_PADDED
+         [VersionDate] [DATETIME]
+         [ModifiedDate] [DATETIME]
+      DEFAULT CONSTRAINTS
+         DF_AWBuildVersion_ModifiedDate:ModifiedDate:(getdate())
+   DatabaseLog:dbo
+      COLUMNS
+         [DatabaseLogID] [INT]
+         [PostTime] [DATETIME]
+         [DatabaseUser] [SYSNAME] ANSI_PADDED
+         [Event] [SYSNAME] ANSI_PADDED
+         [Schema] [SYSNAME] ANSI_PADDED
+         [Object] [SYSNAME] ANSI_PADDED
+         [TSQL] [NVARCHAR](MAX) ANSI_PADDED
+         [XmlEvent] [XML]
+   ErrorLog:dbo
+      COLUMNS
+         [ErrorLogID] [INT]
+         [ErrorTime] [DATETIME]
+         [UserName] [SYSNAME] ANSI_PADDED
+         [ErrorNumber] [INT]
+         [ErrorSeverity] [INT]
+         [ErrorState] [INT]
+         [ErrorProcedure] [NVARCHAR](126) ANSI_PADDED
+         [ErrorLine] [INT]
+         [ErrorMessage] [NVARCHAR](4000) ANSI_PADDED
+      DEFAULT CONSTRAINTS
+         DF_ErrorLog_ErrorTime:ErrorTime:(getdate())
+VIEWS
+   vEmployee:HumanResources
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [Title] [NVARCHAR](8) ANSIPADDED
+         [FirstName] [NAME] ANSIPADDED
+         [MiddleName] [NAME] ANSIPADDED
+         [LastName] [NAME] ANSIPADDED
+         [Suffix] [NVARCHAR](10) ANSIPADDED
+         [JobTitle] [NVARCHAR](50) ANSIPADDED
+         [PhoneNumber] [PHONE] ANSIPADDED
+         [PhoneNumberType] [NAME] ANSIPADDED
+         [EmailAddress] [NVARCHAR](50) ANSIPADDED
+         [EmailPromotion] [INT]
+         [AddressLine1] [NVARCHAR](60) ANSIPADDED
+         [AddressLine2] [NVARCHAR](60) ANSIPADDED
+         [City] [NVARCHAR](30) ANSIPADDED
+         [StateProvinceName] [NAME] ANSIPADDED
+         [PostalCode] [NVARCHAR](15) ANSIPADDED
+         [CountryRegionName] [NAME] ANSIPADDED
+         [AdditionalContactInfo] [XML]
+   vEmployeeDepartment:HumanResources
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [Title] [NVARCHAR](8) ANSIPADDED
+         [FirstName] [NAME] ANSIPADDED
+         [MiddleName] [NAME] ANSIPADDED
+         [LastName] [NAME] ANSIPADDED
+         [Suffix] [NVARCHAR](10) ANSIPADDED
+         [JobTitle] [NVARCHAR](50) ANSIPADDED
+         [Department] [NAME] ANSIPADDED
+         [GroupName] [NAME] ANSIPADDED
+         [StartDate] [DATE]
+   vEmployeeDepartmentHistory:HumanResources
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [Title] [NVARCHAR](8) ANSIPADDED
+         [FirstName] [NAME] ANSIPADDED
+         [MiddleName] [NAME] ANSIPADDED
+         [LastName] [NAME] ANSIPADDED
+         [Suffix] [NVARCHAR](10) ANSIPADDED
+         [Shift] [NAME] ANSIPADDED
+         [Department] [NAME] ANSIPADDED
+         [GroupName] [NAME] ANSIPADDED
+         [StartDate] [DATE]
+         [EndDate] [DATE]
+   vJobCandidate:HumanResources
+      COLUMNS
+         [JobCandidateID] [INT]
+         [BusinessEntityID] [INT]
+         [Name.Prefix] [NVARCHAR](30) ANSIPADDED
+         [Name.First] [NVARCHAR](30) ANSIPADDED
+         [Name.Middle] [NVARCHAR](30) ANSIPADDED
+         [Name.Last] [NVARCHAR](30) ANSIPADDED
+         [Name.Suffix] [NVARCHAR](30) ANSIPADDED
+         [Skills] [NVARCHAR](MAX) ANSIPADDED
+         [Addr.Type] [NVARCHAR](30) ANSIPADDED
+         [Addr.Loc.CountryRegion] [NVARCHAR](100) ANSIPADDED
+         [Addr.Loc.State] [NVARCHAR](100) ANSIPADDED
+         [Addr.Loc.City] [NVARCHAR](100) ANSIPADDED
+         [Addr.PostalCode] [NVARCHAR](20) ANSIPADDED
+         [EMail] [NVARCHAR](MAX) ANSIPADDED
+         [WebSite] [NVARCHAR](MAX) ANSIPADDED
+         [ModifiedDate] [DATETIME]
+   vJobCandidateEducation:HumanResources
+      COLUMNS
+         [JobCandidateID] [INT]
+         [Edu.Level] [NVARCHAR](MAX) ANSIPADDED
+         [Edu.StartDate] [DATETIME]
+         [Edu.EndDate] [DATETIME]
+         [Edu.Degree] [NVARCHAR](50) ANSIPADDED
+         [Edu.Major] [NVARCHAR](50) ANSIPADDED
+         [Edu.Minor] [NVARCHAR](50) ANSIPADDED
+         [Edu.GPA] [NVARCHAR](5) ANSIPADDED
+         [Edu.GPAScale] [NVARCHAR](5) ANSIPADDED
+         [Edu.School] [NVARCHAR](100) ANSIPADDED
+         [Edu.Loc.CountryRegion] [NVARCHAR](100) ANSIPADDED
+         [Edu.Loc.State] [NVARCHAR](100) ANSIPADDED
+         [Edu.Loc.City] [NVARCHAR](100) ANSIPADDED
+   vJobCandidateEmployment:HumanResources
+      COLUMNS
+         [JobCandidateID] [INT]
+         [Emp.StartDate] [DATETIME]
+         [Emp.EndDate] [DATETIME]
+         [Emp.OrgName] [NVARCHAR](100) ANSIPADDED
+         [Emp.JobTitle] [NVARCHAR](100) ANSIPADDED
+         [Emp.Responsibility] [NVARCHAR](MAX) ANSIPADDED
+         [Emp.FunctionCategory] [NVARCHAR](MAX) ANSIPADDED
+         [Emp.IndustryCategory] [NVARCHAR](MAX) ANSIPADDED
+         [Emp.Loc.CountryRegion] [NVARCHAR](MAX) ANSIPADDED
+         [Emp.Loc.State] [NVARCHAR](MAX) ANSIPADDED
+         [Emp.Loc.City] [NVARCHAR](MAX) ANSIPADDED
+   vAdditionalContactInfo:Person
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [FirstName] [NAME] ANSIPADDED
+         [MiddleName] [NAME] ANSIPADDED
+         [LastName] [NAME] ANSIPADDED
+         [TelephoneNumber] [NVARCHAR](50) ANSIPADDED
+         [TelephoneSpecialInstructions] [NVARCHAR](MAX) ANSIPADDED
+         [Street] [NVARCHAR](50) ANSIPADDED
+         [City] [NVARCHAR](50) ANSIPADDED
+         [StateProvince] [NVARCHAR](50) ANSIPADDED
+         [PostalCode] [NVARCHAR](50) ANSIPADDED
+         [CountryRegion] [NVARCHAR](50) ANSIPADDED
+         [HomeAddressSpecialInstructions] [NVARCHAR](MAX) ANSIPADDED
+         [EMailAddress] [NVARCHAR](128) ANSIPADDED
+         [EMailSpecialInstructions] [NVARCHAR](MAX) ANSIPADDED
+         [EMailTelephoneNumber] [NVARCHAR](50) ANSIPADDED
+         [rowguid] [UNIQUEIDENTIFIER]
+         [ModifiedDate] [DATETIME]
+   vStateProvinceCountryRegion:Person
+      COLUMNS
+         [StateProvinceID] [INT]
+         [StateProvinceCode] [NCHAR](3) ANSIPADDED
+         [IsOnlyStateProvinceFlag] [FLAG]
+         [StateProvinceName] [NAME] ANSIPADDED
+         [TerritoryID] [INT]
+         [CountryRegionCode] [NVARCHAR](3) ANSIPADDED
+         [CountryRegionName] [NAME] ANSIPADDED
+   vProductAndDescription:Production
+      COLUMNS
+         [ProductID] [INT]
+         [Name] [NAME] ANSIPADDED
+         [ProductModel] [NAME] ANSIPADDED
+         [CultureID] [NCHAR](6) ANSIPADDED
+         [Description] [NVARCHAR](400) ANSIPADDED
+   vProductModelCatalogDescription:Production
+      COLUMNS
+         [ProductModelID] [INT]
+         [Name] [NAME] ANSIPADDED
+         [Summary] [NVARCHAR](MAX) ANSIPADDED
+         [Manufacturer] [NVARCHAR](MAX) ANSIPADDED
+         [Copyright] [NVARCHAR](30) ANSIPADDED
+         [ProductURL] [NVARCHAR](256) ANSIPADDED
+         [WarrantyPeriod] [NVARCHAR](256) ANSIPADDED
+         [WarrantyDescription] [NVARCHAR](256) ANSIPADDED
+         [NoOfYears] [NVARCHAR](256) ANSIPADDED
+         [MaintenanceDescription] [NVARCHAR](256) ANSIPADDED
+         [Wheel] [NVARCHAR](256) ANSIPADDED
+         [Saddle] [NVARCHAR](256) ANSIPADDED
+         [Pedal] [NVARCHAR](256) ANSIPADDED
+         [BikeFrame] [NVARCHAR](MAX) ANSIPADDED
+         [Crankset] [NVARCHAR](256) ANSIPADDED
+         [PictureAngle] [NVARCHAR](256) ANSIPADDED
+         [PictureSize] [NVARCHAR](256) ANSIPADDED
+         [ProductPhotoID] [NVARCHAR](256) ANSIPADDED
+         [Material] [NVARCHAR](256) ANSIPADDED
+         [Color] [NVARCHAR](256) ANSIPADDED
+         [ProductLine] [NVARCHAR](256) ANSIPADDED
+         [Style] [NVARCHAR](256) ANSIPADDED
+         [RiderExperience] [NVARCHAR](1024) ANSIPADDED
+         [rowguid] [UNIQUEIDENTIFIER]
+         [ModifiedDate] [DATETIME]
+   vProductModelInstructions:Production
+      COLUMNS
+         [ProductModelID] [INT]
+         [Name] [NAME] ANSIPADDED
+         [Instructions] [NVARCHAR](MAX) ANSIPADDED
+         [LocationID] [INT]
+         [SetupHours] [DECIMAL](9,4)
+         [MachineHours] [DECIMAL](9,4)
+         [LaborHours] [DECIMAL](9,4)
+         [LotSize] [INT]
+         [Step] [NVARCHAR](1024) ANSIPADDED
+         [rowguid] [UNIQUEIDENTIFIER]
+         [ModifiedDate] [DATETIME]
+   vVendorWithAddresses:Purchasing
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [Name] [NAME] ANSIPADDED
+         [AddressType] [NAME] ANSIPADDED
+         [AddressLine1] [NVARCHAR](60) ANSIPADDED
+         [AddressLine2] [NVARCHAR](60) ANSIPADDED
+         [City] [NVARCHAR](30) ANSIPADDED
+         [StateProvinceName] [NAME] ANSIPADDED
+         [PostalCode] [NVARCHAR](15) ANSIPADDED
+         [CountryRegionName] [NAME] ANSIPADDED
+   vVendorWithContacts:Purchasing
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [Name] [NAME] ANSIPADDED
+         [ContactType] [NAME] ANSIPADDED
+         [Title] [NVARCHAR](8) ANSIPADDED
+         [FirstName] [NAME] ANSIPADDED
+         [MiddleName] [NAME] ANSIPADDED
+         [LastName] [NAME] ANSIPADDED
+         [Suffix] [NVARCHAR](10) ANSIPADDED
+         [PhoneNumber] [PHONE] ANSIPADDED
+         [PhoneNumberType] [NAME] ANSIPADDED
+         [EmailAddress] [NVARCHAR](50) ANSIPADDED
+         [EmailPromotion] [INT]
+   vIndividualCustomer:Sales
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [Title] [NVARCHAR](8) ANSIPADDED
+         [FirstName] [NAME] ANSIPADDED
+         [MiddleName] [NAME] ANSIPADDED
+         [LastName] [NAME] ANSIPADDED
+         [Suffix] [NVARCHAR](10) ANSIPADDED
+         [PhoneNumber] [PHONE] ANSIPADDED
+         [PhoneNumberType] [NAME] ANSIPADDED
+         [EmailAddress] [NVARCHAR](50) ANSIPADDED
+         [EmailPromotion] [INT]
+         [AddressType] [NAME] ANSIPADDED
+         [AddressLine1] [NVARCHAR](60) ANSIPADDED
+         [AddressLine2] [NVARCHAR](60) ANSIPADDED
+         [City] [NVARCHAR](30) ANSIPADDED
+         [StateProvinceName] [NAME] ANSIPADDED
+         [PostalCode] [NVARCHAR](15) ANSIPADDED
+         [CountryRegionName] [NAME] ANSIPADDED
+         [Demographics] [XML]
+   vPersonDemographics:Sales
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [TotalPurchaseYTD] [MONEY]
+         [DateFirstPurchase] [DATETIME]
+         [BirthDate] [DATETIME]
+         [MaritalStatus] [NVARCHAR](1) ANSIPADDED
+         [YearlyIncome] [NVARCHAR](30) ANSIPADDED
+         [Gender] [NVARCHAR](1) ANSIPADDED
+         [TotalChildren] [INT]
+         [NumberChildrenAtHome] [INT]
+         [Education] [NVARCHAR](30) ANSIPADDED
+         [Occupation] [NVARCHAR](30) ANSIPADDED
+         [HomeOwnerFlag] [BIT]
+         [NumberCarsOwned] [INT]
+   vSalesPerson:Sales
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [Title] [NVARCHAR](8) ANSIPADDED
+         [FirstName] [NAME] ANSIPADDED
+         [MiddleName] [NAME] ANSIPADDED
+         [LastName] [NAME] ANSIPADDED
+         [Suffix] [NVARCHAR](10) ANSIPADDED
+         [JobTitle] [NVARCHAR](50) ANSIPADDED
+         [PhoneNumber] [PHONE] ANSIPADDED
+         [PhoneNumberType] [NAME] ANSIPADDED
+         [EmailAddress] [NVARCHAR](50) ANSIPADDED
+         [EmailPromotion] [INT]
+         [AddressLine1] [NVARCHAR](60) ANSIPADDED
+         [AddressLine2] [NVARCHAR](60) ANSIPADDED
+         [City] [NVARCHAR](30) ANSIPADDED
+         [StateProvinceName] [NAME] ANSIPADDED
+         [PostalCode] [NVARCHAR](15) ANSIPADDED
+         [CountryRegionName] [NAME] ANSIPADDED
+         [TerritoryName] [NAME] ANSIPADDED
+         [TerritoryGroup] [NVARCHAR](50) ANSIPADDED
+         [SalesQuota] [MONEY]
+         [SalesYTD] [MONEY]
+         [SalesLastYear] [MONEY]
+   vSalesPersonSalesByFiscalYears:Sales
+      COLUMNS
+         [SalesPersonID] [INT]
+         [FullName] [NVARCHAR](152) ANSIPADDED
+         [JobTitle] [NVARCHAR](50) ANSIPADDED
+         [SalesTerritory] [NAME] ANSIPADDED
+         [2002] [MONEY]
+         [2003] [MONEY]
+         [2004] [MONEY]
+   vStoreWithAddresses:Sales
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [Name] [NAME] ANSIPADDED
+         [AddressType] [NAME] ANSIPADDED
+         [AddressLine1] [NVARCHAR](60) ANSIPADDED
+         [AddressLine2] [NVARCHAR](60) ANSIPADDED
+         [City] [NVARCHAR](30) ANSIPADDED
+         [StateProvinceName] [NAME] ANSIPADDED
+         [PostalCode] [NVARCHAR](15) ANSIPADDED
+         [CountryRegionName] [NAME] ANSIPADDED
+   vStoreWithContacts:Sales
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [Name] [NAME] ANSIPADDED
+         [ContactType] [NAME] ANSIPADDED
+         [Title] [NVARCHAR](8) ANSIPADDED
+         [FirstName] [NAME] ANSIPADDED
+         [MiddleName] [NAME] ANSIPADDED
+         [LastName] [NAME] ANSIPADDED
+         [Suffix] [NVARCHAR](10) ANSIPADDED
+         [PhoneNumber] [PHONE] ANSIPADDED
+         [PhoneNumberType] [NAME] ANSIPADDED
+         [EmailAddress] [NVARCHAR](50) ANSIPADDED
+         [EmailPromotion] [INT]
+   vStoreWithDemographics:Sales
+      COLUMNS
+         [BusinessEntityID] [INT]
+         [Name] [NAME] ANSIPADDED
+         [AnnualSales] [MONEY]
+         [AnnualRevenue] [MONEY]
+         [BankName] [NVARCHAR](50) ANSIPADDED
+         [BusinessType] [NVARCHAR](5) ANSIPADDED
+         [YearOpened] [INT]
+         [Specialty] [NVARCHAR](50) ANSIPADDED
+         [SquareFeet] [INT]
+         [Brands] [NVARCHAR](30) ANSIPADDED
+         [Internet] [NVARCHAR](30) ANSIPADDED
+         [NumberEmployees] [INT]
+PROCEDURES
+      uspLogError
+      uspPrintError
+      uspUpdateEmployeePersonalInfo
+      uspUpdateEmployeeLogin
+      uspUpdateEmployeeHireInfo
+      uspGetWhereUsedProductID
+      uspGetManagerEmployees
+      uspGetEmployeeManagers
+      uspGetBillOfMaterials
+FUNCTIONS
+      ufnLeadingZeros
+      ufnGetSalesOrderStatusText
+      ufnGetPurchaseOrderStatusText
+      ufnGetDocumentStatusText
+      ufnGetStock
+      ufnGetProductStandardCost
+      ufnGetProductListPrice
+      ufnGetProductDealerPrice
+      ufnGetContactInformation
+      ufnGetAccountingEndDate
+      ufnGetAccountingStartDate
+XML_SCHEMA_COLLECTIONS
+      StoreSurveySchemaCollection
+      ManuInstructionsSchemaCollection
+      ProductDescriptionSchemaCollection
+      HRResumeSchemaCollection
+      IndividualSurveySchemaCollection
+      AdditionalContactInfoSchemaCollection

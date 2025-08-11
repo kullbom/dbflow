@@ -1,0 +1,189 @@
+﻿namespace DbFlow.Tests
+
+open Xunit
+open Microsoft.Data.SqlClient
+
+open MyDbUp
+
+open DbFlow
+open DbFlow.SqlServer.Scripts
+
+module Helpers = 
+    let separateTableKeys (fullTableScript : string) =
+        fullTableScript.Split("\r\n")
+        |> Array.fold 
+            (fun (sb : System.Text.StringBuilder, inlineKeys, standAloneKeys) (line : string) ->
+                match line with
+                | "" ->
+                    // Filter away empty lines as well ... since I could not understand the logic behind the schemazen output 
+                    sb, inlineKeys, standAloneKeys
+                | _ when line.StartsWith "CREATE" && not (line.StartsWith "CREATE TABLE") ->
+                    sb, inlineKeys, line :: standAloneKeys
+                | _ when line.StartsWith "   ," ->
+                    sb, line :: inlineKeys, standAloneKeys
+                | _ ->
+                    sb.AppendLine line, inlineKeys, standAloneKeys)
+            (System.Text.StringBuilder (), [], [])
+        |> fun (sb, inlineKeys, standAloneKeys) -> 
+            sb.ToString (), 
+            inlineKeys |> List.sort |> List.toArray,
+            standAloneKeys |> List.sort |> List.toArray
+                    
+    
+    let compareScriptFolders logger folder0 folder1 =
+        let sortedSubdirs d =
+            System.IO.Directory.GetDirectories d 
+            |> Array.map (fun d -> d.Substring(d.LastIndexOf("\\") + 1))
+            |> Array.sortBy (fun s -> s.ToUpperInvariant())
+            
+        let sortedFiles d =
+            System.IO.Directory.GetFiles d 
+            |> Array.map (fun d -> d.Substring(d.LastIndexOf("\\") + 1))
+            |> Array.sortBy (fun s -> s.ToUpperInvariant())
+        
+        let aEqual a0 a1 = 
+            (a0 |> Array.length) = (a1 |> Array.length) 
+            && (a0, a1) ||> Array.forall2 (fun (s0 : string) (s1 : string) -> s0.ToUpperInvariant() = s1.ToUpperInvariant()) 
+
+        //let files0 = sortedFiles folder0
+        //let files1 = sortedFiles folder1
+        //
+        //if not (aEqual files0 files1)
+        //then Assert.Fail $"Different files in '\\'"
+        //
+        //for file in files0 do
+        //    let fileContent0 = System.IO.File.ReadAllText (System.IO.Path.Combine(folder0, file))
+        //    let fileContent1 = System.IO.File.ReadAllText (System.IO.Path.Combine(folder1, file))
+        //    
+        //    Assert.True ((fileContent0 = fileContent1), $"The content of \\{file} is not the same")
+        
+        let dirs0 = sortedSubdirs folder0 
+        let dirs1 = sortedSubdirs folder1 
+        
+        if not (aEqual dirs0 dirs1)
+        then Assert.Fail $"{dirs0} != {dirs1}"
+
+        for dir in dirs0 do
+            let dir0 = System.IO.Path.Combine(folder0, dir)
+            let dir1 = System.IO.Path.Combine(folder1, dir)
+            
+            let files0 = sortedFiles dir0
+            let files1 = sortedFiles dir1
+
+            if not (aEqual files0 files1)
+            then Assert.Fail $"Different files in '{dir}'"
+
+            for file in files0 do
+                let fileContent0 = System.IO.File.ReadAllText (System.IO.Path.Combine(dir0, file))
+                let fileContent1 = System.IO.File.ReadAllText (System.IO.Path.Combine(dir1, file))
+                match dir with
+                // The order of constraints and keys does not seems to be deterministic
+                | "check_constraints"
+                | "foreign_keys"
+                | "defaults" ->
+                    let defs0 = fileContent0.Split ("\r\nGO") |> Array.sort
+                    let defs1 = fileContent0.Split ("\r\nGO") |> Array.sort
+
+                    if not (aEqual defs0 defs1)
+                    then Assert.Fail $"The content of {dir}\\{file} is not the same"
+
+                | "tables" ->
+                    // In table definitions the key order does not seems to be deterministic
+                    let (content0, inlineKeys0, standAloneKeys0) = separateTableKeys fileContent0    
+                    let (content1, inlineKeys1, standAloneKeys1) = separateTableKeys fileContent1
+
+                    Assert.True ((content0 = content1), $"The content of {dir}\\{file} is not the same")
+
+                    if not (aEqual inlineKeys0 inlineKeys1)
+                    then Assert.Fail $"The content ('inline keys') of {dir}\\{file} is not the same"
+
+                    if not (aEqual standAloneKeys0 standAloneKeys1)
+                    then Assert.Fail $"The content ('stand alone keys') of {dir}\\{file} is not the same"
+                    ()
+                // These folders are expected to contain identical files
+                | "table_types"
+                | "xmlschemacollections"
+                | "synonyms" 
+                | "functions" 
+                | "procedures" 
+                | "schemas" 
+                | "triggers" 
+                | "sequences" 
+                | "user_defined_types" 
+                // Schemazen adds files for indexes of all views to the same folder (!)
+                // This will make it hard to use the output for scripting (ensure working order)
+                | "views" -> 
+                    Assert.True ((fileContent0 = fileContent1), $"The content of {dir}\\{file} is not the same")
+                    ()
+                | _ -> failwithf "Unknown subdirectory %s" dir
+    
+    let withLocalDb logger f =
+        use localDb = new SqlServer.LocalTempDb(logger)
+        let localDbConnectionString = localDb.GetConnectionString ()
+        let timestamp = System.DateTime.Now.ToString("HH:mm:ss.fff")
+        logger $"{timestamp} New local db: {localDbConnectionString}" 
+        
+        f localDbConnectionString
+
+    let withLocalDbFromScripts logger scriptFolder f =
+        withLocalDb logger
+            (fun connectionStr ->
+                Execute.performDbUpgrade logger connectionStr scriptFolder
+
+                //let config = Db.createDbupConfiguration connectionStr scriptFolder 120 (fun s -> ()) //logger
+                //let r = 
+                //    Db.performDbUpgrade config
+                //    |> Logger.logTime logger "DbUp" logger
+
+                //Assert.True(r)
+
+                f connectionStr)
+
+    let runSchemazenGeneratedScripts logger connectionStr scriptsFolder =
+        let scriptFolders =
+            [
+                "schemas" 
+
+                "user_defined_types" 
+                "table_types"
+
+                // The problem: 
+                // - if functions are executed before tables then functions that refer to tables fail
+                // - if tables are executed before functions then tables (computed columns) that refer to functions fail
+                "tables"
+                "functions" 
+                
+                "check_constraints"
+                "foreign_keys"
+                "defaults" 
+
+                // CHALLANGE: SqlException : 
+                // Cannot create secondary xml or secondary selective xml index 'PXML_Person_AddContact' without a USING XML INDEX clause.
+                //   (AdventureWorks db fails with this...)
+                //
+                // SOLUTION: Need to understand how these beast works and their purpose...?
+                "xmlschemacollections"
+                "synonyms" 
+
+                "procedures"
+                "triggers"
+
+                "views"  
+            ]
+        scriptFolders
+        |> List.fold 
+            (fun acc folder ->
+                let folderDir = System.IO.Path.Combine (scriptsFolder, folder)
+                if System.IO.Directory.Exists folderDir
+                then 
+                    System.IO.Directory.GetFiles folderDir 
+                    |> Array.fold (fun acc' file -> System.IO.File.ReadAllText file :: acc') acc
+                else acc)
+            []
+        |> List.rev 
+        |> List.map Execute.scriptTransaction
+        |> DbTr.sequence_
+        |> fun dbTransaction ->
+            use connection = new SqlConnection(connectionStr)
+            connection.Open()
+            DbTr.commit_ connection dbTransaction
