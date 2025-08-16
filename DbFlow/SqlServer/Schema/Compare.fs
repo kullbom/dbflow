@@ -28,65 +28,76 @@ type SortOrder = SortOrder
 
 
 module Compare =
-    let optionIsSame (o0 : 'a option) (o1 : 'a option) (isSame : ('a * 'a) -> bool) =
+    let collectOption (o0 : 'a option) (o1 : 'a option) (collector : 'a * 'a * _ * _ -> _) path diffs =
         match o0, o1 with
-        | None, None -> true
-        | Some x, Some y -> isSame (x,y)
-        | _ -> false
+        | None, None -> diffs
+        | Some x, Some y -> collector (x, y, path, diffs)
+        | _ -> path :: diffs
     
-    let listIsSame (l0 : 'a list) (l1 : 'a list) (orderBy : 'a -> 'k) (isSame : ('a * 'a) -> bool) =
-        List.forall2 (fun x y -> isSame (x,y)) (l0 |> List.sortBy orderBy) (l1 |> List.sortBy orderBy)
+    let collectList (l0 : 'a list) (l1 : 'a list) (orderBy : 'a -> 'k) (collector : 'a * 'a * _ * _ -> _) path diffs =
+        if l0.Length <> l1.Length
+        then path :: diffs
+        else
+            List.fold2 
+                (fun diffs' x y -> collector (x, y, path, diffs'))
+                diffs
+                (l0 |> List.sortBy orderBy) 
+                (l1 |> List.sortBy orderBy)
     
-    let arrayIsSame (l0 : 'a array) (l1 : 'a array) (orderBy : 'a -> 'k) (isSame : ('a * 'a) -> bool) =
-        Array.forall2 (fun x y -> isSame (x,y)) (l0 |> Array.sortBy orderBy) (l1 |> Array.sortBy orderBy)
+    let collectArray (l0 : 'a array) (l1 : 'a array) (orderBy : 'a -> 'k) (collector : 'a * 'a * _ * _ -> _) path diffs =
+        if l0.Length <> l1.Length
+        then path :: diffs
+        else
+            Array.fold2 
+                (fun diffs' x y -> collector (x, y, path, diffs'))
+                diffs
+                (l0 |> Array.sortBy orderBy) 
+                (l1 |> Array.sortBy orderBy)
 
-    
+    let equalCollector (x0 : _, x1 : _, path, diff) = 
+        if x0 = x1 then diff else path :: diff
+
     // A few manual implementations
-    let object_type (x0 : OBJECT_TYPE) (x1 : OBJECT_TYPE) = x0 = x1
     
-    let index_type (x0 : INDEX_TYPE) (x1 : INDEX_TYPE) = x0 = x1
-    
-    let sys_datatype (x0 : SYS_DATATYPE, x1 : SYS_DATATYPE) = x0 = x1
+    let sys_datatype (x0 : SYS_DATATYPE, x1 : SYS_DATATYPE, path, diff) = equalCollector (x0, x1, path, diff)
 
-    let index_name (x0 : INDEX) (x1 : INDEX) =
+    let index_name (x0 : INDEX, x1 : INDEX, path, diff) =
         match x0.is_system_named, x0.name, x1.is_system_named, x1.name with
         | true, _, true, _ -> true
         | false, Some n0, false, Some n1 when n0 = n1 -> true
         | _ -> false
+        diff
 
-    let foreign_key_name (x0 : FOREIGN_KEY) (x1 : FOREIGN_KEY) =
+    let foreign_key_name (x0 : FOREIGN_KEY, x1 : FOREIGN_KEY, path, diff) =
         match x0.is_system_named, x0.name, x1.is_system_named, x1.name with
         | true, _, true, _ -> true
         | false, n0, false, n1 when n0 = n1 -> true
         | _ -> false
+        diff
 
-    let check_constraint_name (x0 : CHECK_CONSTRAINT) (x1 : CHECK_CONSTRAINT) =
+    let check_constraint_name (x0 : CHECK_CONSTRAINT, x1 : CHECK_CONSTRAINT, path, diff) =
         match x0.is_system_named, x0.object.name, x1.is_system_named, x1.object.name with
         | true, _, true, _ -> true
         | false, n0, false, n1 when n0 = n1 -> true
         | _ -> false
+        diff
        
-    let default_constraint_name (x0 : DEFAULT_CONSTRAINT) (x1 : DEFAULT_CONSTRAINT) =
+    let default_constraint_name (x0 : DEFAULT_CONSTRAINT, x1 : DEFAULT_CONSTRAINT, path, diff) =
         match x0.is_system_named, x0.object.name, x1.is_system_named, x1.object.name with
         | true, _, true, _ -> true
         | false, n0, false, n1 when n0 = n1 -> true
         | _ -> false    
+        diff
 
     
-    let sequence_definition (x0 : SEQUENCE_DEFINITION) (x1 : SEQUENCE_DEFINITION) =
-        x0.increment = x1.increment
-        && optionIsSame x0.minimum_value x1.minimum_value (fun (v0,v1) -> v0 = v1)
-        && optionIsSame x0.maximum_value x1.maximum_value (fun (v0,v1) -> v0 = v1)
-    
-    let identity_definition (x0 : IDENTITY_DEFINITION, x1 : IDENTITY_DEFINITION) =
-        x0.increment_value = x1.increment_value
-    
-    let schema_id (_x0 : _) (_x1 : _) = true
-    let object_id (_x0 : _) (_x1 : _) = true
-    let create_date (_x0 : _) (_x1 : _) = true
-    let modify_date (_x0 : _) (_x1 : _) = true
-    
-    let dependencies (_x0 : _) (_x1 : _) = true
+    let sequence_definition (x0 : SEQUENCE_DEFINITION, x1 : SEQUENCE_DEFINITION, path, diff) =
+        diff
+        |> fun diff' -> if x0.increment = x1.increment then diff' else ("increment" :: path) :: diff'
+        |> collectOption x0.minimum_value x1.minimum_value equalCollector ("minimum_value" :: path)
+        |> collectOption x0.maximum_value x1.maximum_value equalCollector ("maximum_value" :: path)
+
+    let identity_definition (x0 : IDENTITY_DEFINITION, x1 : IDENTITY_DEFINITION, path, diff) =
+        if x0.increment_value = x1.increment_value then diff else ("increment_value" :: path) :: diff
 
 
             

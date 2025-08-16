@@ -31,8 +31,9 @@ module Common =
                 Helpers.compareScriptFolders logger sourceScriptFolder 
                 |> Logger.logTime logger "Compare scripts (source vs. clone)"destScriptFolder
                 
-                if not <| Schema.CompareGen.IsSame (cloneSchema, sourceSchema)
-                then Assert.Fail "Schema is not same"
+                match Schema.CompareGen.Collect (cloneSchema, sourceSchema, [], []) with
+                | [] -> ()
+                | diff -> Assert.Fail "Schema is not same"
                 )
         
     let fullTestSuite logger options rules directory (dbName : string) =

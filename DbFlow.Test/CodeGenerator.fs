@@ -20,35 +20,35 @@ let mapType = typeof<Map<_,_>>.GetGenericTypeDefinition()
 
 let propertyType (parent : System.Type) (pName : string) (pType :System.Type) =
     match pName with
-    | "dependencies" when parent = typeof<DATABASE> -> PropType.Special (fun pname -> $"Compare.dependencies x0.{pname} x1.{pname}")
-    | "schema_id" when parent = typeof<SCHEMA> -> PropType.Special (fun pname -> $"Compare.schema_id x0.{pname} x1.{pname}")
-    | "object_id" when parent = typeof<OBJECT> -> PropType.Special (fun pname -> $"Compare.object_id x0.{pname} x1.{pname}")
-    | "create_date" -> PropType.Special (fun pname -> $"Compare.create_date x0.{pname} x1.{pname}")
-    | "modify_date" -> PropType.Special (fun pname -> $"Compare.modify_date x0.{pname} x1.{pname}")
-    | "sys_datatype"      when parent = typeof<DATATYPE> -> PropType.Special (fun pname -> $"Compare.optionIsSame x0.{pname} x1.{pname} Compare.sys_datatype")
-    
-    | "name" when parent = typeof<INDEX> -> PropType.Special (fun _ -> "Compare.index_name x0 x1") 
+    | "dependencies" when parent = typeof<DATABASE> -> PropType.Special (fun pname -> "")
+    | "schema_id" when parent = typeof<SCHEMA> -> PropType.Special (fun pname -> "")
+    | "object_id" when parent = typeof<OBJECT> -> PropType.Special (fun pname -> "")
+    | "create_date" -> PropType.Special (fun pname -> "")
+    | "modify_date" -> PropType.Special (fun pname -> "")
+
+    | "name" when parent = typeof<INDEX> -> PropType.Special (fun _pname -> $"|> fun diff' -> Compare.index_name (x0, x1, path, diff')") 
     | "object" when parent = typeof<INDEX> -> PropType.Special (fun _ -> "")
     | "is_system_named" when parent = typeof<INDEX> -> PropType.Special (fun _ -> "")
     
-    | "name" when parent = typeof<FOREIGN_KEY> -> PropType.Special (fun _ -> "Compare.foreign_key_name x0 x1") 
+    | "name" when parent = typeof<FOREIGN_KEY> -> PropType.Special (fun _pname -> $"|> fun diff' -> Compare.foreign_key_name (x0, x1, path, diff')") 
     | "object" when parent = typeof<FOREIGN_KEY> -> PropType.Special (fun _ -> "")
     | "is_system_named" when parent = typeof<FOREIGN_KEY> -> PropType.Special (fun _ -> "")
 
-    | "name" when parent = typeof<CHECK_CONSTRAINT> -> PropType.Special (fun _ -> "Compare.check_constraint_name x0 x1") 
+    | "name" when parent = typeof<CHECK_CONSTRAINT> -> PropType.Special (fun _pname -> $"|> fun diff' -> Compare.check_constraint_name (x0, x1, path, diff')") 
     | "object" when parent = typeof<CHECK_CONSTRAINT> -> PropType.Special (fun _ -> "")
     | "is_system_named" when parent = typeof<CHECK_CONSTRAINT> -> PropType.Special (fun _ -> "")
 
-    | "name" when parent = typeof<DEFAULT_CONSTRAINT> -> PropType.Special (fun _ -> "Compare.default_constraint_name x0 x1") 
+    | "name" when parent = typeof<DEFAULT_CONSTRAINT> -> PropType.Special (fun _pname -> $"|> fun diff' -> Compare.default_constraint_name (x0, x1, path, diff')") 
     | "object" when parent = typeof<DEFAULT_CONSTRAINT> -> PropType.Special (fun _ -> "")
     | "is_system_named" when parent = typeof<DEFAULT_CONSTRAINT> -> PropType.Special (fun _ -> "")
 
-    | "sequence_definition" when parent = typeof<SEQUENCE> -> PropType.Special (fun pname -> $"Compare.sequence_definition x0.{pname} x1.{pname}")
+    | "sequence_definition" when parent = typeof<SEQUENCE> -> PropType.Special (fun pname -> $"|> fun diff' -> Compare.sequence_definition (x0.{pname}, x1.{pname}, \"{pname}\" :: path, diff')")
    
-    | "identity_definition" when parent = typeof<COLUMN> -> PropType.Special (fun pname -> $"Compare.optionIsSame x0.{pname} x1.{pname} Compare.identity_definition")
+    | "identity_definition" when parent = typeof<COLUMN> -> PropType.Special (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.identity_definition (\"{pname}\" :: path)")
+    | "sys_datatype"      when parent = typeof<DATATYPE> -> PropType.Special (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.equalCollector (\"{pname}\" :: path)")
     
-    | "object_type" when pType = typeof<OBJECT_TYPE> -> PropType.Special (fun pname -> $"Compare.object_type x0.{pname} x1.{pname}")
-    | "index_type" when pType = typeof<INDEX_TYPE> -> PropType.Special (fun pname -> $"Compare.index_type x0.{pname} x1.{pname}")
+    | "object_type" when pType = typeof<OBJECT_TYPE> -> PropType.Special (fun pname -> $"|> fun diff' -> Compare.equalCollector (x0.{pname}, x1.{pname}, (\"{pname}\" :: path), diff')")
+    | "index_type" when pType = typeof<INDEX_TYPE> -> PropType.Special (fun pname -> $"|> fun diff' -> Compare.equalCollector (x0.{pname}, x1.{pname}, (\"{pname}\" :: path), diff')")
     | _ ->
         if pType.IsArray
         then PropType.Array
@@ -118,26 +118,24 @@ type CompareGen = CompareGenCase
                     append ""
                     match fields with
                     | None -> 
-                        append $"        static member IsSame (x0 : System.{ty}, x1 : System.{ty}) = (x0 = x1)"
+                        append $"        static member Collect (x0 : System.{ty}, x1 : System.{ty}, path, diffs) = "
+                        append $"                    if x0 = x1 then diffs else path :: diffs"
                     | Some fs ->
-                        append $"        static member IsSame (x0 : {ty}, x1 : {ty}) ="
-                        
+                        append $"        static member Collect (x0 : {ty}, x1 : {ty}, path, diffs) ="
+                        append $"                    diffs"
                         fs
                         |> Array.choose 
                             (fun (pt, pname) -> 
                                 match pt with
-                                | PropType.Gen -> $"CompareGen.IsSame (x0.{pname}, x1.{pname})"
-                                | PropType.Option -> $"Compare.optionIsSame x0.{pname} x1.{pname} CompareGen.IsSame"
-                                | PropType.List -> $"Compare.listIsSame x0.{pname} x1.{pname} SortOrder.orderBy CompareGen.IsSame"
-                                | PropType.Array -> $"Compare.arrayIsSame x0.{pname} x1.{pname} SortOrder.orderBy CompareGen.IsSame"
+                                | PropType.Gen -> $"|> fun diffs' -> CompareGen.Collect (x0.{pname}, x1.{pname}, \"{pname}\" :: path, diffs')"
+                                | PropType.Option -> $"|> Compare.collectOption x0.{pname} x1.{pname} CompareGen.Collect (\"{pname}\" :: path)"
+                                | PropType.List -> $"|> Compare.collectList x0.{pname} x1.{pname} SortOrder.orderBy CompareGen.Collect (\"{pname}\" :: path)"
+                                | PropType.Array -> $"|> Compare.collectArray x0.{pname} x1.{pname} SortOrder.orderBy CompareGen.Collect (\"{pname}\" :: path)"
                                 | PropType.Special special -> special pname
                                 |> function "" -> None | s -> Some s 
                             )
-                        |> Array.joinBy 
-                            "
-                && "        
-                            id
-                        |> fun s -> append ("                " + s))
+                        |> Array.iter
+                            (fun s -> append $"                    {s}"))
             (Set.empty, ())
         |> ignore
 
