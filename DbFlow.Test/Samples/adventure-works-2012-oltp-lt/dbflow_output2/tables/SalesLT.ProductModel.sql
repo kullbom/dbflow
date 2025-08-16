@@ -3,10 +3,8 @@ CREATE TABLE [SalesLT].[ProductModel] (
       IDENTITY (1,1),
    [Name] [NAME] NOT NULL,
    [CatalogDescription] [XML] NULL,
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_ProductModel_ProductModelID] PRIMARY KEY CLUSTERED ([ProductModelID])
    ,CONSTRAINT [AK_ProductModel_Name] UNIQUE NONCLUSTERED ([Name])

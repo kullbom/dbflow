@@ -3,14 +3,11 @@ CREATE TABLE [Person].[StateProvince] (
       IDENTITY (1,1),
    [StateProvinceCode] [NCHAR](3) NOT NULL,
    [CountryRegionCode] [NVARCHAR](3) NOT NULL,
-   [IsOnlyStateProvinceFlag] [FLAG] NOT NULL
-       DEFAULT ((1)),
+   [IsOnlyStateProvinceFlag] [FLAG] NOT NULL,
    [Name] [NAME] NOT NULL,
    [TerritoryID] [INT] NOT NULL,
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_StateProvince_StateProvinceID] PRIMARY KEY CLUSTERED ([StateProvinceID])
 )

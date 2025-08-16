@@ -2,10 +2,8 @@ CREATE TABLE [Sales].[SalesPersonQuotaHistory] (
    [BusinessEntityID] [INT] NOT NULL,
    [QuotaDate] [DATETIME] NOT NULL,
    [SalesQuota] [MONEY] NOT NULL,
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_SalesPersonQuotaHistory_BusinessEntityID_QuotaDate] PRIMARY KEY CLUSTERED ([BusinessEntityID], [QuotaDate])
 )

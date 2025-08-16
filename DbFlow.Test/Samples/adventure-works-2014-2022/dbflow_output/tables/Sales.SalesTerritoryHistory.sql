@@ -3,10 +3,8 @@ CREATE TABLE [Sales].[SalesTerritoryHistory] (
    [TerritoryID] [INT] NOT NULL,
    [StartDate] [DATETIME] NOT NULL,
    [EndDate] [DATETIME] NULL,
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_SalesTerritoryHistory_BusinessEntityID_StartDate_TerritoryID] PRIMARY KEY CLUSTERED ([BusinessEntityID], [StartDate], [TerritoryID])
 )

@@ -3,13 +3,11 @@ CREATE TABLE [Production].[ProductReview] (
       IDENTITY (1,1),
    [ProductID] [INT] NOT NULL,
    [ReviewerName] [NAME] NOT NULL,
-   [ReviewDate] [DATETIME] NOT NULL
-       DEFAULT (getdate()),
+   [ReviewDate] [DATETIME] NOT NULL,
    [EmailAddress] [NVARCHAR](50) NOT NULL,
    [Rating] [INT] NOT NULL,
    [Comments] [NVARCHAR](3850) NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_ProductReview_ProductReviewID] PRIMARY KEY CLUSTERED ([ProductReviewID])
 )

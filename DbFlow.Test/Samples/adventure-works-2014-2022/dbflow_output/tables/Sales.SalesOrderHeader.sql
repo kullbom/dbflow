@@ -1,16 +1,12 @@
 CREATE TABLE [Sales].[SalesOrderHeader] (
    [SalesOrderID] [INT] NOT NULL
       IDENTITY (1,1),
-   [RevisionNumber] [TINYINT] NOT NULL
-       DEFAULT ((0)),
-   [OrderDate] [DATETIME] NOT NULL
-       DEFAULT (getdate()),
+   [RevisionNumber] [TINYINT] NOT NULL,
+   [OrderDate] [DATETIME] NOT NULL,
    [DueDate] [DATETIME] NOT NULL,
    [ShipDate] [DATETIME] NULL,
-   [Status] [TINYINT] NOT NULL
-       DEFAULT ((1)),
-   [OnlineOrderFlag] [FLAG] NOT NULL
-       DEFAULT ((1)),
+   [Status] [TINYINT] NOT NULL,
+   [OnlineOrderFlag] [FLAG] NOT NULL,
    [SalesOrderNumber] AS (isnull(N'SO'+CONVERT([nvarchar](23),[SalesOrderID]),N'*** ERROR ***')),
    [PurchaseOrderNumber] [ORDERNUMBER] NULL,
    [AccountNumber] [ACCOUNTNUMBER] NULL,
@@ -23,18 +19,13 @@ CREATE TABLE [Sales].[SalesOrderHeader] (
    [CreditCardID] [INT] NULL,
    [CreditCardApprovalCode] [VARCHAR](15) NULL,
    [CurrencyRateID] [INT] NULL,
-   [SubTotal] [MONEY] NOT NULL
-       DEFAULT ((0.00)),
-   [TaxAmt] [MONEY] NOT NULL
-       DEFAULT ((0.00)),
-   [Freight] [MONEY] NOT NULL
-       DEFAULT ((0.00)),
+   [SubTotal] [MONEY] NOT NULL,
+   [TaxAmt] [MONEY] NOT NULL,
+   [Freight] [MONEY] NOT NULL,
    [TotalDue] AS (isnull(([SubTotal]+[TaxAmt])+[Freight],(0))),
    [Comment] [NVARCHAR](128) NULL,
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_SalesOrderHeader_SalesOrderID] PRIMARY KEY CLUSTERED ([SalesOrderID])
 )

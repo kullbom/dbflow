@@ -3,20 +3,16 @@ CREATE TABLE [Production].[Document] (
    [DocumentLevel] AS ([DocumentNode].[GetLevel]()),
    [Title] [NVARCHAR](50) NOT NULL,
    [Owner] [INT] NOT NULL,
-   [FolderFlag] [BIT] NOT NULL
-       DEFAULT ((0)),
+   [FolderFlag] [BIT] NOT NULL,
    [FileName] [NVARCHAR](400) NOT NULL,
    [FileExtension] [NVARCHAR](8) NOT NULL,
    [Revision] [NCHAR](5) NOT NULL,
-   [ChangeNumber] [INT] NOT NULL
-       DEFAULT ((0)),
+   [ChangeNumber] [INT] NOT NULL,
    [Status] [TINYINT] NOT NULL,
    [DocumentSummary] [NVARCHAR](MAX) NULL,
    [Document] [VARBINARY](MAX) NULL,
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_Document_DocumentNode] PRIMARY KEY CLUSTERED ([DocumentNode])
    ,UNIQUE NONCLUSTERED ([rowguid])

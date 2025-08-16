@@ -23,9 +23,17 @@ let propertyType (parent : System.Type) (pName : string) (pType :System.Type) =
     | "dependencies" when parent = typeof<DATABASE> -> PropType.Special (fun pname -> "")
     | "schema_id" when parent = typeof<SCHEMA> -> PropType.Special (fun pname -> "")
     | "object_id" when parent = typeof<OBJECT> -> PropType.Special (fun pname -> "")
+    | "parent_object_id" when parent = typeof<OBJECT> -> PropType.Special (fun pname -> "")
     | "create_date" -> PropType.Special (fun pname -> "")
     | "modify_date" -> PropType.Special (fun pname -> "")
+    | "all_objects" -> PropType.Special (fun pname -> "")
+    | "orig_definition" -> PropType.Special (fun pname -> "")
+    
+    // TODO: This should be part of the generated scripts
+    | "ms_description" -> PropType.Special (fun pname -> "")
 
+    | "name" when parent = typeof<OBJECT> -> PropType.Special (fun _pname -> $"|> fun diff' -> Compare.object_name (x0, x1, path, diff')") 
+    
     | "name" when parent = typeof<INDEX> -> PropType.Special (fun _pname -> $"|> fun diff' -> Compare.index_name (x0, x1, path, diff')") 
     | "object" when parent = typeof<INDEX> -> PropType.Special (fun _ -> "")
     | "is_system_named" when parent = typeof<INDEX> -> PropType.Special (fun _ -> "")
@@ -118,8 +126,7 @@ type CompareGen = CompareGenCase
                     append ""
                     match fields with
                     | None -> 
-                        append $"        static member Collect (x0 : System.{ty}, x1 : System.{ty}, path, diffs) = "
-                        append $"                    if x0 = x1 then diffs else path :: diffs"
+                        append $"        static member Collect (x0 : System.{ty}, x1 : System.{ty}, path, diffs) = Compare.equalCollector (x0, x1, path, diffs)"
                     | Some fs ->
                         append $"        static member Collect (x0 : {ty}, x1 : {ty}, path, diffs) ="
                         append $"                    diffs"
@@ -129,8 +136,8 @@ type CompareGen = CompareGenCase
                                 match pt with
                                 | PropType.Gen -> $"|> fun diffs' -> CompareGen.Collect (x0.{pname}, x1.{pname}, \"{pname}\" :: path, diffs')"
                                 | PropType.Option -> $"|> Compare.collectOption x0.{pname} x1.{pname} CompareGen.Collect (\"{pname}\" :: path)"
-                                | PropType.List -> $"|> Compare.collectList x0.{pname} x1.{pname} SortOrder.orderBy CompareGen.Collect (\"{pname}\" :: path)"
-                                | PropType.Array -> $"|> Compare.collectArray x0.{pname} x1.{pname} SortOrder.orderBy CompareGen.Collect (\"{pname}\" :: path)"
+                                | PropType.List -> $"|> Compare.collectList x0.{pname} x1.{pname} SortOrder.orderBy Sequence.elementId CompareGen.Collect (\"{pname}\" :: path)"
+                                | PropType.Array -> $"|> Compare.collectArray x0.{pname} x1.{pname} SortOrder.orderBy Sequence.elementId CompareGen.Collect (\"{pname}\" :: path)"
                                 | PropType.Special special -> special pname
                                 |> function "" -> None | s -> Some s 
                             )

@@ -31,15 +31,14 @@ module Common =
                 Helpers.compareScriptFolders logger sourceScriptFolder 
                 |> Logger.logTime logger "Compare scripts (source vs. clone)"destScriptFolder
                 
-                match Schema.CompareGen.Collect (cloneSchema, sourceSchema, [], []) with
+                match Execute.compare cloneSchema sourceSchema with
                 | [] -> ()
-                | diff -> Assert.Fail "Schema is not same"
+                | diff -> Assert.Fail (sprintf "Schema is not same (%i differences)" diff.Length)
                 )
         
     let fullTestSuite logger options rules directory (dbName : string) =
         Helpers.withLocalDbFromScripts logger (directory + $"{dbName}\\scripts")
             (fun connectionString ->
-                let rawOutputFile = directory + $"{dbName}\\dbflow_rawout.txt"
                 let dbFlowOutputDir = directory + $"{dbName}\\dbflow_output"
                 let dbFlowOutputDir2 = directory + $"{dbName}\\dbflow_output2"
 

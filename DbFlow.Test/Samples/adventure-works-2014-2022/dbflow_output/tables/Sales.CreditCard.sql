@@ -6,7 +6,6 @@ CREATE TABLE [Sales].[CreditCard] (
    [ExpMonth] [TINYINT] NOT NULL,
    [ExpYear] [SMALLINT] NOT NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_CreditCard_CreditCardID] PRIMARY KEY CLUSTERED ([CreditCardID])
 )

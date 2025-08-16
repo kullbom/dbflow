@@ -10,7 +10,6 @@ CREATE TABLE [Production].[WorkOrder] (
    [DueDate] [DATETIME] NOT NULL,
    [ScrapReasonID] [SMALLINT] NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_WorkOrder_WorkOrderID] PRIMARY KEY CLUSTERED ([WorkOrderID])
 )

@@ -6,7 +6,6 @@ CREATE TABLE [Production].[ProductPhoto] (
    [LargePhoto] [VARBINARY](MAX) NULL,
    [LargePhotoFileName] [NVARCHAR](50) NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_ProductPhoto_ProductPhotoID] PRIMARY KEY CLUSTERED ([ProductPhotoID])
 )

@@ -1,34 +1,36 @@
-# Grov plan
+ï»¿# Grov plan
 
 ## Version 0.1.0(-beta)
 
-- C#-vänligare interface
-- Möjlighet att testa script-output utan faktisk scriptmapp...?
-- Tester som visar på problem/buggar (eller lösning på problemet):
-    - CHECK_CONSTRAINT väl hårdkodad vad gäller "CHECK" etc. 
-        - Täck ordentligt med tester
-        - Lägg också till tester för andra saker som kan vara disabled...
-    - Test för disabled triggers
-    - Test för triggers, procedures och views man bytt namn på...
+- C#-vÃ¤nligare interface
+- MÃ¶jlighet att testa script-output utan faktisk scriptmapp...?
+- Tester som visar pÃ¥ problem/buggar (eller lÃ¶sning pÃ¥ problemet):
+    - CHECK_CONSTRAINT vÃ¤l hÃ¥rdkodad vad gÃ¤ller "CHECK" etc. 
+        - TÃ¤ck ordentligt med tester
+        - LÃ¤gg ocksÃ¥ till tester fÃ¶r andra saker som kan vara disabled...
+    - Test fÃ¶r disabled triggers
+    - Test fÃ¶r triggers, procedures och views man bytt namn pÃ¥...
     - Test for anonymous (system named) unique keys
     - BUG: Named defaults blir fel - se [DF_TestTable01_ColWithNamedDefault]
-    - XML index fungar inte bra ... se AW - sök på "[XMLPATH_Person_Demographics]"
-      (Det finns ett fallerande test för detta) 
+    - XML index fungar inte bra ... se AW - sÃ¶k pÃ¥ "[XMLPATH_Person_Demographics]"
+      (Det finns ett fallerande test fÃ¶r detta) 
+âœ“   - Index "FILLFACTOR" Ã¤r inte med i de genererade scripten - och blir dÃ¤rfÃ¶r fel i kloner.
+    - Column "is ansi padded" blir fel 
 - Dokumentera dessa i readme - eller som issues i github...? 
 
 
 ## Version 1.0.0
 
-- DbUp-kompatibel (kan använda dbo.SchemaVersion - om konfad så) 
-- Någon form av db compare (syfte: hitta buggar)
-    - Och test med hjälp av detta som jämför db från originalscripten med db från genererade script/clone
-- Något form av dokumentationsgenerering
-- Säkerställ lämpliga rättigheter innan "load" (https://github.com/sethreno/schemazen/issues/136)
-- Testerna klarar inte att köras parallellt - pga delade mappar?
+- DbUp-kompatibel (kan anvÃ¤nda dbo.SchemaVersion - om konfad sÃ¥) 
+âœ“ - NÃ¥gon form av db compare (syfte: hitta buggar)
+    - Och test med hjÃ¤lp av detta som jÃ¤mfÃ¶r db frÃ¥n originalscripten med db frÃ¥n genererade script/clone
+- NÃ¥got form av dokumentationsgenerering
+- SÃ¤kerstÃ¤ll lÃ¤mpliga rÃ¤ttigheter innan "load" (https://github.com/sethreno/schemazen/issues/136)
+- Testerna klarar inte att kÃ¶ras parallellt - pga delade mappar?
  
 ## Kommande version
 
-- Stöd för CLR-grejor... (https://github.com/sethreno/schemazen/blob/master/Library/Models/Assembly.cs)
-- Statistikstöd
+- StÃ¶d fÃ¶r CLR-grejor... (https://github.com/sethreno/schemazen/blob/master/Library/Models/Assembly.cs)
+- StatistikstÃ¶d
 - Data import
 - Data export

@@ -71,6 +71,14 @@ let indexColumnsStr (columns : INDEX_COLUMN array) =
             let descStr = if c.is_descending_key then " DESC" else ""
             $"[{c.column.column_name}]{descStr}")
 
+let indexWithSettings (index : INDEX) =
+    [|
+        match index.fill_factor with 0uy -> "" | ff -> $"FILLFACTOR = {ff}"
+    |]
+    |> Array.filter (fun s -> s.Length > 0)
+    |> Array.joinBy ", " id
+    |> function "" -> "" | s -> $"\r\n    WITH( {s} )"
+
 let primaryKeyStr (opt : Options) isTableType (pk : INDEX) =
     let pkName = 
         match pk.name with Some n -> n | None -> failwithf "Can not handle PK without name"
@@ -86,9 +94,10 @@ let primaryKeyStr (opt : Options) isTableType (pk : INDEX) =
         then $"PRIMARY KEY {clusteredStr} ({pkColumnsStr})"
         else $"CONSTRAINT [{pkName}] PRIMARY KEY {clusteredStr} ({pkColumnsStr})"
     else    
+        let withSettings = indexWithSettings pk
         if isTableType || pk.is_system_named
-        then $"PRIMARY KEY {clusteredStr} ({pkColumnsStr})"
-        else $"CONSTRAINT [{pkName}] PRIMARY KEY {clusteredStr} ({pkColumnsStr})"
+        then $"PRIMARY KEY {clusteredStr} ({pkColumnsStr}){withSettings}"
+        else $"CONSTRAINT [{pkName}] PRIMARY KEY {clusteredStr} ({pkColumnsStr}){withSettings}"
         
 let uniqueKeyStr (opt : Options) (i : INDEX) =
     let iName = 
@@ -103,7 +112,7 @@ let uniqueKeyStr (opt : Options) (i : INDEX) =
     then $"CONSTRAINT [{iName}] UNIQUE {clusteredStr} ({indexColumnsStr})"
     else $"UNIQUE {clusteredStr} ({indexColumnsStr})"
 
-let generateStandardIndexScript (index : INDEX) (parentName : string) (indexName : string) (indexTypeStr : string) =
+let generateStandardIndexScript (opt : Options) (index : INDEX) (parentName : string) (indexName : string) (indexTypeStr : string) =
     let (includeColumns, keyColumns) =
         separateBy (fun c -> c.is_included_column) index.columns
 
@@ -113,14 +122,20 @@ let generateStandardIndexScript (index : INDEX) (parentName : string) (indexName
         then ""
         else 
             includeColumns
-            |> Array.map (fun c -> $"[{c.column.column_name}]")
-            |> fun ss -> System.String.Join (", ", ss) 
+            |> Array.joinBy ", " (fun c -> $"[{c.column.column_name}]") 
             |> fun s -> $" INCLUDE ({s})"
     let filterStr =
         match index.filter with
         | None -> ""
         | Some filter -> $" WHERE {filter}"
-    $"CREATE {indexTypeStr} INDEX [{indexName}] ON {parentName} ({keyColumnsStr}){includeStr}{filterStr}"
+    
+    let withSettings = 
+        if opt.SchemazenCompatibility
+        then ""
+        else indexWithSettings index
+            
+
+    $"CREATE {indexTypeStr} INDEX [{indexName}] ON {parentName} ({keyColumnsStr}){includeStr}{filterStr}{withSettings}"
 
 let generateXMLIndexScript (opt : Options) (index : INDEX) (parentName : string) (indexName : string) =
     let (includeColumns, keyColumns) =
@@ -144,13 +159,13 @@ let objectFilename (schema_name :string) (object_name : string) =
 let getIndexDefinitionStr (opt : Options) parentName (index : INDEX) =
     match index.name, index.is_unique, index.index_type with
     | Some n, false, INDEX_TYPE.CLUSTERED -> 
-        Some <| generateStandardIndexScript index parentName n "CLUSTERED"
+        Some <| generateStandardIndexScript opt index parentName n "CLUSTERED"
     | Some n, false, INDEX_TYPE.NONCLUSTERED -> 
-        Some <| generateStandardIndexScript index parentName n "NONCLUSTERED" 
+        Some <| generateStandardIndexScript opt index parentName n "NONCLUSTERED" 
     | Some n, true, INDEX_TYPE.CLUSTERED -> 
-        Some <| generateStandardIndexScript index parentName n "UNIQUE CLUSTERED"
+        Some <| generateStandardIndexScript opt index parentName n "UNIQUE CLUSTERED"
     | Some n, true, INDEX_TYPE.NONCLUSTERED -> 
-        Some <| generateStandardIndexScript index parentName n "UNIQUE NONCLUSTERED"
+        Some <| generateStandardIndexScript opt index parentName n "UNIQUE NONCLUSTERED"
     | Some n, false, INDEX_TYPE.XML ->
         Some <| generateXMLIndexScript opt index parentName n  
     // Heap indexes without name is ignored
@@ -216,9 +231,9 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) allTypes i
         defaultConstraints
         |> Array.fold
             (fun tableInlineDefaults' dc ->
-                 if opt.SchemazenCompatibility && not isTableType
-                 then tableInlineDefaults'
-                 else Map.add dc.column.column_id dc tableInlineDefaults')
+                 if isTableType
+                 then Map.add dc.column.column_id dc tableInlineDefaults'
+                 else tableInlineDefaults')
             Map.empty
 
 
@@ -385,7 +400,7 @@ let generateSequenceScript (w : System.IO.StreamWriter) (opt : Options) (s : SEQ
     let minValue = match s.sequence_definition.minimum_value with Some v -> $" MINVALUE {v}" | None -> " NO MINVALUE"
     let maxValue = match s.sequence_definition.maximum_value with Some v -> $" MAXVALUE {v}" | None -> " NO MAXVALUE"
     let cycle = if s.is_cycling then " CYCLE" else " NO CYCLE"
-    let cache = match s.cache_size with Some s -> $" CACHE {s}" | None -> " NO CACHE"
+    let cache = match s.cache_size with Some s -> $" CACHE {s}" | None -> if s.is_cached then "" else " NO CACHE"
     w.WriteLine $"CREATE SEQUENCE {name} AS {typeStr}{startWith}{incrementBy}{minValue}{maxValue}{cycle}{cache}"
 
     ObjectDefinitions {| contains_objects = [s.object.object_id]; depends_on = [] |}
@@ -486,10 +501,8 @@ let generateScripts (opt : Options) (db : DATABASE) scriptConsumer =
     db.TABLES |> List.choose (fun t -> match t.checkConstraints |> Array.filter (fun cc -> not cc.is_system_named) with [||] -> None | ccs -> Some (t, ccs))
     |> dataForFolder "check_constraints" (fun (t, _) -> objectFilename t.schema.name t.table_name) generateCheckConstraintsScript
 
-    if opt.SchemazenCompatibility
-    then
-        db.TABLES |> List.choose (fun t -> match t.defaultConstraints with [||] -> None | dcs -> Some (t, dcs))
-        |> dataForFolder "defaults" (fun (t, _) -> objectFilename t.schema.name t.table_name) generateDefaultConstraintsScript
+    db.TABLES |> List.choose (fun t -> match t.defaultConstraints with [||] -> None | dcs -> Some (t, dcs))
+    |> dataForFolder "defaults" (fun (t, _) -> objectFilename t.schema.name t.table_name) generateDefaultConstraintsScript
 
     db.TABLES 
     |> List.collect (fun t -> t.triggers |> Array.toList)
