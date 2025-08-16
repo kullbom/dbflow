@@ -236,6 +236,9 @@ module DATATYPE =
             }
         }
 
+type COMPUTED_DEFINITION = { computed_definition : string; is_persisted : bool }
+type IDENTITY_DEFINITION = { seed_value : obj; increment_value : obj; last_value : obj } 
+
 type COLUMN = {
     column_name : string     
     object : OBJECT
@@ -244,8 +247,8 @@ type COLUMN = {
     data_type : DATATYPE
     
     is_ansi_padded : bool    
-    computed_definition : {| computed_definition : string; is_persisted : bool |} option
-    identity_definition : {| seed_value : obj; increment_value : obj; last_value : obj |} option
+    computed_definition : COMPUTED_DEFINITION option
+    identity_definition : IDENTITY_DEFINITION option
     masking_function : string option
     is_rowguidcol : bool     
 
@@ -290,19 +293,19 @@ module COLUMN =
                         computed_definition = 
                             match readBool "is_computed" r with
                             | true -> 
-                                {| 
+                                { 
                                     computed_definition = readString "computed_definition" r 
                                     is_persisted = readBool "computed_is_persisted" r 
-                                |} |> Some
+                                } |> Some
                             | false -> None
                         identity_definition = 
                             match readBool "is_identity" r with
                             | true -> 
-                                {| 
+                                { 
                                     seed_value = readObject "identity_seed_value" r
                                     increment_value = readObject "identity_increment_value" r
                                     last_value = readObject "identity_last_value" r 
-                                |} |> Some
+                                } |> Some
                             | false -> None
                         masking_function =
                             match readBool "is_masked" r with

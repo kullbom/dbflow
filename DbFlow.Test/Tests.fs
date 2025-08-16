@@ -21,16 +21,19 @@ module Common =
                 Execute.clone (fun m -> logger $"  {m}") options sourceSchema 
                 |> Logger.logTime logger "DbFlow - clone db" connection
 
-                let dbSchema = 
+                let cloneSchema = 
                     Schema.DATABASE.read (fun _s -> ()) options
                     |> Logger.logTime logger "DbFlow - load clone" connection
 
-                Execute.generateScriptFiles options dbSchema
+                Execute.generateScriptFiles options cloneSchema
                 |> Logger.logTime logger "DbFlow - generate scripts (of clone)" destScriptFolder 
 
                 Helpers.compareScriptFolders logger sourceScriptFolder 
-                |> Logger.logTime logger "Compare scripts (source vs. clone)"destScriptFolder)
-
+                |> Logger.logTime logger "Compare scripts (source vs. clone)"destScriptFolder
+                
+                if not <| Schema.CompareGen.IsSame (cloneSchema, sourceSchema)
+                then Assert.Fail "Schema is not same"
+                )
         
     let fullTestSuite logger options rules directory (dbName : string) =
         Helpers.withLocalDbFromScripts logger (directory + $"{dbName}\\scripts")

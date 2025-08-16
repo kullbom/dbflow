@@ -380,10 +380,10 @@ CREATE SEQUENCE [schema_name . ] sequence_name
 let generateSequenceScript (w : System.IO.StreamWriter) (opt : Options) (s : SEQUENCE) =
     let name = $"[{s.object.schema.name}].[{s.object.name}]"
     let typeStr = DATATYPE.typeStr opt.SchemazenCompatibility false s.data_type
-    let startWith = match s.start_value with Some v -> $" START WITH {v}" | None -> ""
-    let incrementBy = $" INCREMENT BY {s.increment}"
-    let minValue = match s.minimum_value with Some v -> $" MINVALUE {v}" | None -> " NO MINVALUE"
-    let maxValue = match s.maximum_value with Some v -> $" MAXVALUE {v}" | None -> " NO MAXVALUE"
+    let startWith = match s.sequence_definition.start_value with Some v -> $" START WITH {v}" | None -> ""
+    let incrementBy = $" INCREMENT BY {s.sequence_definition.increment}"
+    let minValue = match s.sequence_definition.minimum_value with Some v -> $" MINVALUE {v}" | None -> " NO MINVALUE"
+    let maxValue = match s.sequence_definition.maximum_value with Some v -> $" MAXVALUE {v}" | None -> " NO MAXVALUE"
     let cycle = if s.is_cycling then " CYCLE" else " NO CYCLE"
     let cache = match s.cache_size with Some s -> $" CACHE {s}" | None -> " NO CACHE"
     w.WriteLine $"CREATE SEQUENCE {name} AS {typeStr}{startWith}{incrementBy}{minValue}{maxValue}{cycle}{cache}"
