@@ -293,7 +293,8 @@ let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options) 
         |> Array.fold 
             (fun acc cc ->
                 let tableName = $"[{table.schema.name}].[{table.table_name}]"
-                $"ALTER TABLE {tableName} WITH CHECK ADD CONSTRAINT [{cc.object.name}] CHECK ({cc.definition})"
+                let additionalSpace = if opt.SchemazenCompatibility then " " else ""
+                $"ALTER TABLE {tableName} WITH CHECK ADD CONSTRAINT [{cc.object.name}] CHECK{additionalSpace} {cc.definition}"
                 |> w.WriteLine 
                 "GO" |> w.WriteLine
                 cc.object.object_id :: acc)
@@ -327,13 +328,21 @@ let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (tabl
             (fun (object_ids, depends_on) fk ->
                 let columnsStr = fk.columns |> Array.joinBy ", " (fun c -> $"[{c.parent_column.column_name}]")
                 let refColumnsStr = fk.columns |> Array.joinBy ", " (fun c -> $"[{c.referenced_column.column_name}]")
-                [
-                    $"ALTER TABLE [{table.schema.name}].[{table.table_name}] WITH CHECK ADD CONSTRAINT [{fk.name}]"
-                    $"   FOREIGN KEY({columnsStr}) REFERENCES [{fk.referenced.schema.name}].[{fk.referenced.name}] ({refColumnsStr})"
-                    ""
-                    "GO"
-                ]
-                |> List.iter w.WriteLine
+                let name = if fk.is_system_named then "" else $"CONSTRAINT [{fk.name}]"
+                w.WriteLine $"ALTER TABLE [{table.schema.name}].[{table.table_name}] WITH CHECK ADD {name}"
+                w.WriteLine $"   FOREIGN KEY({columnsStr}) REFERENCES [{fk.referenced.schema.name}].[{fk.referenced.name}] ({refColumnsStr})"
+                match fk.update_referential_action with
+                | REFERENTIAL_ACTION.No_action -> () 
+                | REFERENTIAL_ACTION.Cascade -> w.WriteLine "   ON UPDATE CASCADE"
+                | REFERENTIAL_ACTION.Set_null -> w.WriteLine "   ON UPDATE SET NULL"
+                | REFERENTIAL_ACTION.Set_default -> w.WriteLine "   ON UPDATE SET DEFAULT"
+                match fk.delete_referential_action with
+                | REFERENTIAL_ACTION.No_action -> () 
+                | REFERENTIAL_ACTION.Cascade -> w.WriteLine "   ON DELETE CASCADE"
+                | REFERENTIAL_ACTION.Set_null -> w.WriteLine "   ON DELETE SET NULL"
+                | REFERENTIAL_ACTION.Set_default -> w.WriteLine "   ON DELETE SET DEFAULT"
+                w.WriteLine ""
+                w.WriteLine "GO"
 
                 fk.object.object_id :: object_ids,
                 fk.parent.object_id :: fk.referenced.object_id :: depends_on)

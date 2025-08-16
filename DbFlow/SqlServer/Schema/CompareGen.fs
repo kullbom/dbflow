@@ -142,7 +142,12 @@ type CompareGen = CompareGenCase
                     |> fun diffs' -> CompareGen.Collect (x0.referenced, x1.referenced, "referenced" :: path, diffs')
                     |> fun diffs' -> CompareGen.Collect (x0.key_index_id, x1.key_index_id, "key_index_id" :: path, diffs')
                     |> fun diffs' -> CompareGen.Collect (x0.is_disabled, x1.is_disabled, "is_disabled" :: path, diffs')
+                    |> fun diffs' -> CompareGen.Collect (x0.delete_referential_action, x1.delete_referential_action, "delete_referential_action" :: path, diffs')
+                    |> fun diffs' -> CompareGen.Collect (x0.update_referential_action, x1.update_referential_action, "update_referential_action" :: path, diffs')
                     |> Compare.collectArray x0.columns x1.columns SortOrder.orderBy Sequence.elementId CompareGen.Collect ("columns" :: path)
+
+        static member Collect (x0 : REFERENTIAL_ACTION, x1 : REFERENTIAL_ACTION, path, diffs) =
+                    diffs
 
         static member Collect (x0 : FOREIGN_KEY_COLUMN, x1 : FOREIGN_KEY_COLUMN, path, diffs) =
                     diffs

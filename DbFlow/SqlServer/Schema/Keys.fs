@@ -50,6 +50,12 @@ module FOREIGN_KEY_COLUMN =
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-foreign-keys-transact-sql?view=sql-server-ver17
 
+type REFERENTIAL_ACTION =
+    | No_action = 0uy
+    | Cascade = 1uy
+    | Set_null = 2uy
+    | Set_default = 3uy
+
 type FOREIGN_KEY = {
     name : string
     object : OBJECT
@@ -59,15 +65,27 @@ type FOREIGN_KEY = {
     is_disabled : bool
     is_system_named : bool
 
+    delete_referential_action : REFERENTIAL_ACTION
+    update_referential_action : REFERENTIAL_ACTION
+
     columns : FOREIGN_KEY_COLUMN array
 
     ms_description : string option
 }
 
 module FOREIGN_KEY =
+    let toREFERENTIAL_ACTION b =
+        match b with
+        | 0uy -> REFERENTIAL_ACTION.No_action
+        | 1uy -> REFERENTIAL_ACTION.Cascade
+        | 2uy -> REFERENTIAL_ACTION.Set_null
+        | 3uy -> REFERENTIAL_ACTION.Set_default
+    
     let readAll' objects fkColumns ms_descriptions connection =
         DbTr.reader 
-            "SELECT fk.name, fk.object_id, fk.parent_object_id, fk.referenced_object_id, fk.is_disabled, fk.is_system_named, fk.key_index_id 
+            "SELECT 
+                fk.name, fk.object_id, fk.parent_object_id, fk.referenced_object_id, fk.is_disabled, fk.is_system_named, fk.key_index_id, 
+                fk.delete_referential_action, fk.update_referential_action
              FROM sys.foreign_keys fk"
             []
             (fun acc r -> 
@@ -80,6 +98,9 @@ module FOREIGN_KEY =
                     key_index_id = readInt32 "key_index_id" r
                     is_disabled = readBool "is_disabled" r
                     is_system_named = readBool "is_system_named" r
+
+                    delete_referential_action = toREFERENTIAL_ACTION (readByte "delete_referential_action" r)
+                    update_referential_action = toREFERENTIAL_ACTION (readByte "update_referential_action" r)
 
                     columns = match RCMap.tryPick object_id fkColumns with Some cs -> cs | None -> [||]
 

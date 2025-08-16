@@ -81,8 +81,8 @@ module Helpers =
                 | "check_constraints"
                 | "foreign_keys"
                 | "defaults" ->
-                    let defs0 = fileContent0.Split ("\r\nGO") |> Array.sort
-                    let defs1 = fileContent0.Split ("\r\nGO") |> Array.sort
+                    let defs0 = fileContent0 |> SqlParser.Batches.splitInSqlBatches |> List.sort |> List.toArray
+                    let defs1 = fileContent1 |> SqlParser.Batches.splitInSqlBatches |> List.sort |> List.toArray
 
                     if not (aEqual defs0 defs1)
                     then Assert.Fail $"The content of {dir}\\{file} is not the same"
