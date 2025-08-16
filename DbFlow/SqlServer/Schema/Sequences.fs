@@ -82,7 +82,7 @@ module SEQUENCE =
                 let object_id = readInt32 "object_id" r
                 Map.add object_id 
                     { 
-                        object = PickMap.pick object_id objects 
+                        object = RCMap.pick object_id objects 
                     
                         start_value = if readBool "start_value_explicit" r then readObject "start_value" r |> Some else None
                         increment = readObject "increment" r
@@ -102,4 +102,4 @@ module SEQUENCE =
                     m)
             Map.empty
         |> DbTr.commit_ connection
-        |> PickMap.ofMap
+        |> RCMap.ofMap

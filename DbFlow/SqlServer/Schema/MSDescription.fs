@@ -59,4 +59,4 @@ module MS_Description =
                 (XPROPERTY_CLASS.findClass (readByte "class" r), readInt32 "major_id" r, readInt32 "minor_id" r),
                 readString "value" r)
         |> DbTr.commit_ connection
-        |> PickMap.ofMap
+        |> RCMap.ofMap

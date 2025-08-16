@@ -37,7 +37,6 @@
     <Compile Include="SqlServer\Scripts\Execute.fs" />
     <Compile Include="SqlServer\LocalDatabase.fs" />
     <Compile Include="SqlServer\Rules.fs" />
-    <Compile Include="SqlServer\RawOut.fs" />
   </ItemGroup>
 
   <ItemGroup>

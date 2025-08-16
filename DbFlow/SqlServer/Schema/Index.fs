@@ -27,13 +27,13 @@ module INDEX_COLUMN =
             (fun acc r -> 
                 let object_id = readInt32 "object_id" r
                 let column_id = readInt32 "column_id" r
-                let object = PickMap.pick object_id objects
+                let object = RCMap.pick object_id objects
                 match object.object_type with
                 | OBJECT_TYPE.INTERNAL_TABLE 
                 | OBJECT_TYPE.SYSTEM_TABLE
                     -> acc
                 | _ ->
-                    let column = PickMap.pick (object_id, column_id) columns
+                    let column = RCMap.pick (object_id, column_id) columns
                     {
                         object = object
                         index_id = readInt32 "index_id" r
@@ -63,7 +63,7 @@ module INDEX_COLUMN =
                             | _ -> 1, c.index_column_id)
                     |> List.toArray)
             |> Map.ofList
-            |> PickMap.ofMap
+            |> RCMap.ofMap
         indexColumnsByIndex
         
 
@@ -144,19 +144,19 @@ module INDEX =
                 let index_object_id = nullable "index_object_id" readInt32 r
                 let parent_object_id = readInt32 "parent_object_id" r
                 let index_id = readInt32 "index_id" r
-                let parent = PickMap.pick parent_object_id objects
+                let parent = RCMap.pick parent_object_id objects
                 let object = 
                     match index_object_id with
-                    | Some id -> PickMap.pick id objects |> Some
+                    | Some id -> RCMap.pick id objects |> Some
                     | None -> None
                 let columns = 
-                    match PickMap.tryPick (parent_object_id, index_id) indexColumnsByIndex with
+                    match RCMap.tryPick (parent_object_id, index_id) indexColumnsByIndex with
                     | Some cs -> cs 
                     | None -> [||]
                 let ms_description =
-                    match index_object_id, PickMap.tryPick (XPROPERTY_CLASS.INDEX, parent_object_id, index_id) ms_descriptions with
+                    match index_object_id, RCMap.tryPick (XPROPERTY_CLASS.INDEX, parent_object_id, index_id) ms_descriptions with
                     | _, Some d -> Some d
-                    | Some id, None -> PickMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, id, 0) ms_descriptions
+                    | Some id, None -> RCMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, id, 0) ms_descriptions
                     | _ -> None 
                 {
                     parent = parent
@@ -199,5 +199,5 @@ module INDEX =
             |> List.groupBy (fun i -> i.parent.object_id)
             |> List.map (fun (object_id, is) -> object_id, is |> List.sortBy (fun i -> i.index_id) |> List.toArray)
             |> Map.ofList
-            |> PickMap.ofMap
+            |> RCMap.ofMap
         indexesByParent

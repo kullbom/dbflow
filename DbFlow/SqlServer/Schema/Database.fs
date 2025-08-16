@@ -61,6 +61,7 @@ module DATABASE =
         let (columns, columnsByObject) = COLUMN.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
         let triggersByParent = TRIGGER.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
         
+        // A bit strange that keyConstraints isn't used...?!
         let keyConstraints = KEY_CONSTRAINT.readAll objects ms_descs connection
         let checkConstraintsByParent = 
             CHECK_CONSTRAINT.readAll objects columns ms_descs
@@ -97,11 +98,11 @@ module DATABASE =
             VIEW.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules ms_descs
             |> Logger.logTime logger "VIEW" connection
         
-        let db_msDesc = PickMap.tryPick (XPROPERTY_CLASS.DATABASE, 0, 0) ms_descs
+        let db_msDesc = RCMap.tryPick (XPROPERTY_CLASS.DATABASE, 0, 0) ms_descs
         let db_triggers = TRIGGER.readAllDatabaseTriggers objects sql_modules ms_descs connection
 
         let checkUnused (id : string) exclude pm =
-            match PickMap.unused exclude pm with
+            match RCMap.unused exclude pm with
             | [] -> ()
             | unused -> failwith $"{id} not mapped for {unused}" 
 
@@ -127,7 +128,7 @@ module DATABASE =
                     | _ -> false)
 
         {
-            SCHEMAS = schemas |> PickMap.toList 
+            SCHEMAS = schemas |> RCMap.toList 
             TABLES = tables
             VIEWS = views         
             
@@ -139,11 +140,11 @@ module DATABASE =
             XML_SCHEMA_COLLECTIONS = xml_schema_collections
 
             TRIGGERS = db_triggers
-            SYNONYMS = synonyms |> PickMap.toList
-            SEQUENCES = sequences |> PickMap.toList
+            SYNONYMS = synonyms |> RCMap.toList
+            SEQUENCES = sequences |> RCMap.toList
 
             ms_description = db_msDesc
 
-            all_objects = objects |> PickMap.toList
+            all_objects = objects |> RCMap.toList
             dependencies = dependencies
         }

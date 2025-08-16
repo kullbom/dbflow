@@ -50,9 +50,6 @@ module Common =
                 Scripts.Execute.generateScriptFiles options dbSchema 
                 |> Logger.logTime logger "DbFlow - generate scripts" dbFlowOutputDir 
 
-                RawOut.generateRawOutput rawOutputFile
-                |> Logger.logTime logger "DbFlow - generate raw output" dbSchema
-
                 // Test DbFlow "roundtrip"
                 testDbFlowRoundtrip logger options dbSchema dbFlowOutputDir dbFlowOutputDir2
 

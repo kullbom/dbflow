@@ -2,8 +2,9 @@
 
 ## Version 0.1.0(-beta)
 
+- C#-vänligare interface
 - Möjlighet att testa script-output utan faktisk scriptmapp...?
-- Tester som visar på problem/buggar:
+- Tester som visar på problem/buggar (eller lösning på problemet):
     - CHECK_CONSTRAINT väl hårdkodad vad gäller "CHECK" etc. 
         - Täck ordentligt med tester
         - Lägg också till tester för andra saker som kan vara disabled...

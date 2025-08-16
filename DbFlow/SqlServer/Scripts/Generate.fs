@@ -43,11 +43,6 @@ let columnDefinitionStr (opt : Options) allTypes isTableType (columnInlineDefaul
             $"{typeStr}{maskedStr} {nullStr}{identityStr}{checkStr}{rowGuidStr}"
     $"[{column.column_name}] {columnDefStr}"
 
-let joinBy (separator : string) (formatter : _ -> string) xs =
-    xs 
-    |> Array.map formatter
-    |> fun ss -> System.String.Join (separator, ss)
-
 let separateBy f xs =
     xs 
     |> Array.fold (fun (xs, ys) x -> if f x then x :: xs, ys else xs, x :: ys) ([], [])
@@ -70,7 +65,7 @@ let commaSeparated (w : System.IO.StreamWriter) (indentionStr : string) xs (form
 
 let indexColumnsStr (columns : INDEX_COLUMN array) =
     columns
-    |> joinBy 
+    |> Array.joinBy 
         ", "
         (fun c -> 
             let descStr = if c.is_descending_key then " DESC" else ""
@@ -315,8 +310,8 @@ let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (tabl
         fks
         |> Array.fold 
             (fun (object_ids, depends_on) fk ->
-                let columnsStr = fk.columns |> joinBy ", " (fun c -> $"[{c.parent_column.column_name}]")
-                let refColumnsStr = fk.columns |> joinBy ", " (fun c -> $"[{c.referenced_column.column_name}]")
+                let columnsStr = fk.columns |> Array.joinBy ", " (fun c -> $"[{c.parent_column.column_name}]")
+                let refColumnsStr = fk.columns |> Array.joinBy ", " (fun c -> $"[{c.referenced_column.column_name}]")
                 [
                     $"ALTER TABLE [{table.schema.name}].[{table.table_name}] WITH CHECK ADD CONSTRAINT [{fk.name}]"
                     $"   FOREIGN KEY({columnsStr}) REFERENCES [{fk.referenced.schema.name}].[{fk.referenced.name}] ({refColumnsStr})"

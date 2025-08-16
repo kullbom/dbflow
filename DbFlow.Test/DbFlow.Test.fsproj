@@ -17,6 +17,7 @@
 	
 	<Compile Include="Search.fs" />
     <Compile Include="Tests.fs" />
+    <Compile Include="CodeGenerator.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
