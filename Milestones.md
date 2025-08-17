@@ -4,6 +4,7 @@
 
 - C#-vänligare interface
 - Möjlighet att testa script-output utan faktisk scriptmapp...?
+- Testen måste städa bort databasfiler efter sig. Blir snabbt mycket skräpdata...
 - Tester som visar på problem/buggar (eller lösning på problemet):
     - CHECK_CONSTRAINT väl hårdkodad vad gäller "CHECK" etc. 
         - Täck ordentligt med tester
@@ -17,10 +18,9 @@
     - Column "is ansi padded" blir fel 
 ✓   - Det är fel på metadatat för vyer (?!) vars kolumner definierats om. (prova att definiera om (drop och create) vyer utifrån sin - uppdaterade - definition i samband med inläsning)
 ✓   - För att kunna definiera om views behöver dependency resolvern köras på vyerna
-    - Index på vyer försvinner när man definierar om dem... hm... måste jag köra två full svep?!
+✓   - Index på vyer försvinner när man definierar om dem... hm... måste jag köra två full svep?!
     - ms_description is not part of the generated scripts (and temporary excluded in the schema comparison)
 - Dokumentera dessa i readme - eller som issues i github...?
-- Testen måste städa bort databasfiler efter sig. Blir snabbt mycket skräpdata...
 
 
 ## Version 1.0.0

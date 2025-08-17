@@ -26,11 +26,32 @@ type DATABASE = {
 }
 
 module DATABASE =
-    let read logger (options : Options) connection =
-        // Redefine all views
-        VIEW.redefineAll 
-        |> Logger.logTime logger "Refresh view meta data" connection 
+    open Dependencies
 
+    // Read all views in order to redefined them - to get fresh/correct meta data 
+    let preReadAllViews logger connection =
+        let ms_descs = RCMap.ofMap Map.empty
+        let dependencies = DEPENDENCY.readAll |> Logger.logTime logger "Dependencies" connection
+        
+        let schemas = SCHEMA.readAll ms_descs connection
+        let objects = OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
+        let types = DATATYPE.readAll schemas objects ms_descs connection
+
+        let sql_modules = SQL_MODULE.readAll connection
+        
+        let (columns, columnsByObject) = COLUMN.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
+        let triggersByParent = TRIGGER.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
+        
+        let indexesColumnsByIndex = INDEX_COLUMN.readAll objects columns |> Logger.logTime logger "INDEX_COLUMN" connection
+        let indexesByParent = INDEX.readAll objects indexesColumnsByIndex ms_descs |> Logger.logTime logger "INDEX" connection
+        
+        let views = 
+            VIEW.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules ms_descs
+            |> Logger.logTime logger "VIEW" connection
+        
+        views, dependencies
+
+    let read logger (options : Options) connection =
         let ms_descs = MS_Description.readAll |> Logger.logTime logger "MS_Description" connection
         let dependencies = DEPENDENCY.readAll |> Logger.logTime logger "Dependencies" connection
         

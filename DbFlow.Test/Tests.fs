@@ -22,7 +22,7 @@ module Common =
                 |> Logger.logTime logger "DbFlow - clone db" connection
 
                 let cloneSchema = 
-                    Schema.DATABASE.read (fun _s -> ()) options
+                    Execute.readSchema (fun _s -> ()) options
                     |> Logger.logTime logger "DbFlow - load clone" connection
 
                 Execute.generateScriptFiles options cloneSchema
@@ -47,7 +47,7 @@ module Common =
                 connection.Open()
                 
                 let dbSchema = 
-                    Schema.DATABASE.read (fun _s -> ()) options
+                    Execute.readSchema (fun _s -> ()) options
                     |> Logger.logTime logger "DbFlow - load model" connection
 
                 Scripts.Execute.generateScriptFiles options dbSchema 
@@ -78,7 +78,7 @@ module Common =
                 
                 let options = { Options.SchemazenCompatibility = true; BypassReferenceChecksOnLoad = false }
                 let dbSchema = 
-                    Schema.DATABASE.read (fun _s -> ()) options
+                    Execute.readSchema (fun _s -> ()) options
                     |> Logger.logTime logger "DbFlow - load model" connection
 
                 Scripts.Execute.generateScriptFiles options dbSchema 

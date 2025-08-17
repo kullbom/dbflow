@@ -1,6 +1,7 @@
 ﻿module DbFlow.SqlServer.Scripts.Execute
 
 open DbFlow
+open DbFlow.Dependencies
 open DbFlow.SqlServer.Schema
 
 let scriptTransaction (script : string) = 
@@ -17,6 +18,59 @@ let scriptTransaction (script : string) =
             ])
     |> List.map  (fun s -> DbTr.nonQuery s [])
     |> DbTr.sequence_
+
+
+// Read schema
+
+let private redefineViews logger options connection =
+    let (views, deps) = DATABASE.preReadAllViews logger connection
+    // Drop scripts
+    let dropScripts = 
+        views 
+        |> List.map 
+            (fun view -> 
+                let drop_script = $"DROP VIEW [{view.schema.name}].[{view.view_name}]"
+                Dependent.create drop_script [view.object.object_id] [] 0)
+        |> Dependencies.resolveScriptOrder deps 
+    // Create scripts
+    let createScripts = 
+        views 
+        |> List.fold 
+            (fun scripts view -> 
+                let create_script =
+                    Dependent.create view.definition [view.object.object_id] [] 0
+                let view_scripts =
+                    let view_name = $"[{view.schema.name}].[{view.view_name}]"
+                    view.indexes
+                    |> Array.fold 
+                        (fun acc index ->
+                            match Generate.getIndexDefinitionStr options view_name index with
+                            | None -> acc
+                            | Some indexScript -> 
+                                let index_contains_objects =
+                                    match index.object with Some o -> [o.object_id] | None -> []
+                                Dependent.create indexScript index_contains_objects [view.object.object_id] 0 :: acc)
+                        (create_script :: scripts)
+                view_scripts)
+            []
+        |> Dependencies.resolveScriptOrder deps 
+        
+    // The drop scripts needs to be reverted since dependency works on the asumption that objects are created...
+    dropScripts 
+    |> List.fold 
+        (fun acc s -> scriptTransaction s.content :: acc)
+        (createScripts |> List.map (fun s -> scriptTransaction s.content))
+    |> DbTr.sequence_ 
+    |> DbTr.commit_ connection 
+    ()
+
+let readSchema logger (options : Options) connection =
+    if not options.SchemazenCompatibility
+    then 
+        redefineViews logger options 
+        |> Logger.logTime logger "Refresh view meta data" connection 
+
+    DATABASE.read logger options connection
 
 let collectScripts (options : Options) (sourceDb : DATABASE) =
     let mutable scripts = []

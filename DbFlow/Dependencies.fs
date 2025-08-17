@@ -9,6 +9,17 @@ type 'a Dependent = {
     priority : int
 }
 
+module Dependent =
+    let create content contains_objects depends_on priority = 
+        {
+            content = content  
+            
+            contains_objects = contains_objects |> Set.ofList
+            depends_on = depends_on |> Set.ofList
+
+            priority = priority
+        }
+
 // Objects needs to be created in correct order. 
 // - A schemabound view can not be created before all the referenced views has been created
 // - The same is true for procedures etc.
