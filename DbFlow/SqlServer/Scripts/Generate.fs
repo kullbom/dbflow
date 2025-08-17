@@ -451,8 +451,8 @@ let generateUserDefinedTypeScript (types : Map<int, DATATYPE>) (w : System.IO.St
     UserDefinedTypeDefinition
 
 
-let generateScripts (opt : Options) (db : DATABASE) scriptConsumer =
-    
+let generateScripts (opt : Options) (schema : DATABASE) scriptConsumer =
+    let db = schema
     let dataForFolder subfolderName (nameFn : 'a -> string) f (xs : 'a list) =
         if xs |> List.isEmpty |> not 
         then

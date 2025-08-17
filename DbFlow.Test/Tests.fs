@@ -50,7 +50,7 @@ module Common =
                     Execute.readSchema (fun _s -> ()) options
                     |> Logger.logTime logger "DbFlow - load model" connection
 
-                Scripts.Execute.generateScriptFiles options dbSchema 
+                Execute.generateScriptFiles options dbSchema 
                 |> Logger.logTime logger "DbFlow - generate scripts" dbFlowOutputDir 
 
                 // Test DbFlow "roundtrip"
@@ -81,7 +81,7 @@ module Common =
                     Execute.readSchema (fun _s -> ()) options
                     |> Logger.logTime logger "DbFlow - load model" connection
 
-                Scripts.Execute.generateScriptFiles options dbSchema 
+                Execute.generateScriptFiles options dbSchema 
                 |> Logger.logTime logger "DbFlow - generate scripts" dbFlowOutputDir
 
                 // Compare the output from Schemazen and DbFlow

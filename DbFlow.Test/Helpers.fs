@@ -6,7 +6,7 @@ open Microsoft.Data.SqlClient
 open MyDbUp
 
 open DbFlow
-open DbFlow.SqlServer.Scripts
+open DbFlow.SqlServer
 
 module Helpers = 
     let separateTableKeys (fullTableScript : string) =
@@ -181,7 +181,7 @@ module Helpers =
                 else acc)
             []
         |> List.rev 
-        |> List.map Execute.scriptTransaction
+        |> List.map Execute.Internal.scriptTransaction
         |> DbTr.sequence_
         |> fun dbTransaction ->
             use connection = new SqlConnection(connectionStr)
