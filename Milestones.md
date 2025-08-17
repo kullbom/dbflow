@@ -4,7 +4,7 @@
 
 - C#-vänligare interface
 - Möjlighet att testa script-output utan faktisk scriptmapp...?
-- Testen måste städa bort databasfiler efter sig. Blir snabbt mycket skräpdata...
+✓ - Testen måste städa bort databasfiler efter sig. Blir snabbt mycket skräpdata...
 - Tester som visar på problem/buggar (eller lösning på problemet):
     - CHECK_CONSTRAINT väl hårdkodad vad gäller "CHECK" etc. 
         - Täck ordentligt med tester

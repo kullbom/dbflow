@@ -9,8 +9,10 @@ open DbFlow
 
 /// Db queries used to create and tear down databases
 module LocalDatabase =
-    let create (dbName : string) (file : string) = 
-        DbTr.nonQuery $@"CREATE DATABASE {dbName} ON PRIMARY (NAME={dbName}, FILENAME = '{file}')" []
+    let create (dbName : string) (dbFile : string) (logFile : string) = 
+        let dbFileSpec = $"(NAME={dbName}_db, FILENAME = '{dbFile}')"
+        let logFileSpec = $"(NAME={dbName}_log, FILENAME = '{logFile}')"
+        DbTr.nonQuery $@"CREATE DATABASE {dbName} ON PRIMARY {dbFileSpec} LOG ON {logFileSpec}" []
 
     let takeOffline (dbName : string) = 
         DbTr.nonQuery @$"ALTER DATABASE {dbName} SET OFFLINE WITH ROLLBACK IMMEDIATE" []
@@ -66,7 +68,8 @@ type LocalTempDb(logger) =
 
     let path = Path.Combine(Directory.GetCurrentDirectory(), "Data")
     let di = DirectoryInfo(path)
-    let file = Path.Combine(di.FullName, $"TestDb_{dbName}.mdf")
+    let dbFile = Path.Combine(di.FullName, $"TestDb_{dbName}.mdf")
+    let logFile = Path.Combine(di.FullName, $"TestDb_{dbName}_log.ldf")
 
     do
         if not di.Exists 
@@ -75,7 +78,7 @@ type LocalTempDb(logger) =
         use connection = new SqlConnection(cs "master")
         connection.Open()
 
-        LocalDatabase.create dbName file
+        LocalDatabase.create dbName dbFile logFile
         |> DbTr.exe connection
 
     member _.GetConnectionString() = cs dbName
@@ -85,7 +88,6 @@ type LocalTempDb(logger) =
             use connection = new SqlConnection(cs "master")
             connection.Open()
             // Removing all users before detaching is a huge speed up...
-            // Yes - but it doesn't work in async environment - tries to kill all processes
             (fun () -> LocalDatabase.killAllUsers dbName |> DbTr.exe connection)
             |> Logger.logTime logger "kill all users" ()
             
@@ -95,4 +97,6 @@ type LocalTempDb(logger) =
             (fun () -> LocalDatabase.detach dbName |> DbTr.exe connection)
             |> Logger.logTime logger "detach db" ()
             
-            File.Delete(file)
+            File.Delete(dbFile)
+            File.Delete(logFile)
+            ()
