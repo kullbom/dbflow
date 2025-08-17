@@ -3,25 +3,6 @@
 open DbFlow
 open DbFlow.Readers
 
-// https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-sql-expression-dependencies-transact-sql?view=sql-server-ver17
-
-module DEPENDENCY =
-    let readAll connection =
-        DbTr.reader
-            "SELECT DISTINCT d.referencing_id, d.referenced_id, d.is_schema_bound_reference 
-             FROM sys.sql_expression_dependencies d
-             WHERE d.referencing_id IS NOT NULL 
-                AND d.referenced_id IS NOT NULL
-                AND d.referencing_id <> d.referenced_id"
-            []
-            (fun acc r -> 
-                (readInt32 "referencing_id" r, readInt32 "referenced_id" r) :: acc)
-            []
-        |> DbTr.commit_ connection
-        |> List.groupBy fst 
-        |> List.map (fun (referencing_id, xs) -> referencing_id, xs |> List.map snd)
-        |> Map.ofList
-
 type DATABASE = {
     SCHEMAS : SCHEMA list
     TABLES : TABLE list
@@ -46,6 +27,9 @@ type DATABASE = {
 
 module DATABASE =
     let read logger (options : Options) connection =
+        // Redefine all views
+        VIEW.redefineAll connection 
+
         let ms_descs = MS_Description.readAll |> Logger.logTime logger "MS_Description" connection
         let dependencies = DEPENDENCY.readAll |> Logger.logTime logger "Dependencies" connection
         

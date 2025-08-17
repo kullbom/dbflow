@@ -55,7 +55,6 @@ type CompareGen = CompareGenCase
                     diffs
                     |> fun diffs' -> CompareGen.Collect (x0.column_name, x1.column_name, "column_name" :: path, diffs')
                     |> fun diffs' -> CompareGen.Collect (x0.object, x1.object, "object" :: path, diffs')
-                    |> fun diffs' -> CompareGen.Collect (x0.column_id, x1.column_id, "column_id" :: path, diffs')
                     |> fun diffs' -> CompareGen.Collect (x0.data_type, x1.data_type, "data_type" :: path, diffs')
                     |> fun diffs' -> CompareGen.Collect (x0.is_ansi_padded, x1.is_ansi_padded, "is_ansi_padded" :: path, diffs')
                     |> Compare.collectOption x0.computed_definition x1.computed_definition CompareGen.Collect ("computed_definition" :: path)

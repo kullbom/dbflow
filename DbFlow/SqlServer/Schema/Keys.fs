@@ -51,10 +51,10 @@ module FOREIGN_KEY_COLUMN =
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-foreign-keys-transact-sql?view=sql-server-ver17
 
 type REFERENTIAL_ACTION =
-    | No_action = 0uy
-    | Cascade = 1uy
-    | Set_null = 2uy
-    | Set_default = 3uy
+    | No_action   // 0
+    | Cascade     // 1
+    | Set_null    // 2
+    | Set_default // 3
 
 type FOREIGN_KEY = {
     name : string
@@ -80,6 +80,7 @@ module FOREIGN_KEY =
         | 1uy -> REFERENTIAL_ACTION.Cascade
         | 2uy -> REFERENTIAL_ACTION.Set_null
         | 3uy -> REFERENTIAL_ACTION.Set_default
+        | _ -> failwithf "Unknown REFERENTIAL_ACTION: %i" b
     
     let readAll' objects fkColumns ms_descriptions connection =
         DbTr.reader 

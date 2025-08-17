@@ -118,6 +118,30 @@ type VIEW = {
 }
 
 module VIEW = 
+    let preread connection =
+        DbTr.reader
+            "SELECT v.name view_name, s.name schema_name, m.definition 
+             FROM sys.views v
+             INNER JOIN sys.schemas s ON v.schema_id = s.schema_id
+             INNER JOIN sys.sql_modules m ON v.object_id = m.object_id"
+            []
+            (fun acc r -> 
+                let schemaName = readString "schema_name" r
+                let viewName = readString "view_name" r
+                let viewDefinition = readString "definition" r
+                {| 
+                    drop = $"DROP VIEW [{schemaName}].[{viewName}]"
+                    create = viewDefinition.Trim()
+                |} :: acc)
+            []
+        |> DbTr.commit_ connection
+
+    let redefineAll connection =
+        let dep = DEPENDENCY.readAll connection
+        for vDef in preread connection do
+            DbTr.sequence_ [DbTr.nonQuery vDef.drop []; DbTr.nonQuery vDef.create []]
+            |> DbTr.commit_ connection 
+
     let readAll schemas objects columns indexes triggers (sql_modules : RCMap<int, SQL_MODULE>) ms_descriptions connection =
         DbTr.reader
             "SELECT v.name view_name, v.object_id, v.schema_id
