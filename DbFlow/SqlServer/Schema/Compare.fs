@@ -49,19 +49,25 @@ type Sequence = Sequence
         static member elementId (x : OBJECT) = x.name
         static member elementId (x : SEQUENCE) = x.object.name
 
-type Diff = { Message : string; Path : string }
-    with static member create message path = { Message = message; Path = path |> List.rev |> List.toArray |> Array.joinBy "/" id }
+type Diff = { Message : string; Path : string; Data0 : obj; Data1 : obj }
+    with static member create message path data0 data1 = 
+            { 
+                Message = message; 
+                Path = path |> List.rev |> List.toArray |> Array.joinBy "/" id 
+                Data0 = data0
+                Data1 = data1
+            }
 
 module Compare =
     let collectOption (o0 : 'a option) (o1 : 'a option) (collector : 'a * 'a -> _ -> _ -> _) path diffs =
         match o0, o1 with
         | None, None -> diffs
         | Some x, Some y -> collector (x, y) path diffs
-        | x, y -> Diff.create $"{x} != {y}" path :: diffs
+        | x, y -> Diff.create $"{x} != {y}" path x y :: diffs
     
     let collectList (l0 : 'a list) (l1 : 'a list) (orderBy : 'a -> 'k) (elementId : 'a -> string) (collector : 'a * 'a -> _ -> _ -> _) path diffs =
         if l0.Length <> l1.Length
-        then Diff.create $"different length ({l0.Length} != {l1.Length})" path :: diffs
+        then Diff.create $"different length ({l0.Length} != {l1.Length})" path l0 l1 :: diffs
         else
             List.fold2 
                 (fun diffs' x y -> collector (x, y) (elementId x :: path) diffs')
@@ -71,7 +77,7 @@ module Compare =
     
     let collectArray (l0 : 'a array) (l1 : 'a array) (orderBy : 'a -> 'k) (elementId : 'a -> string) (collector : 'a * 'a -> _ -> _ -> _) path diffs =
         if l0.Length <> l1.Length
-        then Diff.create $"different length ({l0.Length} != {l1.Length})" path :: diffs
+        then Diff.create $"different length ({l0.Length} != {l1.Length})" path l0 l1 :: diffs
         else
             Array.fold2 
                 (fun diffs' x y -> collector (x, y) (elementId x :: path) diffs')
@@ -80,7 +86,7 @@ module Compare =
                 (l1 |> Array.sortBy orderBy)
 
     let equalCollector (x0 : _, x1 : _) path diff = 
-        if x0 = x1 then diff else Diff.create $"{x0} != {x1}" path :: diff
+        if x0 = x1 then diff else Diff.create $"{x0} != {x1}" path x0 x1 :: diff
 
     // A few manual implementations
 
@@ -99,26 +105,26 @@ module Compare =
         | true, _, true, _ -> diff
         | false, Some n0, false, Some n1 when n0 = n1 -> diff
         | false, None, false, None -> diff
-        | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path :: diff
+        | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path x0 x1 :: diff
         
 
     let foreign_key_name (x0 : FOREIGN_KEY, x1 : FOREIGN_KEY) path diff =
         match x0.is_system_named, x0.name, x1.is_system_named, x1.name with
         | true, _, true, _ -> diff
         | false, n0, false, n1 when n0 = n1 -> diff
-        | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path :: diff
+        | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path x0 x1 :: diff
 
     let check_constraint_name (x0 : CHECK_CONSTRAINT, x1 : CHECK_CONSTRAINT) path diff =
         match x0.is_system_named, x0.object.name, x1.is_system_named, x1.object.name with
         | true, _, true, _ -> diff
         | false, n0, false, n1 when n0 = n1 -> diff
-        | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path :: diff
+        | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path n0 n1 :: diff
        
     let default_constraint_name (x0 : DEFAULT_CONSTRAINT, x1 : DEFAULT_CONSTRAINT, path, diff) =
         match x0.is_system_named, x0.object.name, x1.is_system_named, x1.object.name with
         | true, _, true, _ -> diff
         | false, n0, false, n1 when n0 = n1 -> diff
-        | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path :: diff
+        | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path x0 x1 :: diff
 
     
     let sequence_definition (x0 : SEQUENCE_DEFINITION, x1 : SEQUENCE_DEFINITION) path diff =
