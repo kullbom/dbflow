@@ -53,48 +53,48 @@ type Diff = { Message : string; Path : string }
     with static member create message path = { Message = message; Path = path |> List.rev |> List.toArray |> Array.joinBy "/" id }
 
 module Compare =
-    let collectOption (o0 : 'a option) (o1 : 'a option) (collector : 'a * 'a * _ * _ -> _) path diffs =
+    let collectOption (o0 : 'a option) (o1 : 'a option) (collector : 'a * 'a -> _ -> _ -> _) path diffs =
         match o0, o1 with
         | None, None -> diffs
-        | Some x, Some y -> collector (x, y, path, diffs)
+        | Some x, Some y -> collector (x, y) path diffs
         | x, y -> Diff.create $"{x} != {y}" path :: diffs
     
-    let collectList (l0 : 'a list) (l1 : 'a list) (orderBy : 'a -> 'k) (elementId : 'a -> string) (collector : 'a * 'a * _ * _ -> _) path diffs =
+    let collectList (l0 : 'a list) (l1 : 'a list) (orderBy : 'a -> 'k) (elementId : 'a -> string) (collector : 'a * 'a -> _ -> _ -> _) path diffs =
         if l0.Length <> l1.Length
         then Diff.create $"different length ({l0.Length} != {l1.Length})" path :: diffs
         else
             List.fold2 
-                (fun diffs' x y -> collector (x, y, elementId x :: path, diffs'))
+                (fun diffs' x y -> collector (x, y) (elementId x :: path) diffs')
                 diffs
                 (l0 |> List.sortBy orderBy) 
                 (l1 |> List.sortBy orderBy)
     
-    let collectArray (l0 : 'a array) (l1 : 'a array) (orderBy : 'a -> 'k) (elementId : 'a -> string) (collector : 'a * 'a * _ * _ -> _) path diffs =
+    let collectArray (l0 : 'a array) (l1 : 'a array) (orderBy : 'a -> 'k) (elementId : 'a -> string) (collector : 'a * 'a -> _ -> _ -> _) path diffs =
         if l0.Length <> l1.Length
         then Diff.create $"different length ({l0.Length} != {l1.Length})" path :: diffs
         else
             Array.fold2 
-                (fun diffs' x y -> collector (x, y, elementId x :: path, diffs'))
+                (fun diffs' x y -> collector (x, y) (elementId x :: path) diffs')
                 diffs
                 (l0 |> Array.sortBy orderBy) 
                 (l1 |> Array.sortBy orderBy)
 
-    let equalCollector (x0 : _, x1 : _, path, diff) = 
+    let equalCollector (x0 : _, x1 : _) path diff = 
         if x0 = x1 then diff else Diff.create $"{x0} != {x1}" path :: diff
 
     // A few manual implementations
 
-    let object_name (x0 : OBJECT, x1 : OBJECT, path, diffs) =
+    let object_name (x0 : OBJECT, x1 : OBJECT) path diffs =
         match x0.object_type, x1.object_type with
         | OBJECT_TYPE.FOREIGN_KEY_CONSTRAINT, OBJECT_TYPE.FOREIGN_KEY_CONSTRAINT 
         | OBJECT_TYPE.TYPE_TABLE, OBJECT_TYPE.TYPE_TABLE ->
             let i = x0.name.LastIndexOf '_'
-            equalCollector (x0.name.Substring(0, i), x1.name.Substring(0, i), "name" :: path, diffs)
-        | _ -> equalCollector (x0.name, x1.name, "name" :: path, diffs)
+            equalCollector (x0.name.Substring(0, i), x1.name.Substring(0, i)) ("name" :: path) diffs
+        | _ -> equalCollector (x0.name, x1.name) ("name" :: path) diffs
     
-    let sys_datatype (x0 : SYS_DATATYPE, x1 : SYS_DATATYPE, path, diff) = equalCollector (x0, x1, path, diff)
+    //let sys_datatype (x0 : SYS_DATATYPE, x1 : SYS_DATATYPE, path, diff) = equalCollector (x0, x1) path diff
 
-    let index_name (x0 : INDEX, x1 : INDEX, path, diff) =
+    let index_name (x0 : INDEX, x1 : INDEX) path diff =
         match x0.is_system_named, x0.name, x1.is_system_named, x1.name with
         | true, _, true, _ -> diff
         | false, Some n0, false, Some n1 when n0 = n1 -> diff
@@ -102,13 +102,13 @@ module Compare =
         | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path :: diff
         
 
-    let foreign_key_name (x0 : FOREIGN_KEY, x1 : FOREIGN_KEY, path, diff) =
+    let foreign_key_name (x0 : FOREIGN_KEY, x1 : FOREIGN_KEY) path diff =
         match x0.is_system_named, x0.name, x1.is_system_named, x1.name with
         | true, _, true, _ -> diff
         | false, n0, false, n1 when n0 = n1 -> diff
         | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path :: diff
 
-    let check_constraint_name (x0 : CHECK_CONSTRAINT, x1 : CHECK_CONSTRAINT, path, diff) =
+    let check_constraint_name (x0 : CHECK_CONSTRAINT, x1 : CHECK_CONSTRAINT) path diff =
         match x0.is_system_named, x0.object.name, x1.is_system_named, x1.object.name with
         | true, _, true, _ -> diff
         | false, n0, false, n1 when n0 = n1 -> diff
@@ -121,14 +121,14 @@ module Compare =
         | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path :: diff
 
     
-    let sequence_definition (x0 : SEQUENCE_DEFINITION, x1 : SEQUENCE_DEFINITION, path, diff) =
+    let sequence_definition (x0 : SEQUENCE_DEFINITION, x1 : SEQUENCE_DEFINITION) path diff =
         diff
-        |> fun diff' -> equalCollector (x0.increment, x1.increment, "increment" :: path, diff')
+        |> equalCollector (x0.increment, x1.increment) ("increment" :: path)
         |> collectOption x0.minimum_value x1.minimum_value equalCollector ("minimum_value" :: path)
         |> collectOption x0.maximum_value x1.maximum_value equalCollector ("maximum_value" :: path)
 
-    let identity_definition (x0 : IDENTITY_DEFINITION, x1 : IDENTITY_DEFINITION, path, diff) =
-        equalCollector (x0.increment_value, x1.increment_value, path, diff)
+    let identity_definition (x0 : IDENTITY_DEFINITION, x1 : IDENTITY_DEFINITION) path diff =
+        equalCollector (x0.increment_value, x1.increment_value) path diff
         
 
         
@@ -160,34 +160,34 @@ module Generator =
                 sDefNoneT<OBJECT> "parent_object_id"
                 sDefNoneT<COLUMN> "column_id"
                 
-                sDefT<OBJECT> "name" (fun _ -> $"|> fun diff' -> Compare.object_name (x0, x1, path, diff')") 
-                sDefT<OBJECT> "object_type" (fun pname -> $"|> fun diff' -> Compare.equalCollector (x0.{pname}, x1.{pname}, (\"{pname}\" :: path), diff')")
+                sDefT<OBJECT> "name" (fun _ -> $"|> Compare.object_name (x0, x1) path") 
+                sDefT<OBJECT> "object_type" (fun pname -> $"|> Compare.equalCollector (x0.{pname}, x1.{pname}) (\"{pname}\" :: path)")
                 
-                sDefT<INDEX> "name" (fun _ -> $"|> fun diff' -> Compare.index_name (x0, x1, path, diff')")
+                sDefT<INDEX> "name" (fun _ -> $"|> Compare.index_name (x0, x1) path")
                 sDefNoneT<INDEX> "object"
                 sDefNoneT<INDEX> "is_system_named"
-                sDefT<INDEX> "index_type" (fun pname -> $"|> fun diff' -> Compare.equalCollector (x0.{pname}, x1.{pname}, (\"{pname}\" :: path), diff')")
+                sDefT<INDEX> "index_type" (fun pname -> $"|> Compare.equalCollector (x0.{pname}, x1.{pname}) (\"{pname}\" :: path)")
                 
-                sDefT<FOREIGN_KEY> "name" (fun _ -> $"|> fun diff' -> Compare.foreign_key_name (x0, x1, path, diff')")
+                sDefT<FOREIGN_KEY> "name" (fun _ -> $"|> Compare.foreign_key_name (x0, x1) path")
                 sDefNoneT<FOREIGN_KEY> "object"
                 sDefNoneT<FOREIGN_KEY> "is_system_named"
 
-                sDefT<CHECK_CONSTRAINT> "name" (fun _ -> $"|> fun diff' -> Compare.check_constraint_name (x0, x1, path, diff')")
+                sDefT<CHECK_CONSTRAINT> "name" (fun _ -> $"|> Compare.check_constraint_name (x0, x1) path")
                 sDefNoneT<CHECK_CONSTRAINT> "object"
                 sDefNoneT<CHECK_CONSTRAINT> "is_system_named"
 
-                sDefT<DEFAULT_CONSTRAINT> "name" (fun _ -> $"|> fun diff' -> Compare.default_constraint_name (x0, x1, path, diff')")
+                sDefT<DEFAULT_CONSTRAINT> "name" (fun _ -> $"|> Compare.default_constraint_name (x0, x1) path")
                 sDefNoneT<DEFAULT_CONSTRAINT> "object"
                 sDefNoneT<DEFAULT_CONSTRAINT> "is_system_named"
 
-                sDefT<SEQUENCE> "sequence_definition" (fun pname -> $"|> fun diff' -> Compare.sequence_definition (x0.{pname}, x1.{pname}, \"{pname}\" :: path, diff')")
+                sDefT<SEQUENCE> "sequence_definition" (fun pname -> $"|> Compare.sequence_definition (x0.{pname}, x1.{pname}) (\"{pname}\" :: path)")
    
                 sDefT<COLUMN> "identity_definition" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.identity_definition (\"{pname}\" :: path)")
                 sDefT<DATATYPE> "sys_datatype" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.equalCollector (\"{pname}\" :: path)")
                 
                 
-                sDefT<FOREIGN_KEY> "delete_referential_action" (fun pname -> $"|> fun diff' -> Compare.equalCollector (x0.{pname}, x1.{pname}, (\"{pname}\" :: path), diff')")
-                sDefT<FOREIGN_KEY> "update_referential_action" (fun pname -> $"|> fun diff' -> Compare.equalCollector (x0.{pname}, x1.{pname}, (\"{pname}\" :: path), diff')")
+                sDefT<FOREIGN_KEY> "delete_referential_action" (fun pname -> $"|> Compare.equalCollector (x0.{pname}, x1.{pname}) (\"{pname}\" :: path)")
+                sDefT<FOREIGN_KEY> "update_referential_action" (fun pname -> $"|> Compare.equalCollector (x0.{pname}, x1.{pname}) (\"{pname}\" :: path)")
             ] |> Map.ofList
 
         let sDefNone pname = pname, fun (_ : string) -> ""
@@ -286,15 +286,16 @@ type CompareGen = CompareGenCase
                     append ""
                     match fields with
                     | None -> 
-                        append $"        static member Collect (x0 : System.{ty}, x1 : System.{ty}, path, diffs) = Compare.equalCollector (x0, x1, path, diffs)"
+                        append $"        static member Collect (x0 : System.{ty}, x1 : System.{ty}) = Compare.equalCollector (x0, x1)"
                     | Some fs ->
-                        append $"        static member Collect (x0 : {ty}, x1 : {ty}, path, diffs) ="
-                        append $"                    diffs"
+                        append $"        static member Collect (x0 : {ty}, x1 : {ty}) ="
+                        append $"                    fun path diffs ->"
+                        append $"                       diffs"
                         fs
                         |> Array.choose 
                             (fun (pt, pname) -> 
                                 match pt with
-                                | PropType.Gen -> $"|> fun diff' -> CompareGen.Collect (x0.{pname}, x1.{pname}, \"{pname}\" :: path, diff')"
+                                | PropType.Gen -> $"|> CompareGen.Collect (x0.{pname}, x1.{pname}) (\"{pname}\" :: path)"
                                 | PropType.Option -> $"|> Compare.collectOption x0.{pname} x1.{pname} CompareGen.Collect (\"{pname}\" :: path)"
                                 | PropType.List -> $"|> Compare.collectList x0.{pname} x1.{pname} SortOrder.orderBy Sequence.elementId CompareGen.Collect (\"{pname}\" :: path)"
                                 | PropType.Array -> $"|> Compare.collectArray x0.{pname} x1.{pname} SortOrder.orderBy Sequence.elementId CompareGen.Collect (\"{pname}\" :: path)"
@@ -302,7 +303,7 @@ type CompareGen = CompareGenCase
                                 |> function "" -> None | s -> Some s 
                             )
                         |> Array.iter
-                            (fun s -> append $"                    {s}"))
+                            (fun s -> append $"                       {s}"))
             (Set.empty, ())
         |> ignore
 

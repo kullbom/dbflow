@@ -20,6 +20,7 @@
     - Index på vyer försvinner när man definierar om dem... hm... måste jag köra två full svep?!
     - ms_description is not part of the generated scripts (and temporary excluded in the schema comparison)
 - Dokumentera dessa i readme - eller som issues i github...?
+- Testen måste städa bort databasfiler efter sig. Blir snabbt mycket skräpdata...
 
 
 ## Version 1.0.0

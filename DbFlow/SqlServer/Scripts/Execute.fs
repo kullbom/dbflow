@@ -61,7 +61,7 @@ let generateScriptFiles (opt : Options) (db : DATABASE) folder =
 // Db compare
 
 let compare (d0 : DATABASE) (d1 : DATABASE) =
-    CompareGen.Collect (d0, d1, [],[])
+    CompareGen.Collect (d0, d1) [] []
 
 
 // Db upgrade
