@@ -8,8 +8,8 @@ open DbFlow.SqlParser
 open DbFlow.SqlParser.CodeSearch
 
 type BatchParsing (outputHelper:ITestOutputHelper) = 
-    let logger s = outputHelper.WriteLine s
-    
+    let logger = Logger.create outputHelper.WriteLine
+
     [<Fact>]
     member x.``Sql batches 01`` () =
         let inputScript = "GO\r\nFoobar\r\nGO\r\n\r\nALTER F GO\r\nLast\r\nGO"
@@ -205,7 +205,8 @@ GO
         ()
 
 type DefinitionParsing (outputHelper:ITestOutputHelper) = 
-    let logger s = outputHelper.WriteLine s
+    let logger = Logger.create outputHelper.WriteLine
+
     [<Fact>]
     member x.``Trigger``() =
         let input = "SET ANSI_NULLS ON 
@@ -241,7 +242,7 @@ AS BEGIN
         then
             let input = System.IO.File.ReadAllText file
 
-            logger $"File contains {input.Length} characters"
+            logger.info $"File contains {input.Length} characters"
 
             let bs = 
                 Batches.splitInSqlBatches
@@ -249,7 +250,7 @@ AS BEGIN
                 
             let nBatches = bs |> List.length
             
-            logger $"Found {nBatches} batches"
+            logger.info $"Found {nBatches} batches"
 
             Assert.Equal (3995, nBatches)
         else 

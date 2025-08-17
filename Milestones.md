@@ -2,7 +2,7 @@
 
 ## Version 0.1.0(-beta)
 
-- C#-vänligare interface
+✓ - C#-vänligare interface
 - Möjlighet att testa script-output utan faktisk scriptmapp...?
 ✓ - Testen måste städa bort databasfiler efter sig. Blir snabbt mycket skräpdata...
 - Tester som visar på problem/buggar (eller lösning på problemet):

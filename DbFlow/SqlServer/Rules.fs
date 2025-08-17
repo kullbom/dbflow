@@ -88,9 +88,30 @@ module Rule =
                             $"{errStr}" |> Error)
         }
 
+    let ``No ansi padding OFF - THIS IS PROBABLY NOT HOW TO DO IT...`` exclude = 
+        { 
+            Title = "No ansi padding OFF"
+            Description = "SET ANSI_PADDING OFF, and the ANSI_PADDING OFF database option, are deprecated.
+See: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-ansi-padding-transact-sql?view=sql-server-ver17"
+            CheckRule = 
+                (fun db ->
+                    Helpers.foldAllColumns exclude db
+                        (fun acc c -> 
+                            if c.is_ansi_padded 
+                            then acc
+                            else $"{c.object.schema.name}.{c.object.name}.{c.column_name}" :: acc)
+                        []
+                    |> function 
+                        | [] -> Ok () 
+                        | errors -> 
+                            let errStr = System.String.Join(", ", errors |> List.toArray) 
+                            $"{errStr}" |> Error)
+        }
+
     let ALL (exclusions : RuleExclusion) =
         let exclusions' = { exclusions with Objects = Set.add { schema = "dbo"; name = "SchemaVersions" } exclusions.Objects }
         [
             ``DATETIME2 - not DATETIME`` exclusions'
             ``Postfix datetime with 'Utc'`` exclusions'
+            //``No ansi padding OFF`` exclusions'
         ]
