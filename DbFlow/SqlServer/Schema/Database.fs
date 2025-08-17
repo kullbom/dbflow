@@ -28,7 +28,8 @@ type DATABASE = {
 module DATABASE =
     let read logger (options : Options) connection =
         // Redefine all views
-        VIEW.redefineAll connection 
+        VIEW.redefineAll 
+        |> Logger.logTime logger "Refresh view meta data" connection 
 
         let ms_descs = MS_Description.readAll |> Logger.logTime logger "MS_Description" connection
         let dependencies = DEPENDENCY.readAll |> Logger.logTime logger "Dependencies" connection

@@ -20,6 +20,7 @@
     <Compile Include="SqlParser.fs" />
     <Compile Include="DbTr.fs" />
     <Compile Include="DbFlow.fs" />
+    <Compile Include="Dependencies.fs" />
     <Compile Include="SqlServer\Schema\MSDescription.fs" />
     <Compile Include="SqlServer\Schema\Objects.fs" />
     <Compile Include="SqlServer\Schema\Types.fs" />
@@ -33,7 +34,6 @@
     <Compile Include="SqlServer\Schema\Database.fs" />
     <Compile Include="SqlServer\Schema\Compare.fs" />
     <Compile Include="SqlServer\Schema\CompareGen.fs" />
-    <Compile Include="SqlServer\Scripts\Script.fs" />
     <Compile Include="SqlServer\Scripts\Generate.fs" />
     <Compile Include="SqlServer\Scripts\Execute.fs" />
     <Compile Include="SqlServer\LocalDatabase.fs" />

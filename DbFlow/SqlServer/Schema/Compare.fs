@@ -9,7 +9,7 @@ type SortOrder = SortOrder
         static member orderBy (x : TABLE) = SortOrder.orderBy x.object 
         static member orderBy (x : VIEW) = SortOrder.orderBy x.object 
         static member orderBy (x : INDEX) = SortOrder.orderBy x.parent, x.index_id
-        static member orderBy (x : COLUMN) = SortOrder.orderBy x.object, x.column_id
+        static member orderBy (x : COLUMN) = SortOrder.orderBy x.object, x.column_name
         static member orderBy (x : FOREIGN_KEY) = SortOrder.orderBy x.object 
         static member orderBy (x : TRIGGER) = SortOrder.orderBy x.object, x.trigger_name 
         static member orderBy (x : PARAMETER) = SortOrder.orderBy x.object, x.name, x.parameter_id 
@@ -21,8 +21,8 @@ type SortOrder = SortOrder
         static member orderBy (x : XML_SCHEMA_COLLECTION) = SortOrder.orderBy x.schema, x.name 
         static member orderBy (x : DATABASE_TRIGGER) = x.trigger_name
         static member orderBy (x : CHECK_CONSTRAINT) = SortOrder.orderBy x.object
-        static member orderBy (x : FOREIGN_KEY_COLUMN) = SortOrder.orderBy x.parent_column, SortOrder.orderBy x.referenced_column 
-        static member orderBy (x : INDEX_COLUMN) = SortOrder.orderBy x.object, x.index_id, x.index_column_id
+        static member orderBy (x : FOREIGN_KEY_COLUMN) = SortOrder.orderBy x.parent_column
+        static member orderBy (x : INDEX_COLUMN) = SortOrder.orderBy x.column
         static member orderBy (x : OBJECT) = SortOrder.orderBy x.schema, x.name, x.object_type
         static member orderBy (x : SEQUENCE) = SortOrder.orderBy x.object
 
@@ -141,53 +141,81 @@ type PropType =
     | List
     | Array
     | Option
-    | Special of (string -> string)
+    | Special of string
 
 module Generator =
     let listType = typeof<list<_>>.GetGenericTypeDefinition()
     let optionType = typeof<option<_>>.GetGenericTypeDefinition()
     let mapType = typeof<Map<_,_>>.GetGenericTypeDefinition()
     
-    let propertyType (parent : System.Type) (pName : string) (pType :System.Type) =
-        match pName with
-        | "dependencies" when parent = typeof<DATABASE> -> PropType.Special (fun pname -> "")
-        | "schema_id" when parent = typeof<SCHEMA> -> PropType.Special (fun pname -> "")
-        | "object_id" when parent = typeof<OBJECT> -> PropType.Special (fun pname -> "")
-        | "parent_object_id" when parent = typeof<OBJECT> -> PropType.Special (fun pname -> "")
-        | "column_id" when parent = typeof<COLUMN> -> PropType.Special (fun pname -> "")
-        | "create_date" -> PropType.Special (fun pname -> "")
-        | "modify_date" -> PropType.Special (fun pname -> "")
-        | "all_objects" -> PropType.Special (fun pname -> "")
-        | "orig_definition" -> PropType.Special (fun pname -> "")
+    module Special =
+        let sDefNoneT<'a> pname = (pname, typeof<'a>.FullName), fun (_ : string) -> ""
+        let sDefT<'a> pname (def : string -> string) = (pname, typeof<'a>.FullName), def
         
-        // TODO: This should be part of the generated scripts
-        | "ms_description" -> PropType.Special (fun pname -> "")
-    
-        | "name" when parent = typeof<OBJECT> -> PropType.Special (fun _pname -> $"|> fun diff' -> Compare.object_name (x0, x1, path, diff')") 
+        let specialDefinitionsT = 
+            [
+                sDefNoneT<DATABASE> "dependencies"
+                sDefNoneT<SCHEMA> "schema_id"
+                sDefNoneT<OBJECT> "object_id"
+                sDefNoneT<OBJECT> "parent_object_id"
+                sDefNoneT<COLUMN> "column_id"
+                
+                sDefT<OBJECT> "name" (fun _ -> $"|> fun diff' -> Compare.object_name (x0, x1, path, diff')") 
+                sDefT<OBJECT> "object_type" (fun pname -> $"|> fun diff' -> Compare.equalCollector (x0.{pname}, x1.{pname}, (\"{pname}\" :: path), diff')")
+                
+                sDefT<INDEX> "name" (fun _ -> $"|> fun diff' -> Compare.index_name (x0, x1, path, diff')")
+                sDefNoneT<INDEX> "object"
+                sDefNoneT<INDEX> "is_system_named"
+                sDefT<INDEX> "index_type" (fun pname -> $"|> fun diff' -> Compare.equalCollector (x0.{pname}, x1.{pname}, (\"{pname}\" :: path), diff')")
+                
+                sDefT<FOREIGN_KEY> "name" (fun _ -> $"|> fun diff' -> Compare.foreign_key_name (x0, x1, path, diff')")
+                sDefNoneT<FOREIGN_KEY> "object"
+                sDefNoneT<FOREIGN_KEY> "is_system_named"
+
+                sDefT<CHECK_CONSTRAINT> "name" (fun _ -> $"|> fun diff' -> Compare.check_constraint_name (x0, x1, path, diff')")
+                sDefNoneT<CHECK_CONSTRAINT> "object"
+                sDefNoneT<CHECK_CONSTRAINT> "is_system_named"
+
+                sDefT<DEFAULT_CONSTRAINT> "name" (fun _ -> $"|> fun diff' -> Compare.default_constraint_name (x0, x1, path, diff')")
+                sDefNoneT<DEFAULT_CONSTRAINT> "object"
+                sDefNoneT<DEFAULT_CONSTRAINT> "is_system_named"
+
+                sDefT<SEQUENCE> "sequence_definition" (fun pname -> $"|> fun diff' -> Compare.sequence_definition (x0.{pname}, x1.{pname}, \"{pname}\" :: path, diff')")
+   
+                sDefT<COLUMN> "identity_definition" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.identity_definition (\"{pname}\" :: path)")
+                sDefT<DATATYPE> "sys_datatype" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.equalCollector (\"{pname}\" :: path)")
+                
+                
+                sDefT<FOREIGN_KEY> "delete_referential_action" (fun pname -> $"|> fun diff' -> Compare.equalCollector (x0.{pname}, x1.{pname}, (\"{pname}\" :: path), diff')")
+                sDefT<FOREIGN_KEY> "update_referential_action" (fun pname -> $"|> fun diff' -> Compare.equalCollector (x0.{pname}, x1.{pname}, (\"{pname}\" :: path), diff')")
+            ] |> Map.ofList
+
+        let sDefNone pname = pname, fun (_ : string) -> ""
+        let sDef pname def = pname, def 
         
-        | "name" when parent = typeof<INDEX> -> PropType.Special (fun _pname -> $"|> fun diff' -> Compare.index_name (x0, x1, path, diff')") 
-        | "object" when parent = typeof<INDEX> -> PropType.Special (fun _ -> "")
-        | "is_system_named" when parent = typeof<INDEX> -> PropType.Special (fun _ -> "")
-        
-        | "name" when parent = typeof<FOREIGN_KEY> -> PropType.Special (fun _pname -> $"|> fun diff' -> Compare.foreign_key_name (x0, x1, path, diff')") 
-        | "object" when parent = typeof<FOREIGN_KEY> -> PropType.Special (fun _ -> "")
-        | "is_system_named" when parent = typeof<FOREIGN_KEY> -> PropType.Special (fun _ -> "")
-    
-        | "name" when parent = typeof<CHECK_CONSTRAINT> -> PropType.Special (fun _pname -> $"|> fun diff' -> Compare.check_constraint_name (x0, x1, path, diff')") 
-        | "object" when parent = typeof<CHECK_CONSTRAINT> -> PropType.Special (fun _ -> "")
-        | "is_system_named" when parent = typeof<CHECK_CONSTRAINT> -> PropType.Special (fun _ -> "")
-    
-        | "name" when parent = typeof<DEFAULT_CONSTRAINT> -> PropType.Special (fun _pname -> $"|> fun diff' -> Compare.default_constraint_name (x0, x1, path, diff')") 
-        | "object" when parent = typeof<DEFAULT_CONSTRAINT> -> PropType.Special (fun _ -> "")
-        | "is_system_named" when parent = typeof<DEFAULT_CONSTRAINT> -> PropType.Special (fun _ -> "")
-    
-        | "sequence_definition" when parent = typeof<SEQUENCE> -> PropType.Special (fun pname -> $"|> fun diff' -> Compare.sequence_definition (x0.{pname}, x1.{pname}, \"{pname}\" :: path, diff')")
-       
-        | "identity_definition" when parent = typeof<COLUMN> -> PropType.Special (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.identity_definition (\"{pname}\" :: path)")
-        | "sys_datatype"      when parent = typeof<DATATYPE> -> PropType.Special (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.equalCollector (\"{pname}\" :: path)")
-        
-        | "object_type" when pType = typeof<OBJECT_TYPE> -> PropType.Special (fun pname -> $"|> fun diff' -> Compare.equalCollector (x0.{pname}, x1.{pname}, (\"{pname}\" :: path), diff')")
-        | "index_type" when pType = typeof<INDEX_TYPE> -> PropType.Special (fun pname -> $"|> fun diff' -> Compare.equalCollector (x0.{pname}, x1.{pname}, (\"{pname}\" :: path), diff')")
+        let specialDefinitions = 
+            [
+                sDefNone "create_date"
+                sDefNone "modify_date"
+                sDefNone "all_objects"
+                sDefNone "orig_definition"
+                
+                // TODO: This should be part of the generated scripts
+                sDefNone "ms_description"
+            ] |> Map.ofList
+
+        let getSpecialDef pname (parentType : System.Type) =
+            match Map.tryFind pname specialDefinitions with
+            | Some d -> Some (d pname)
+            | None ->
+                match Map.tryFind (pname, parentType.FullName) specialDefinitionsT with
+                | Some d -> Some (d pname)
+                | None -> None
+
+
+    let propertyType (parent : System.Type) (pname : string) (pType :System.Type) =
+        match Special.getSpecialDef pname parent with
+        | Some d -> PropType.Special d 
         | _ ->
             if pType.IsArray
             then PropType.Array
@@ -242,11 +270,17 @@ open DbFlow
 type CompareGen = CompareGenCase
     with"""
 
-        
+        let skipObjects =
+            [ 
+                "Object"
+                "REFERENTIAL_ACTION"; "OBJECT_TYPE"; "SYS_DATATYPE"; "INDEX_TYPE"; 
+                "IDENTITY_DEFINITION"; "SEQUENCE_DEFINITION"
+            ]
+            |> Set.ofList
+
         foldTypes typeof<DATABASE>
             (fun () (ty : string) fields -> 
-                if ty.StartsWith "<>" || ty.StartsWith "FSharpList" || ty = "Object" 
-                    || ty = "OBJECT_TYPE" || ty = "SYS_DATATYPE" || ty = "INDEX_TYPE" || ty = "IDENTITY_DEFINITION" || ty = "SEQUENCE_DEFINITION"
+                if ty.StartsWith "<>" || ty.StartsWith "FSharpList" || Set.contains ty skipObjects
                 then ()
                 else
                     append ""
@@ -260,11 +294,11 @@ type CompareGen = CompareGenCase
                         |> Array.choose 
                             (fun (pt, pname) -> 
                                 match pt with
-                                | PropType.Gen -> $"|> fun diffs' -> CompareGen.Collect (x0.{pname}, x1.{pname}, \"{pname}\" :: path, diffs')"
+                                | PropType.Gen -> $"|> fun diff' -> CompareGen.Collect (x0.{pname}, x1.{pname}, \"{pname}\" :: path, diff')"
                                 | PropType.Option -> $"|> Compare.collectOption x0.{pname} x1.{pname} CompareGen.Collect (\"{pname}\" :: path)"
                                 | PropType.List -> $"|> Compare.collectList x0.{pname} x1.{pname} SortOrder.orderBy Sequence.elementId CompareGen.Collect (\"{pname}\" :: path)"
                                 | PropType.Array -> $"|> Compare.collectArray x0.{pname} x1.{pname} SortOrder.orderBy Sequence.elementId CompareGen.Collect (\"{pname}\" :: path)"
-                                | PropType.Special special -> special pname
+                                | PropType.Special special -> special
                                 |> function "" -> None | s -> Some s 
                             )
                         |> Array.iter

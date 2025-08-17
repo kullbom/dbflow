@@ -1,7 +1,21 @@
 ﻿module DbFlow.SqlServer.Scripts.Generate
 
 open DbFlow
+open DbFlow.Dependencies
 open DbFlow.SqlServer.Schema
+
+type Script = { 
+    directory_name : string; 
+    filename : string; 
+    content : string; 
+}
+
+type ScriptObjects =
+    | SchemaDefinition
+    | ObjectDefinitions of {| contains_objects : int list; depends_on : int list |}
+    | UserDefinedTypeDefinition
+    | XmlSchemaCollectionDefinition
+
 
 let columnDefinitionStr (opt : Options) allTypes isTableType (columnInlineDefaults : Map<int, DEFAULT_CONSTRAINT>) (column : COLUMN) =
     let columnDefStr =
@@ -452,16 +466,19 @@ let generateScripts (opt : Options) (db : DATABASE) scriptConsumer =
                         match scriptObjects with
                         | SchemaDefinition -> 1, [],[]
                         | ObjectDefinitions x -> 3, x.contains_objects, x.depends_on
-                        | UserDefinedTypeDefinition ->2,  [],[]
+                        | UserDefinedTypeDefinition -> 2,  [],[]
                         | XmlSchemaCollectionDefinition -> 4, [], []
                         
-                    { 
-                        directory_name = subfolderName; 
-                        filename = nameFn x; 
-                        content = ms.ToArray () |> System.Text.Encoding.UTF8.GetString
+                    {
                         contains_objects = Set.ofList contains_objects
                         depends_on = Set.ofList depends_on
                         priority = priority
+                        
+                        content  = { 
+                            directory_name = subfolderName; 
+                            filename = nameFn x; 
+                            content = ms.ToArray () |> System.Text.Encoding.UTF8.GetString
+                        }
                     }
                 scriptConsumer script
     

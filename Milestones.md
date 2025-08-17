@@ -15,10 +15,11 @@
     - XML index fungar inte bra ... se AW - sök på "[XMLPATH_Person_Demographics]"
 ✓   - Index "FILLFACTOR" är inte med i de genererade scripten - och blir därför fel i kloner.
     - Column "is ansi padded" blir fel 
-    - Det är fel på metadatat för vyer (?!) vars kolumner definierats om. (prova att definiera om (drop och create) vyer utifrån sin - uppdaterade - definition i samband med inläsning)
-    - För att kunna definiera om views behöver dependency resolvern köras på vyerna
+✓   - Det är fel på metadatat för vyer (?!) vars kolumner definierats om. (prova att definiera om (drop och create) vyer utifrån sin - uppdaterade - definition i samband med inläsning)
+✓   - För att kunna definiera om views behöver dependency resolvern köras på vyerna
+    - Index på vyer försvinner när man definierar om dem... hm... måste jag köra två full svep?!
     - ms_description is not part of the generated scripts (and temporary excluded in the schema comparison)
-- Dokumentera dessa i readme - eller som issues i github...? 
+- Dokumentera dessa i readme - eller som issues i github...?
 
 
 ## Version 1.0.0
