@@ -8,6 +8,12 @@ CREATE TABLE TestTable01 (
 	ColWithNamedDefault INT NOT NULL
 )
 
+ALTER TABLE [dbo].[TestTable01]  WITH NOCHECK ADD  CONSTRAINT [CK_TestTable01_PreventBad] CHECK  ([ColWithDefault2] <> 'Foobar')
+GO
+
+ALTER TABLE [dbo].[TestTable01] CHECK CONSTRAINT [CK_TestTable01_PreventBad]
+GO
+
 ALTER TABLE TestTable01 ADD CONSTRAINT [DF_TestTable01_ColWithNamedDefault] DEFAULT (((-1))) FOR [ColWithNamedDefault]
 
 
