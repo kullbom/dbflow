@@ -108,7 +108,6 @@ type CompareGen = CompareGenCase
                        diffs
                        |> CompareGen.Collect (x0.parent, x1.parent) ("parent" :: path)
                        |> Compare.index_name (x0, x1) path
-                       |> CompareGen.Collect (x0.index_id, x1.index_id) ("index_id" :: path)
                        |> Compare.equalCollector (x0.index_type, x1.index_type) ("index_type" :: path)
                        |> CompareGen.Collect (x0.is_unique, x1.is_unique) ("is_unique" :: path)
                        |> CompareGen.Collect (x0.data_space_id, x1.data_space_id) ("data_space_id" :: path)
@@ -128,7 +127,6 @@ type CompareGen = CompareGenCase
                     fun path diffs ->
                        diffs
                        |> CompareGen.Collect (x0.object, x1.object) ("object" :: path)
-                       |> CompareGen.Collect (x0.index_id, x1.index_id) ("index_id" :: path)
                        |> CompareGen.Collect (x0.index_column_id, x1.index_column_id) ("index_column_id" :: path)
                        |> CompareGen.Collect (x0.column, x1.column) ("column" :: path)
                        |> Compare.collectOption x0.key_ordinal x1.key_ordinal CompareGen.Collect ("key_ordinal" :: path)

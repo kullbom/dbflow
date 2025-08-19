@@ -54,7 +54,7 @@ module Common =
                 |> Logger.logTime logger "DbFlow - generate scripts" dbFlowOutputDir 
 
                 // Test DbFlow "roundtrip"
-                //testDbFlowRoundtrip logger options dbSchema dbFlowOutputDir dbFlowOutputDir2
+                testDbFlowRoundtrip logger options dbSchema dbFlowOutputDir dbFlowOutputDir2
 
                 for (rule : Rule) in rules do
                     match rule.CheckRule dbSchema with

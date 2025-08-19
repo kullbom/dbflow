@@ -21,7 +21,7 @@ type SortOrder = SortOrder
         static member orderBy (x : XML_SCHEMA_COLLECTION) = SortOrder.orderBy x.schema, x.name 
         static member orderBy (x : DATABASE_TRIGGER) = x.trigger_name
         static member orderBy (x : CHECK_CONSTRAINT) = SortOrder.orderBy x.object
-        static member orderBy (x : FOREIGN_KEY_COLUMN) = SortOrder.orderBy x.parent_column
+        static member orderBy (x : FOREIGN_KEY_COLUMN) = x.constraint_column_id
         static member orderBy (x : INDEX_COLUMN) = SortOrder.orderBy x.column
         static member orderBy (x : OBJECT) = SortOrder.orderBy x.schema, x.name, x.object_type
         static member orderBy (x : SEQUENCE) = SortOrder.orderBy x.object
@@ -165,6 +165,8 @@ module Generator =
                 sDefNoneT<OBJECT> "object_id"
                 sDefNoneT<OBJECT> "parent_object_id"
                 sDefNoneT<COLUMN> "column_id"
+                sDefNoneT<INDEX> "index_id"
+                sDefNoneT<INDEX_COLUMN> "index_id"
                 
                 sDefT<OBJECT> "name" (fun _ -> $"|> Compare.object_name (x0, x1) path") 
                 sDefT<OBJECT> "object_type" (fun pname -> $"|> Compare.equalCollector (x0.{pname}, x1.{pname}) (\"{pname}\" :: path)")

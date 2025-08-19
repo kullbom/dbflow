@@ -5,7 +5,7 @@ CREATE TABLE [dbo].[TestTable01] (
    [ColWithDefault2] [int] NULL,
    [ColWithNamedDefault] [int] NOT NULL
 
-   ,CONSTRAINT [PK__TestTabl__3214EC07715C453A] PRIMARY KEY CLUSTERED ([Id])
+   ,CONSTRAINT [PK__TestTabl__3214EC07EE3DB297] PRIMARY KEY CLUSTERED ([Id])
 )
 
 
