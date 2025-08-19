@@ -175,6 +175,7 @@ module Generator =
                 sDefNoneT<COLUMN> "column_id"
                 sDefNoneT<INDEX> "index_id"
                 sDefNoneT<INDEX_COLUMN> "index_id"
+                sDefNoneT<DATATYPE> "user_type_id"
                 
                 sDefT<OBJECT> "name" (fun _ -> $"|> Compare.object_name (x0, x1) path") 
                 sDefT<OBJECT> "object_type" (fun pname -> $"|> Compare.equalCollector (x0.{pname}, x1.{pname}) (\"{pname}\" :: path)")

@@ -21,7 +21,13 @@ let columnDefinitionStr (opt : Options) allTypes isTableType (columnInlineDefaul
     let columnDefStr =
         match column.computed_definition with
         | Some computed ->
-            let persistStr = if computed.is_persisted then " PERSISTED" else ""
+            let persistStr = 
+                if computed.is_persisted 
+                then 
+                    if column.data_type.parameter.is_nullable 
+                    then " PERSISTED" 
+                    else " PERSISTED NOT NULL"
+                else ""
             $"AS {computed.computed_definition}{persistStr}"
         | None -> 
             let nullStr = if column.data_type.parameter.is_nullable then "NULL" else "NOT NULL"
@@ -235,8 +241,7 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) allTypes i
         checkConstraints
         |> Array.fold 
             (fun (tableInlineChecks') cc ->
-                // Schemazen inlines checks for table types
-                if opt.SchemazenCompatibility && isTableType
+                if isTableType
                 then cc :: tableInlineChecks'
                 else tableInlineChecks')
             []
@@ -301,19 +306,22 @@ let generateViewScript (w : System.IO.StreamWriter) (opt : Options) (view : VIEW
 
     ObjectDefinitions {| contains_objects = [view.object.object_id]; depends_on = [] |}
 
-let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options) (table : TABLE, ccs : CHECK_CONSTRAINT array) =
+let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options) 
+                            (schemaName : string, tableName : string, table_object_id : int, ccs : CHECK_CONSTRAINT array) =
     let object_ids =
         ccs
         |> Array.fold 
             (fun acc cc ->
-                let tableName = $"[{table.schema.name}].[{table.table_name}]"
+                let tableFullname = $"[{schemaName}].[{tableName}]"
                 let additionalSpace = if opt.SchemazenCompatibility then " " else ""
-                $"ALTER TABLE {tableName} WITH CHECK ADD CONSTRAINT [{cc.object.name}] CHECK{additionalSpace} {cc.definition}"
+                if cc.is_system_named
+                then $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK{additionalSpace} {cc.definition}"
+                else $"ALTER TABLE {tableFullname} WITH CHECK ADD CONSTRAINT [{cc.object.name}] CHECK{additionalSpace} {cc.definition}"
                 |> w.WriteLine 
                 "GO" |> w.WriteLine
                 cc.object.object_id :: acc)
             []
-    ObjectDefinitions {| contains_objects = object_ids; depends_on = [table.object.object_id] |}
+    ObjectDefinitions {| contains_objects = object_ids; depends_on = [table_object_id] |}
 
 let generateDefaultConstraintsScript (w : System.IO.StreamWriter) (opt : Options) (table : TABLE, dcs : DEFAULT_CONSTRAINT array) =
     let object_ids =
@@ -524,8 +532,14 @@ let generateScripts (opt : Options) (schema : DATABASE) scriptConsumer =
     db.PROCEDURES |> List.filter  (fun p -> p.object.object_type <> OBJECT_TYPE.SQL_STORED_PROCEDURE)
     |> dataForFolder "functions" (fun p -> objectFilename p.object.schema.name p.name) generateProcedureScript
 
-    db.TABLES |> List.choose (fun t -> match t.checkConstraints |> Array.filter (fun cc -> not cc.is_system_named) with [||] -> None | ccs -> Some (t, ccs))
-    |> dataForFolder "check_constraints" (fun (t, _) -> objectFilename t.schema.name t.table_name) generateCheckConstraintsScript
+    db.TABLES 
+    |> List.choose 
+        (fun t -> 
+            match t.checkConstraints |> Array.filter (fun cc -> not cc.is_system_named) with 
+            | [||] -> None 
+            | ccs -> Some (t.schema.name, t.table_name, t.object.object_id, ccs))
+    |> dataForFolder "check_constraints" (fun (sn, tn, _, _) -> objectFilename sn tn) generateCheckConstraintsScript
+
 
     db.TABLES |> List.choose (fun t -> match t.defaultConstraints with [||] -> None | dcs -> Some (t, dcs))
     |> dataForFolder "defaults" (fun (t, _) -> objectFilename t.schema.name t.table_name) generateDefaultConstraintsScript

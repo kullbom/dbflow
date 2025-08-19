@@ -90,6 +90,13 @@ module Internal =
 
 /// Read the schema of a database given a connection
 let readSchema logger (options : Options) connection =
+    DbTr.reader "SELECT IS_ROLEMEMBER('db_ddladmin') CanRead" []
+        (fun acc r -> (Readers.readInt32 "CanRead" r = 1) :: acc) []
+    |> DbTr.commit_ connection
+    |> function
+        | [true] -> ()
+        | r -> failwithf "Missing privileges to read schema" 
+    
     if not options.SchemazenCompatibility
     then 
         Internal.redefineViews logger options 

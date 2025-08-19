@@ -33,7 +33,7 @@ CREATE TYPE [dbo].[DateTime2Utc1] FROM datetime2(3) NULL
 
 CREATE TYPE [dbo].[IntList] AS TABLE (
     Id INT NOT NULL IDENTITY (1,1) PRIMARY KEY,
-    [Value] [int] NOT NULL DEFAULT ((1)) CHECK ([Value] > 0), 
+    [Value] [int] NOT NULL DEFAULT ((1)) CHECK ([Value] > 0), -- The check constraint here disapears...
 
     CplxComputed AS [Value] * 5,
 

@@ -10,7 +10,12 @@ The current version of DbFlow can be used for
 DbFlow supports
 
 - Microsoft Sql Server
-- (PostgreSql is in planning stage)
+
+Planned features:
+
+- Replace need for DbUp
+- Generate documentation from (primary) ms_description
+- Support for PostgreSql 
 
 To clone a database:
 

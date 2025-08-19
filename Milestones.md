@@ -1,4 +1,4 @@
-﻿# Grov plan
+﻿# Release plan
 
 ## Version 0.1.0(-beta)
 
@@ -10,15 +10,21 @@
     [x] Indexes on views must also be recreated
 [x] It seems that there is a problem with the order of foreign key columns - in the db comparison...?
 [x] It seems that there is a problem with the order of other constraint etc as well - in the db comparison...?
-[ ] There is some problems with (comparision of) user defined types
+[x] Check constaint missing after clone...? (See test "Test suite" for "test_db")
+[x] There is a problem with (comparision of) is_nullable of user defined types
+[ ] There is a problem with (comparision of) ignore_dup_key of indexes 
+[ ] There is a problem with (comparision of) is_not-trusted of check constraints
+[ ] There is a problem with (comparision of) "is ansi padded" of columns
 [ ] There is a problem with (comparision of) collation_name
-[ ] There is a problem with ignore_dup_key of indexes 
-[ ] There is a problem with is_not-trusted of check constraints
 
+
+## Make the repo public
+
+[ ] License-header in all files
 
 ## Version 1.0.0
 
-[ ] Ensure that the db user has suitable privileges before readSchema (https://github.com/sethreno/schemazen/issues/136)
+[x] Ensure that the db user has suitable privileges before readSchema ( IS_ROLEMEMBER ('db_ddladmin'))
 [ ] Tester som visar på problem/buggar (eller lösning på problemet):
     [ ] CHECK_CONSTRAINT väl hårdkodad vad gäller "CHECK" etc. 
         [ ] Täck ordentligt med tester
@@ -26,10 +32,9 @@
     [ ] Test för disabled triggers
     [ ] Test för triggers, procedures och views man bytt namn på...
     [ ] Test for anonymous (system named) unique keys
-    [ ] BUG: Named defaults blir fel - se [DF_TestTable01_ColWithNamedDefault]
+    [x] BUG: Named defaults blir fel - se [DF_TestTable01_ColWithNamedDefault]
     [ ] XML index fungar inte bra ... se AW - sök på "[XMLPATH_Person_Demographics]"
     [x] Index "FILLFACTOR" är inte med i de genererade scripten - och blir därför fel i kloner.
-[ ] Column "is ansi padded" blir fel 
 [ ] ms_description is not part of the generated scripts (and temporary excluded in the schema comparison)
 [ ] Dokumentera alla kända problem i någon slags readme - eller som issues i github...? Eller så får fallerande test räcka...
 [ ] DbUp-kompatibel (kan använda dbo.SchemaVersion - om konfad så) 

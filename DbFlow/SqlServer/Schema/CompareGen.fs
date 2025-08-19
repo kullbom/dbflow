@@ -73,7 +73,6 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.name, x1.name) ("name" :: path)
                        |> CompareGen.Collect (x0.schema, x1.schema) ("schema" :: path)
                        |> CompareGen.Collect (x0.system_type_id, x1.system_type_id) ("system_type_id" :: path)
-                       |> CompareGen.Collect (x0.user_type_id, x1.user_type_id) ("user_type_id" :: path)
                        |> CompareGen.Collect (x0.parameter, x1.parameter) ("parameter" :: path)
                        |> CompareGen.Collect (x0.is_user_defined, x1.is_user_defined) ("is_user_defined" :: path)
                        |> Compare.collectOption x0.sys_datatype x1.sys_datatype Compare.equalCollector ("sys_datatype" :: path)
