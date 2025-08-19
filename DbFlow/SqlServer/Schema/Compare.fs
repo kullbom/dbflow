@@ -5,25 +5,31 @@ open DbFlow
 // In order to compare sequences we need a deterministic order of the elements
 type SortOrder = SortOrder
     with 
+        static member orderBy (x : OBJECT) = SortOrder.orderBy x.schema, x.name, x.object_type
         static member orderBy (x : SCHEMA) = x.name 
         static member orderBy (x : TABLE) = SortOrder.orderBy x.object 
         static member orderBy (x : VIEW) = SortOrder.orderBy x.object 
-        static member orderBy (x : INDEX) = SortOrder.orderBy x.parent, x.index_id
+        static member orderBy (x : INDEX) = match x.name with Some n -> n | None -> x.columns |> Array.joinBy "," (fun c -> c.column.column_name)
         static member orderBy (x : COLUMN) = SortOrder.orderBy x.object, x.column_name
-        static member orderBy (x : FOREIGN_KEY) = SortOrder.orderBy x.object 
+        static member orderBy (x : FOREIGN_KEY) =
+            if x.is_system_named
+            then
+                let parentColumns = x.columns |> Array.joinBy "," (fun c -> c.parent_column.column_name)
+                let refsColumns = x.columns |> Array.joinBy "," (fun c -> c.referenced_column.column_name)
+                $"[{x.parent.schema.name}].[{x.parent.name}]({parentColumns})>[{x.referenced.schema.name}].[{x.referenced.name}]({refsColumns})"
+            else x.name
         static member orderBy (x : TRIGGER) = SortOrder.orderBy x.object, x.trigger_name 
         static member orderBy (x : PARAMETER) = SortOrder.orderBy x.object, x.name, x.parameter_id 
-        static member orderBy (x : DEFAULT_CONSTRAINT) = SortOrder.orderBy x.object 
+        static member orderBy (x : DEFAULT_CONSTRAINT) = x.column.column_name
         static member orderBy (x : SYNONYM) = SortOrder.orderBy x.object
         static member orderBy (x : DATATYPE) = x.name
         static member orderBy (x : TABLE_TYPE) = x.type_name
         static member orderBy (x : PROCEDURE) = x.name 
         static member orderBy (x : XML_SCHEMA_COLLECTION) = SortOrder.orderBy x.schema, x.name 
         static member orderBy (x : DATABASE_TRIGGER) = x.trigger_name
-        static member orderBy (x : CHECK_CONSTRAINT) = SortOrder.orderBy x.object
-        static member orderBy (x : FOREIGN_KEY_COLUMN) = x.constraint_column_id
+        static member orderBy (x : CHECK_CONSTRAINT) = match x.column with Some c -> c.column_name | None -> x.definition
+        static member orderBy (x : FOREIGN_KEY_COLUMN) = SortOrder.orderBy x.parent_column
         static member orderBy (x : INDEX_COLUMN) = SortOrder.orderBy x.column
-        static member orderBy (x : OBJECT) = SortOrder.orderBy x.schema, x.name, x.object_type
         static member orderBy (x : SEQUENCE) = SortOrder.orderBy x.object
 
 type Sequence = Sequence
@@ -94,8 +100,8 @@ module Compare =
         match x0.object_type, x1.object_type with
         | OBJECT_TYPE.FOREIGN_KEY_CONSTRAINT, OBJECT_TYPE.FOREIGN_KEY_CONSTRAINT 
         | OBJECT_TYPE.TYPE_TABLE, OBJECT_TYPE.TYPE_TABLE ->
-            let i = x0.name.LastIndexOf '_'
-            equalCollector (x0.name.Substring(0, i), x1.name.Substring(0, i)) ("name" :: path) diffs
+            // Ignore these since they can be system named 
+            diffs
         | _ -> equalCollector (x0.name, x1.name) ("name" :: path) diffs
     
     //let sys_datatype (x0 : SYS_DATATYPE, x1 : SYS_DATATYPE, path, diff) = equalCollector (x0, x1) path diff
@@ -164,6 +170,8 @@ module Generator =
                 sDefNoneT<SCHEMA> "schema_id"
                 sDefNoneT<OBJECT> "object_id"
                 sDefNoneT<OBJECT> "parent_object_id"
+                sDefNoneT<CHECK_CONSTRAINT> "parent_column_id"
+                sDefNoneT<FOREIGN_KEY> "key_index_id"
                 sDefNoneT<COLUMN> "column_id"
                 sDefNoneT<INDEX> "index_id"
                 sDefNoneT<INDEX_COLUMN> "index_id"

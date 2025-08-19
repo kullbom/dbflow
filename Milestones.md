@@ -2,17 +2,23 @@
 
 ## Version 0.1.0(-beta)
 
-[x] C#-vänligare interface
-[x] Testen måste städa bort databasfiler efter sig. Blir snabbt mycket skräpdata...
-[x] Det är fel på metadatat för vyer (?!) vars kolumner definierats om. (prova att definiera om (drop och create) vyer utifrån sin - uppdaterade - definition i samband med inläsning)
-    [x] För att kunna definiera om views behöver dependency resolvern köras på vyerna
-    [x] Index på vyer försvinner när man definierar om dem... hm... måste jag köra två full svep?!
-[ ] It seems that there is a problem with the order of foreign key columns - in the db comparison...?
+[x] C# friendly interface to all functionality
+[ ] Add C# example - as a test-project and to the readme.md
+[x] The test most remove database files (both data och log) on clean up. 
+[x] THe meta data for views is wrong when underlying columns has been changed. Experiment with drop and recreate all views from the views (possibly updated) definition.
+    [x] Since views can depend on each other the dependency resolver must be used.
+    [x] Indexes on views must also be recreated
+[x] It seems that there is a problem with the order of foreign key columns - in the db comparison...?
+[x] It seems that there is a problem with the order of other constraint etc as well - in the db comparison...?
+[ ] There is some problems with (comparision of) user defined types
+[ ] There is a problem with (comparision of) collation_name
+[ ] There is a problem with ignore_dup_key of indexes 
+[ ] There is a problem with is_not-trusted of check constraints
 
 
 ## Version 1.0.0
 
-[ ] Säkerställ lämpliga rättigheter innan "load" (https://github.com/sethreno/schemazen/issues/136)
+[ ] Ensure that the db user has suitable privileges before readSchema (https://github.com/sethreno/schemazen/issues/136)
 [ ] Tester som visar på problem/buggar (eller lösning på problemet):
     [ ] CHECK_CONSTRAINT väl hårdkodad vad gäller "CHECK" etc. 
         [ ] Täck ordentligt med tester

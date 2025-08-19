@@ -71,6 +71,8 @@ type LocalTempDb(logger) =
     let dbFile = Path.Combine(di.FullName, $"TestDb_{dbName}.mdf")
     let logFile = Path.Combine(di.FullName, $"TestDb_{dbName}_log.ldf")
 
+    let connectionString = cs dbName
+
     do
         if not di.Exists 
         then di.Create()
@@ -81,7 +83,7 @@ type LocalTempDb(logger) =
         LocalDatabase.create dbName dbFile logFile
         |> DbTr.exe connection
 
-    member _.GetConnectionString() = cs dbName
+    member _.ConnectionString = connectionString
 
     interface IDisposable with
         member _.Dispose() =

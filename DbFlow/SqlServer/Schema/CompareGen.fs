@@ -150,7 +150,6 @@ type CompareGen = CompareGenCase
                        |> Compare.foreign_key_name (x0, x1) path
                        |> CompareGen.Collect (x0.parent, x1.parent) ("parent" :: path)
                        |> CompareGen.Collect (x0.referenced, x1.referenced) ("referenced" :: path)
-                       |> CompareGen.Collect (x0.key_index_id, x1.key_index_id) ("key_index_id" :: path)
                        |> CompareGen.Collect (x0.is_disabled, x1.is_disabled) ("is_disabled" :: path)
                        |> Compare.equalCollector (x0.delete_referential_action, x1.delete_referential_action) ("delete_referential_action" :: path)
                        |> Compare.equalCollector (x0.update_referential_action, x1.update_referential_action) ("update_referential_action" :: path)
@@ -168,7 +167,6 @@ type CompareGen = CompareGenCase
                     fun path diffs ->
                        diffs
                        |> CompareGen.Collect (x0.parent, x1.parent) ("parent" :: path)
-                       |> CompareGen.Collect (x0.parent_column_id, x1.parent_column_id) ("parent_column_id" :: path)
                        |> Compare.collectOption x0.column x1.column CompareGen.Collect ("column" :: path)
                        |> CompareGen.Collect (x0.is_disabled, x1.is_disabled) ("is_disabled" :: path)
                        |> CompareGen.Collect (x0.is_not_for_replication, x1.is_not_for_replication) ("is_not_for_replication" :: path)

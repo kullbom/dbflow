@@ -119,7 +119,7 @@ module Helpers =
     
     let withLocalDb logger f =
         use localDb = new SqlServer.LocalTempDb(logger)
-        let localDbConnectionString = localDb.GetConnectionString ()
+        let localDbConnectionString = localDb.ConnectionString
         let timestamp = System.DateTime.Now.ToString("HH:mm:ss.fff")
         logger.info $"{timestamp} New local db: {localDbConnectionString}" 
         
