@@ -15,7 +15,9 @@
 [x] There is a problem with (comparision of) ignore_dup_key of indexes 
 [x] Add test to illustrate problem with is_not-trusted of check constraints
 [ ] There is a problem with (comparision of) is_not-trusted of check constraints
+[ ] Add test to illustrate problem with "is ansi padded" of columns
 [ ] There is a problem with (comparision of) "is ansi padded" of columns
+[ ] Add test to illustrate problem with collation_name
 [ ] There is a problem with (comparision of) collation_name
 
 

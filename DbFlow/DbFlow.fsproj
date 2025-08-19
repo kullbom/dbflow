@@ -5,7 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>DbFlow</Title>
-    <Version>0.0.1-alpha04</Version>
+    <Version>0.0.1-alpha05</Version>
     <Copyright>2025 Johan Kullbom</Copyright>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>.net;f#;sql;mssqlserver</PackageTags>
