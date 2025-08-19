@@ -42,7 +42,7 @@ module Internal =
                         view.indexes
                         |> Array.fold 
                             (fun acc index ->
-                                match Scripts.Generate.getIndexDefinitionStr options view_name index with
+                                match Scripts.Generate.getIndexDefinitionStr options view_name true index with
                                 | None -> acc
                                 | Some indexScript -> 
                                     let index_contains_objects =

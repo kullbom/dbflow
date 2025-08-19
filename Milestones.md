@@ -12,7 +12,7 @@
 [x] It seems that there is a problem with the order of other constraint etc as well - in the db comparison...?
 [x] Check constaint missing after clone...? (See test "Test suite" for "test_db")
 [x] There is a problem with (comparision of) is_nullable of user defined types
-[ ] There is a problem with (comparision of) ignore_dup_key of indexes 
+[x] There is a problem with (comparision of) ignore_dup_key of indexes 
 [ ] There is a problem with (comparision of) is_not-trusted of check constraints
 [ ] There is a problem with (comparision of) "is ansi padded" of columns
 [ ] There is a problem with (comparision of) collation_name
@@ -21,6 +21,7 @@
 ## Make the repo public
 
 [ ] License-header in all files
+[ ] Generate to temp directory and rename when finished
 
 ## Version 1.0.0
 

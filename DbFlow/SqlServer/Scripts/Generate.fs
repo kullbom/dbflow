@@ -24,7 +24,7 @@ let columnDefinitionStr (opt : Options) allTypes isTableType (columnInlineDefaul
             let persistStr = 
                 if computed.is_persisted 
                 then 
-                    if column.data_type.parameter.is_nullable 
+                    if opt.SchemazenCompatibility || column.data_type.parameter.is_nullable 
                     then " PERSISTED" 
                     else " PERSISTED NOT NULL"
                 else ""
@@ -91,9 +91,10 @@ let indexColumnsStr (columns : INDEX_COLUMN array) =
             let descStr = if c.is_descending_key then " DESC" else ""
             $"[{c.column.column_name}]{descStr}")
 
-let indexWithSettings (index : INDEX) =
+let indexWithSettings parentIsView (index : INDEX) =
     [|
         match index.fill_factor with 0uy -> "" | ff -> $"FILLFACTOR = {ff}"
+        if index.ignore_dup_key then "IGNORE_DUP_KEY = ON" else ""
     |]
     |> Array.filter (fun s -> s.Length > 0)
     |> Array.joinBy ", " id
@@ -114,7 +115,7 @@ let primaryKeyStr (opt : Options) isTableType (pk : INDEX) =
         then $"PRIMARY KEY {clusteredStr} ({pkColumnsStr})"
         else $"CONSTRAINT [{pkName}] PRIMARY KEY {clusteredStr} ({pkColumnsStr})"
     else    
-        let withSettings = indexWithSettings pk
+        let withSettings = indexWithSettings false pk
         if isTableType || pk.is_system_named
         then $"PRIMARY KEY {clusteredStr} ({pkColumnsStr}){withSettings}"
         else $"CONSTRAINT [{pkName}] PRIMARY KEY {clusteredStr} ({pkColumnsStr}){withSettings}"
@@ -132,7 +133,7 @@ let uniqueKeyStr (opt : Options) (i : INDEX) =
     then $"CONSTRAINT [{iName}] UNIQUE {clusteredStr} ({indexColumnsStr})"
     else $"UNIQUE {clusteredStr} ({indexColumnsStr})"
 
-let generateStandardIndexScript (opt : Options) (index : INDEX) (parentName : string) (indexName : string) (indexTypeStr : string) =
+let generateStandardIndexScript (opt : Options) (index : INDEX) (parentName : string) parentIsView (indexName : string) (indexTypeStr : string) =
     let (includeColumns, keyColumns) =
         separateBy (fun c -> c.is_included_column) index.columns
 
@@ -152,12 +153,12 @@ let generateStandardIndexScript (opt : Options) (index : INDEX) (parentName : st
     let withSettings = 
         if opt.SchemazenCompatibility
         then ""
-        else indexWithSettings index
+        else indexWithSettings parentIsView index
             
 
     $"CREATE {indexTypeStr} INDEX [{indexName}] ON {parentName} ({keyColumnsStr}){includeStr}{filterStr}{withSettings}"
 
-let generateXMLIndexScript (opt : Options) (index : INDEX) (parentName : string) (indexName : string) =
+let generateXMLIndexScript (opt : Options) (index : INDEX) (parentName : string) parentIsView (indexName : string) =
     let (includeColumns, keyColumns) =
         separateBy (fun c -> c.is_included_column) index.columns
 
@@ -176,18 +177,18 @@ let objectFilename (schema_name :string) (object_name : string) =
     | _ -> $"{schema_name}.{object_name}.sql"
 
     
-let getIndexDefinitionStr (opt : Options) parentName (index : INDEX) =
+let getIndexDefinitionStr (opt : Options) parentName parentIsView (index : INDEX) =
     match index.name, index.is_unique, index.index_type with
     | Some n, false, INDEX_TYPE.CLUSTERED -> 
-        Some <| generateStandardIndexScript opt index parentName n "CLUSTERED"
+        Some <| generateStandardIndexScript opt index parentName parentIsView n "CLUSTERED"
     | Some n, false, INDEX_TYPE.NONCLUSTERED -> 
-        Some <| generateStandardIndexScript opt index parentName n "NONCLUSTERED" 
+        Some <| generateStandardIndexScript opt index parentName parentIsView n "NONCLUSTERED" 
     | Some n, true, INDEX_TYPE.CLUSTERED -> 
-        Some <| generateStandardIndexScript opt index parentName n "UNIQUE CLUSTERED"
+        Some <| generateStandardIndexScript opt index parentName parentIsView n "UNIQUE CLUSTERED"
     | Some n, true, INDEX_TYPE.NONCLUSTERED -> 
-        Some <| generateStandardIndexScript opt index parentName n "UNIQUE NONCLUSTERED"
+        Some <| generateStandardIndexScript opt index parentName parentIsView n "UNIQUE NONCLUSTERED"
     | Some n, false, INDEX_TYPE.XML ->
-        Some <| generateXMLIndexScript opt index parentName n  
+        Some <| generateXMLIndexScript opt index parentName parentIsView n  
     // Heap indexes without name is ignored
     | None, false, INDEX_TYPE.HEAP -> None
     | iType -> 
@@ -262,7 +263,7 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) allTypes i
 
     w.WriteLine ""
     for index in standaloneIndexes |> List.sortBy (fun i -> i.index_id) do
-        let indexStr = getIndexDefinitionStr opt parentName index
+        let indexStr = getIndexDefinitionStr opt parentName false index
         match indexStr with
         | Some s -> w.WriteLine $"{s}"
         | None -> ()
@@ -515,7 +516,7 @@ let generateScripts (opt : Options) (schema : DATABASE) scriptConsumer =
             v.indexes 
             |> Array.choose 
                 (fun i -> 
-                    match i.name, getIndexDefinitionStr opt $"[{v.schema.name}].[{v.view_name}]" i with 
+                    match i.name, getIndexDefinitionStr opt $"[{v.schema.name}].[{v.view_name}]" true i with 
                     | Some n, Some def -> Some (n, v, i, def) 
                     | _ -> None) 
             |> Array.toList) 
