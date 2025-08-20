@@ -18,7 +18,8 @@
 [x] Add test to illustrate problem with is_not-trusted of check constraints
 [x] Add test to illustrate problem with collation_name
 [x] There is a (possible) problem with mismatching collation with a clone
-    [x] Add all (relevant) db settings to the model
+    [x] Add all collation db settings to the model
+    [ ] Add all (relevant) db settings to the model
     [x] Add collation to columns (script) where not the same as the database default
     [x] Add settings/property file 
     [ ] Include root folder in the schemazen compatibility tests

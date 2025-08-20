@@ -31,9 +31,12 @@ let columnDefinitionStr (opt : Options) (ds : DATABASE_SETTINGS) allTypes isTabl
             $"AS {computed.computed_definition}{persistStr}"
         | None -> 
             let collateStr = 
-                match column.data_type.parameter.collation_name with
-                | Some c when c <> ds.collation_name -> $"COLLATE {c}"
-                | _ -> ""
+                if opt.SchemazenCompatibility
+                then ""
+                else
+                    match column.data_type.parameter.collation_name with
+                    | Some c when c <> ds.collation_name -> $"COLLATE {c}"
+                    | _ -> ""
             let nullStr = if column.data_type.parameter.is_nullable then "NULL" else "NOT NULL"
             let maskedStr =
                 if opt.SchemazenCompatibility
