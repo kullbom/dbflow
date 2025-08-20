@@ -35,7 +35,7 @@ let columnDefinitionStr (opt : Options) (ds : DATABASE_SETTINGS) allTypes isTabl
                 then ""
                 else
                     match column.data_type.parameter.collation_name with
-                    | Some c when c <> ds.collation_name -> $"COLLATE {c}"
+                    | Some c when c <> ds.collation_name -> $" COLLATE {c}"
                     | _ -> ""
             let nullStr = if column.data_type.parameter.is_nullable then "NULL" else "NOT NULL"
             let maskedStr =
