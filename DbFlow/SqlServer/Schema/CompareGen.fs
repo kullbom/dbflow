@@ -18,6 +18,7 @@ type CompareGen = CompareGenCase
                        |> Compare.collectList x0.TRIGGERS x1.TRIGGERS SortOrder.orderBy Sequence.elementId CompareGen.Collect ("TRIGGERS" :: path)
                        |> Compare.collectList x0.SYNONYMS x1.SYNONYMS SortOrder.orderBy Sequence.elementId CompareGen.Collect ("SYNONYMS" :: path)
                        |> Compare.collectList x0.SEQUENCES x1.SEQUENCES SortOrder.orderBy Sequence.elementId CompareGen.Collect ("SEQUENCES" :: path)
+                       |> CompareGen.Collect (x0.SETTINGS, x1.SETTINGS) ("SETTINGS" :: path)
 
         static member Collect (x0 : SCHEMA, x1 : SCHEMA) =
                     fun path diffs ->
@@ -254,3 +255,9 @@ type CompareGen = CompareGenCase
                        |> Compare.collectOption x0.cache_size x1.cache_size CompareGen.Collect ("cache_size" :: path)
                        |> CompareGen.Collect (x0.data_type, x1.data_type) ("data_type" :: path)
                        |> CompareGen.Collect (x0.is_exhausted, x1.is_exhausted) ("is_exhausted" :: path)
+
+        static member Collect (x0 : DATABASE_SETTINGS, x1 : DATABASE_SETTINGS) =
+                    fun path diffs ->
+                       diffs
+                       |> CompareGen.Collect (x0.compatibility_level, x1.compatibility_level) ("compatibility_level" :: path)
+                       |> CompareGen.Collect (x0.collation_name, x1.collation_name) ("collation_name" :: path)

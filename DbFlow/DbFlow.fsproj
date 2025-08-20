@@ -20,7 +20,7 @@
     <Compile Include="SqlParser.fs" />
     <Compile Include="DbTr.fs" />
     <Compile Include="DbFlow.fs" />
-    <Compile Include="Dependencies.fs" />
+    <Compile Include="Dependent.fs" />
     <Compile Include="SqlServer\Schema\MSDescription.fs" />
     <Compile Include="SqlServer\Schema\Objects.fs" />
     <Compile Include="SqlServer\Schema\Types.fs" />

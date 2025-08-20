@@ -8,7 +8,6 @@ open MyDbUp
 
 open DbFlow
 open DbFlow.SqlServer
-open DbFlow.SqlServer.Scripts
 
 module Common = 
                 

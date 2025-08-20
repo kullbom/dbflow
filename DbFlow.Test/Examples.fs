@@ -1,4 +1,5 @@
-﻿module DbFlow.Tests.Examples
+﻿
+module DbFlow.Tests.Examples
 (*
 module ``To clone a database:`` = 
     open Microsoft.Data.SqlClient

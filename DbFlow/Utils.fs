@@ -12,7 +12,8 @@ module Array =
         |> Array.map formatter
         |> fun ss -> System.String.Join (separator, ss)
 
-// A reference counting map - used to ensure all objects are referenced/used
+
+/// A reference counting map - used to ensure that all objects are referenced/used
 type RCMap<'key, 'data when 'key : comparison> = { mutable Map : Map<'key, int * 'data> }
 
 module RCMap =

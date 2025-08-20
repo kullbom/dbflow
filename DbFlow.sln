@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbFlow.CSharpExample", "DbFlow.CSharpExample\DbFlow.CSharpExample.csproj", "{1ACD2D4C-97F8-4241-8D0E-9026CE2C9D5A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{3BBDF23F-9AA5-4202-AF50-32EC2A9D5BB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3BBDF23F-9AA5-4202-AF50-32EC2A9D5BB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3BBDF23F-9AA5-4202-AF50-32EC2A9D5BB8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1ACD2D4C-97F8-4241-8D0E-9026CE2C9D5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1ACD2D4C-97F8-4241-8D0E-9026CE2C9D5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1ACD2D4C-97F8-4241-8D0E-9026CE2C9D5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1ACD2D4C-97F8-4241-8D0E-9026CE2C9D5A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

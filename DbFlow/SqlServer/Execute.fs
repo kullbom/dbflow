@@ -1,7 +1,6 @@
 ﻿module DbFlow.SqlServer.Execute
 
 open DbFlow
-open DbFlow.Dependencies
 open DbFlow.SqlServer.Schema
 
 module Internal = 
@@ -29,7 +28,7 @@ module Internal =
                 (fun view -> 
                     let drop_script = $"DROP VIEW [{view.schema.name}].[{view.view_name}]"
                     Dependent.create drop_script [view.object.object_id] [] 0)
-            |> Dependencies.resolveScriptOrder deps 
+            |> Dependent.resolveOrder deps 
         // Create scripts
         let createScripts = 
             views 
@@ -51,23 +50,27 @@ module Internal =
                             (create_script :: scripts)
                     view_scripts)
                 []
-            |> Dependencies.resolveScriptOrder deps 
+            |> Dependent.resolveOrder deps 
             
         // The drop scripts needs to be reverted since dependency works on the asumption that objects are created...
         dropScripts 
         |> List.fold 
-            (fun acc s -> scriptTransaction s.content :: acc)
-            (createScripts |> List.map (fun s -> scriptTransaction s.content))
+            (fun acc s -> scriptTransaction s.Content :: acc)
+            (createScripts |> List.map (fun s -> scriptTransaction s.Content))
         |> DbTr.sequence_ 
         |> DbTr.commit_ connection 
         ()
 
     let collectScriptsFromSchema (options : Options) (sourceDb : DATABASE) =
+        let mutable settingsScripts = []
         let mutable scripts = []
         
         Scripts.Generate.generateScripts options sourceDb
-            (fun script -> scripts <- script :: scripts)
-        scripts
+            (fun isDatabaseSettings script -> 
+                if isDatabaseSettings 
+                then settingsScripts <- script :: settingsScripts 
+                else scripts <- script :: scripts)
+        settingsScripts, scripts
 
     let collectScriptsFromFolder (scriptsFolder : string)=
         let stripName =
@@ -106,18 +109,25 @@ let readSchema logger (options : Options) connection =
 
 /// Clone a schema into a database given a target connection
 let clone logger (options : Options) (sourceDb : DATABASE) (targetConnection : System.Data.IDbConnection) =
-    let collectedScripts = 
+    let (settingsScripts, collectedScripts) = 
         Internal.collectScriptsFromSchema options 
         |> Logger.logTime logger "DbFlow - collect scripts" sourceDb
     
     let resolvedScripts =
-        Dependencies.resolveScriptOrder sourceDb.dependencies
+        Dependent.resolveOrder sourceDb.dependencies
         |> Logger.logTime logger "DbFlow - resolve scripts dependencies" collectedScripts
+
+    (fun () -> 
+        settingsScripts
+        |> List.map (fun script -> Internal.scriptTransaction script.Content.Content)
+        |> DbTr.sequence_
+        |> DbTr.exe targetConnection)
+    |> Logger.logTime logger "DbFlow - execute database setup scripts" ()
 
     (fun () -> 
         //logger $"Executing script {script.directory_name}\\{script.filename}"
         resolvedScripts
-        |> List.map (fun script -> Internal.scriptTransaction script.content.content) 
+        |> List.map (fun script -> Internal.scriptTransaction script.Content.Content) 
         |> DbTr.sequence_
         |> DbTr.commit_ targetConnection)
     |> Logger.logTime logger "DbFlow - resolve and execute scripts" ()
@@ -128,13 +138,16 @@ let generateScriptFiles (opt : Options) (schema : DATABASE) folder =
     then System.IO.Directory.Delete(folder,true)
 
     Scripts.Generate.generateScripts opt schema
-        (fun script ->
-            let subfolder = System.IO.Path.Combine(folder, script.content.directory_name)
+        (fun _isDatabaseSettings script ->
+            let subfolder = 
+                match script.Content.Subdirectory with
+                | Some sDir -> System.IO.Path.Combine(folder, sDir)
+                | None -> folder
             if not <| System.IO.Directory.Exists subfolder
             then System.IO.Directory.CreateDirectory (subfolder) |> ignore
             
-            let file = System.IO.Path.Combine(subfolder, script.content.filename)
-            System.IO.File.WriteAllText (file, script.content.content)
+            let file = System.IO.Path.Combine(subfolder, script.Content.Filename)
+            System.IO.File.WriteAllText (file, script.Content.Content)
             ())
 
 

@@ -3,6 +3,92 @@
 open DbFlow
 open DbFlow.Readers
 
+// https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-databases-transact-sql?view=sql-server-ver17
+
+type DATABASE_SETTINGS = {
+    compatibility_level : byte
+    collation_name : string
+}
+    (*
+    https://github.com/sethreno/schemazen/blob/6787ba30e555220c61186cb7b9cd3713cc9226d0/Library/Models/Database.cs#L1131
+
+    select
+	[compatibility_level],
+	[collation_name],
+	[is_auto_close_on],
+	[is_auto_shrink_on],
+	[snapshot_isolation_state],
+	[is_read_committed_snapshot_on],
+	[recovery_model_desc],
+	[page_verify_option_desc],
+	[is_auto_create_stats_on],
+	[is_auto_update_stats_on],
+	[is_auto_update_stats_async_on],
+	[is_ansi_null_default_on],
+	[is_ansi_nulls_on],
+	[is_ansi_padding_on],
+	[is_ansi_warnings_on],
+	[is_arithabort_on],
+	[is_concat_null_yields_null_on],
+	[is_numeric_roundabort_on],
+	[is_quoted_identifier_on],
+	[is_recursive_triggers_on],
+	[is_cursor_close_on_commit_on],
+	[is_local_cursor_default],
+	[is_trustworthy_on],
+	[is_db_chaining_on],
+	[is_parameterization_forced],
+	[is_date_correlation_on]
+from sys.databases
+where name = @dbname
+
+(Undersök om/hur "CURRENT" kan användas...)
+    *)
+module DATABASE_SETTINGS = 
+    let readAll connection =
+        DbTr.reader
+            "SELECT
+                [compatibility_level],
+                [collation_name],
+                [is_auto_close_on],
+                [is_auto_shrink_on],
+                [snapshot_isolation_state],
+                [is_read_committed_snapshot_on],
+                [recovery_model_desc],
+                [page_verify_option_desc],
+                [is_auto_create_stats_on],
+                [is_auto_update_stats_on],
+                [is_auto_update_stats_async_on],
+                [is_ansi_null_default_on],
+                [is_ansi_nulls_on],
+                [is_ansi_padding_on],
+                [is_ansi_warnings_on],
+                [is_arithabort_on],
+                [is_concat_null_yields_null_on],
+                [is_numeric_roundabort_on],
+                [is_quoted_identifier_on],
+                [is_recursive_triggers_on],
+                [is_cursor_close_on_commit_on],
+                [is_local_cursor_default],
+                [is_trustworthy_on],
+                [is_db_chaining_on],
+                [is_parameterization_forced],
+                [is_date_correlation_on]
+             FROM sys.databases
+             WHERE name = DB_NAME()"
+            []
+            (fun acc r -> 
+                {
+                    compatibility_level = readByte "compatibility_level" r
+                    collation_name = readString "collation_name" r
+                } :: acc)
+            []
+        |> DbTr.commit_ connection
+        |> function
+            | [settings] -> settings
+            | _ -> failwithf "Multiple of no settings found - should not happen"
+        
+
 type DATABASE = {
     SCHEMAS : SCHEMA list
     TABLES : TABLE list
@@ -19,6 +105,8 @@ type DATABASE = {
     SYNONYMS : SYNONYM list
     SEQUENCES : SEQUENCE list
 
+    SETTINGS : DATABASE_SETTINGS
+
     ms_description : string option
 
     all_objects : OBJECT list
@@ -26,8 +114,6 @@ type DATABASE = {
 }
 
 module DATABASE =
-    open Dependencies
-
     // Read all views in order to redefined them - to get fresh/correct meta data 
     let preReadAllViews logger connection =
         let ms_descs = RCMap.ofMap Map.empty
@@ -55,6 +141,8 @@ module DATABASE =
         let ms_descs = MS_Description.readAll |> Logger.logTime logger "MS_Description" connection
         let dependencies = DEPENDENCY.readAll |> Logger.logTime logger "Dependencies" connection
         
+        let settings = DATABASE_SETTINGS.readAll connection
+
         let schemas = SCHEMA.readAll ms_descs connection
         let objects = OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
         let types = DATATYPE.readAll schemas objects ms_descs connection
@@ -149,6 +237,7 @@ module DATABASE =
             SYNONYMS = synonyms |> RCMap.toList
             SEQUENCES = sequences |> RCMap.toList
 
+            SETTINGS = settings
             ms_description = db_msDesc
 
             all_objects = objects |> RCMap.toList

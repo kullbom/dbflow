@@ -1,23 +1,23 @@
 ﻿module DbFlow.SqlServer.Scripts.Generate
 
 open DbFlow
-open DbFlow.Dependencies
 open DbFlow.SqlServer.Schema
 
 type Script = { 
-    directory_name : string; 
-    filename : string; 
-    content : string; 
+    Subdirectory : string option; 
+    Filename : string; 
+    Content : string; 
 }
 
-type ScriptObjects =
+type SchemaScriptPart =
+    | DatabaseDefinition
     | SchemaDefinition
-    | ObjectDefinitions of {| contains_objects : int list; depends_on : int list |}
     | UserDefinedTypeDefinition
+    | ObjectDefinitions of {| contains_objects : int list; depends_on : int list |}
     | XmlSchemaCollectionDefinition
 
 
-let columnDefinitionStr (opt : Options) allTypes isTableType (columnInlineDefaults : Map<int, DEFAULT_CONSTRAINT>) (column : COLUMN) =
+let columnDefinitionStr (opt : Options) (ds : DATABASE_SETTINGS) allTypes isTableType (columnInlineDefaults : Map<int, DEFAULT_CONSTRAINT>) (column : COLUMN) =
     let columnDefStr =
         match column.computed_definition with
         | Some computed ->
@@ -30,6 +30,10 @@ let columnDefinitionStr (opt : Options) allTypes isTableType (columnInlineDefaul
                 else ""
             $"AS {computed.computed_definition}{persistStr}"
         | None -> 
+            let collateStr = 
+                match column.data_type.parameter.collation_name with
+                | Some c when c <> ds.collation_name -> $"COLLATE {c}"
+                | _ -> ""
             let nullStr = if column.data_type.parameter.is_nullable then "NULL" else "NOT NULL"
             let maskedStr =
                 if opt.SchemazenCompatibility
@@ -60,7 +64,7 @@ let columnDefinitionStr (opt : Options) allTypes isTableType (columnInlineDefaul
                     DATATYPE.typeStr opt.SchemazenCompatibility false 
                         { (Map.find (int column.data_type.system_type_id) allTypes) with parameter = column.data_type.parameter }
                 else DATATYPE.typeStr opt.SchemazenCompatibility false column.data_type
-            $"{typeStr}{maskedStr} {nullStr}{identityStr}{checkStr}{rowGuidStr}"
+            $"{typeStr}{collateStr}{maskedStr} {nullStr}{identityStr}{checkStr}{rowGuidStr}"
     $"[{column.column_name}] {columnDefStr}"
 
 let separateBy f xs =
@@ -68,6 +72,40 @@ let separateBy f xs =
     |> Array.fold (fun (xs, ys) x -> if f x then x :: xs, ys else xs, x :: ys) ([], [])
     |> fun (xs, ys) -> xs |> List.rev |> List.toArray, ys |> List.rev |> List.toArray
     
+let generateSettingsScript (w : System.IO.StreamWriter) (opt : Options) (s : DATABASE_SETTINGS) =
+    let wl : string -> unit = w.WriteLine 
+    wl "DECLARE @DB VARCHAR(255)"
+    wl "SET @DB = DB_NAME()"
+    wl $"EXEC dbo.sp_dbcmptlevel @DB, {s.compatibility_level}"
+    wl $"EXEC('ALTER DATABASE [' + @DB + '] COLLATE {s.collation_name}')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET AUTO_CLOSE ON')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET AUTO_SHRINK OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET ALLOW_SNAPSHOT_ISOLATION OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET READ_COMMITTED_SNAPSHOT OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET RECOVERY SIMPLE')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET PAGE_VERIFY CHECKSUM')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET AUTO_CREATE_STATISTICS ON')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET AUTO_UPDATE_STATISTICS ON')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET AUTO_UPDATE_STATISTICS_ASYNC OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET ANSI_NULL_DEFAULT OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET ANSI_NULLS OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET ANSI_PADDING OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET ANSI_WARNINGS OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET ARITHABORT OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET CONCAT_NULL_YIELDS_NULL OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET NUMERIC_ROUNDABORT OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET QUOTED_IDENTIFIER OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET RECURSIVE_TRIGGERS OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET CURSOR_CLOSE_ON_COMMIT OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET CURSOR_DEFAULT GLOBAL')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET TRUSTWORTHY OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET DB_CHAINING OFF')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET PARAMETERIZATION SIMPLE')"
+    wl "EXEC('ALTER DATABASE [' + @DB + '] SET DATE_CORRELATION_OPTIMIZATION OFF')"
+    wl "GO"
+    DatabaseDefinition
+
+
 let generateSchemaScript (w : System.IO.StreamWriter) (opt : Options) (schema : SCHEMA) =
     if opt.SchemazenCompatibility
     then w.WriteLine $"create schema [{schema.name}] authorization [{schema.principal_name}]"
@@ -195,8 +233,8 @@ let getIndexDefinitionStr (opt : Options) parentName parentIsView (index : INDEX
         failwithf "Unhandled index type %A" iType
 
     
-let generateTableBody (w : System.IO.StreamWriter) (opt : Options) allTypes isTableType columns tableInlineIndexes tableInlineChecks columnInlineDefaults =
-    commaSeparated w "   " columns (columnDefinitionStr opt allTypes isTableType columnInlineDefaults)
+let generateTableBody (w : System.IO.StreamWriter) (opt : Options) ds allTypes isTableType columns tableInlineIndexes tableInlineChecks columnInlineDefaults =
+    commaSeparated w "   " columns (columnDefinitionStr opt ds allTypes isTableType columnInlineDefaults)
 
     let indexDefs =
         tableInlineIndexes
@@ -228,7 +266,7 @@ let generateTableBody (w : System.IO.StreamWriter) (opt : Options) allTypes isTa
 
 
                 
-let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) allTypes isTableType parentName columns indexes checkConstraints (defaultConstraints : DEFAULT_CONSTRAINT array) =
+let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) ds allTypes isTableType parentName columns indexes checkConstraints (defaultConstraints : DEFAULT_CONSTRAINT array) =
     let (tableInlineIndexes, standaloneIndexes) =
         indexes
         |> Array.fold 
@@ -257,7 +295,7 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) allTypes i
             Map.empty
 
 
-    generateTableBody w opt allTypes isTableType columns tableInlineIndexes tableInlineChecks columnInlineDefaults
+    generateTableBody w opt ds allTypes isTableType columns tableInlineIndexes tableInlineChecks columnInlineDefaults
 
     w.WriteLine $")"
 
@@ -277,22 +315,22 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) allTypes i
     |> (fun acc -> columnInlineDefaults |> Map.fold (fun acc' _ dc -> dc.object.object_id :: acc') acc)
     
 
-let generateTableScript allTypes (w : System.IO.StreamWriter) (opt : Options) (t : TABLE) =
+let generateTableScript allTypes ds (w : System.IO.StreamWriter) (opt : Options) (t : TABLE) =
     let tableName = $"[{t.schema.name}].[{t.table_name}]"
     w.WriteLine $"CREATE TABLE {tableName} ("
     
     let object_ids =
-        generateTableScript' w opt allTypes false tableName 
+        generateTableScript' w opt ds allTypes false tableName 
             t.columns t.indexes t.checkConstraints t.defaultConstraints
     
     ObjectDefinitions {| contains_objects = t.object.object_id :: object_ids; depends_on = [] |}
 
-let generateTableTypeScript allTypes (w : System.IO.StreamWriter) (opt : Options) (t : TABLE_TYPE) =
+let generateTableTypeScript allTypes ds (w : System.IO.StreamWriter) (opt : Options) (t : TABLE_TYPE) =
     let tName = $"[{t.schema.name}].[{t.type_name}]"
     w.WriteLine $"CREATE TYPE {tName} AS TABLE ("
     
     let object_ids =
-        generateTableScript' w opt allTypes true tName 
+        generateTableScript' w opt ds allTypes true tName 
             t.columns t.indexes t.checkConstraints t.defaultConstraints
     ObjectDefinitions {| contains_objects = t.object.object_id :: object_ids; depends_on = [] |}
 
@@ -466,36 +504,41 @@ let generateScripts (opt : Options) (schema : DATABASE) scriptConsumer =
         if xs |> List.isEmpty |> not 
         then
             for x in xs do
-                let script =
+                let (isDatabaseDefinition, script) =
                     use ms = new System.IO.MemoryStream()
                     let scriptObjects =
                         use w = new System.IO.StreamWriter(ms)
                         f w opt x
-                    let (priority, contains_objects, depends_on) =
+                    let (isDatabaseDefinition, priority, contains_objects, depends_on) =
                         match scriptObjects with
-                        | SchemaDefinition -> 1, [],[]
-                        | ObjectDefinitions x -> 3, x.contains_objects, x.depends_on
-                        | UserDefinedTypeDefinition -> 2,  [],[]
-                        | XmlSchemaCollectionDefinition -> 4, [], []
+                        | DatabaseDefinition -> true, -1, [],[]
+                        | SchemaDefinition -> false, 1, [],[]
+                        | UserDefinedTypeDefinition -> false, 2,  [],[]
+                        | ObjectDefinitions x -> false, 3, x.contains_objects, x.depends_on
+                        | XmlSchemaCollectionDefinition -> false, 4, [], []
                         
+                    isDatabaseDefinition,
                     {
-                        contains_objects = Set.ofList contains_objects
-                        depends_on = Set.ofList depends_on
-                        priority = priority
+                        Contains = Set.ofList contains_objects
+                        DependsOn = Set.ofList depends_on
+                        Priority = priority
                         
-                        content  = { 
-                            directory_name = subfolderName; 
-                            filename = nameFn x; 
-                            content = ms.ToArray () |> System.Text.Encoding.UTF8.GetString
+                        Content  = { 
+                            Subdirectory = match subfolderName with "" -> None | s -> Some s; 
+                            Filename = nameFn x; 
+                            Content = ms.ToArray () |> System.Text.Encoding.UTF8.GetString
                         }
                     }
-                scriptConsumer script
+                scriptConsumer isDatabaseDefinition script
     
     let allTypes = 
         db.TYPES
         |> List.map (fun t -> t.user_type_id, t)
         |> Map.ofList
     
+    [db.SETTINGS]
+    |> dataForFolder "" (fun s -> $"props.sql") generateSettingsScript
+
     db.SCHEMAS |> List.filter (fun s -> not s.is_system_schema)
     |> dataForFolder "schemas" (fun s -> $"{s.name}.sql") generateSchemaScript
 
@@ -504,9 +547,12 @@ let generateScripts (opt : Options) (schema : DATABASE) scriptConsumer =
     |> dataForFolder "user_defined_types" (fun t -> objectFilename t.schema.name t.name) (generateUserDefinedTypeScript allTypes)
 
     db.TABLE_TYPES
-    |> dataForFolder "table_types" (fun t -> $"TYPE_{t.type_name}.sql") (generateTableTypeScript allTypes)
+    |> dataForFolder "table_types" (fun t -> $"TYPE_{t.type_name}.sql") 
+        (generateTableTypeScript allTypes db.SETTINGS)
 
-    db.TABLES |> dataForFolder "tables" (fun t -> objectFilename t.schema.name t.table_name) (generateTableScript allTypes)
+    db.TABLES 
+    |> dataForFolder "tables" (fun t -> objectFilename t.schema.name t.table_name) 
+        (generateTableScript allTypes db.SETTINGS)
     
     db.VIEWS 
     |> dataForFolder "views" (fun v -> objectFilename v.schema.name v.view_name) generateViewScript
