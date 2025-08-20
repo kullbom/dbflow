@@ -8,7 +8,7 @@ open Microsoft.Data.SqlClient
 open DbFlow
 
 /// Db queries used to create and tear down databases
-module LocalDatabase =
+module private LocalTempDb =
     let create (dbName : string) (dbFile : string) (logFile : string) = 
         let dbFileSpec = $"(NAME={dbName}_db, FILENAME = '{dbFile}')"
         let logFileSpec = $"(NAME={dbName}_log, FILENAME = '{logFile}')"
@@ -80,7 +80,7 @@ type LocalTempDb(logger) =
         use connection = new SqlConnection(cs "master")
         connection.Open()
 
-        LocalDatabase.create dbName dbFile logFile
+        LocalTempDb.create dbName dbFile logFile
         |> DbTr.exe connection
 
     member _.ConnectionString = connectionString
@@ -90,13 +90,13 @@ type LocalTempDb(logger) =
             use connection = new SqlConnection(cs "master")
             connection.Open()
             // Removing all users before detaching is a huge speed up...
-            (fun () -> LocalDatabase.killAllUsers dbName |> DbTr.exe connection)
+            (fun () -> LocalTempDb.killAllUsers dbName |> DbTr.exe connection)
             |> Logger.logTime logger "kill all users" ()
             
-            (fun () -> LocalDatabase.takeOffline dbName |> DbTr.exe connection)
+            (fun () -> LocalTempDb.takeOffline dbName |> DbTr.exe connection)
             |> Logger.logTime logger "take db offline" ()
             
-            (fun () -> LocalDatabase.detach dbName |> DbTr.exe connection)
+            (fun () -> LocalTempDb.detach dbName |> DbTr.exe connection)
             |> Logger.logTime logger "detach db" ()
             
             File.Delete(dbFile)

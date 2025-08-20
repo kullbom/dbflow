@@ -12,28 +12,26 @@ open DbFlow.SqlServer
 module Common = 
                 
     let testDbFlowRoundtrip logger options sourceSchema sourceScriptFolder destScriptFolder =
-        Helpers.withLocalDb logger 
-            (fun connectionStr ->
-                use connection = new SqlConnection(connectionStr)
-                connection.Open()
-                
-                Execute.clone (Logger.decorate (fun m -> $"  {m}") logger) options sourceSchema 
-                |> Logger.logTime logger "DbFlow - clone db" connection
+        use localDb =
+            Execute.cloneToLocal (Logger.decorate (fun m -> $"  {m}") logger) options  
+            |> Logger.logTime logger "DbFlow - clone db" sourceSchema
 
-                let cloneSchema = 
-                    Execute.readSchema Logger.dummy options
-                    |> Logger.logTime logger "DbFlow - load clone" connection
+        let cloneSchema = 
+            use connection = new SqlConnection(localDb.ConnectionString)
+            connection.Open()
+            Execute.readSchema Logger.dummy options
+            |> Logger.logTime logger "DbFlow - load clone" connection
 
-                Execute.generateScriptFiles options cloneSchema
-                |> Logger.logTime logger "DbFlow - generate scripts (of clone)" destScriptFolder 
+        Execute.generateScriptFiles options cloneSchema
+        |> Logger.logTime logger "DbFlow - generate scripts (of clone)" destScriptFolder 
 
-                Helpers.compareScriptFolders logger sourceScriptFolder 
-                |> Logger.logTime logger "Compare scripts (source vs. clone)"destScriptFolder
-                
-                match Execute.compare cloneSchema sourceSchema with
-                | [] -> ()
-                | diff -> Assert.Fail (sprintf "Schema is not same (%i differences)" diff.Length)
-                )
+        Helpers.compareScriptFolders logger sourceScriptFolder 
+        |> Logger.logTime logger "Compare scripts (source vs. clone)"destScriptFolder
+        
+        match Execute.compare cloneSchema sourceSchema with
+        | [] -> ()
+        | diff -> Assert.Fail (sprintf "Schema is not same (%i differences)" diff.Length)
+        
         
     let fullTestSuite logger options rules directory (dbName : string) =
         Helpers.withLocalDbFromScripts logger (directory + $"{dbName}\\scripts")

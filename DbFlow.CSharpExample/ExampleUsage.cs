@@ -16,11 +16,7 @@
             sourceConnection.Open();
             var schema = Execute.readSchema(logger, options, sourceConnection);
 
-            // I'd like to be able to do this in one call - that returns a localDb
-            using var localDb = new LocalTempDb(logger);
-            using var targetConnection = new Microsoft.Data.SqlClient.SqlConnection(localDb.ConnectionString);
-            targetConnection.Open();
-            Execute.clone(logger, options, schema, targetConnection);
+            var cloneDb = Execute.cloneToLocal(logger, options, schema);
         }
     }
 }

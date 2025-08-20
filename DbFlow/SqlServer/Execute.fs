@@ -132,6 +132,13 @@ let clone logger (options : Options) (sourceDb : DATABASE) (targetConnection : S
         |> DbTr.commit_ targetConnection)
     |> Logger.logTime logger "DbFlow - resolve and execute scripts" ()
 
+let cloneToLocal logger (options : Options) (sourceDb : DATABASE) =
+    let localDb = new LocalTempDb(logger)
+    use conn = new Microsoft.Data.SqlClient.SqlConnection(localDb.ConnectionString)
+    conn.Open ()
+    clone logger options sourceDb conn
+    localDb
+
 /// Generate scripts of a schema to a folder structure
 let generateScriptFiles (opt : Options) (schema : DATABASE) folder =
     if System.IO.Directory.Exists folder
