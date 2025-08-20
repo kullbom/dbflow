@@ -15,10 +15,8 @@ CREATE TABLE [SalesLT].[Product] (
    [DiscontinuedDate] [DATETIME] NULL,
    [ThumbNailPhoto] [VARBINARY](MAX) NULL,
    [ThumbnailPhotoFileName] [NVARCHAR](50) NULL,
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_Product_ProductID] PRIMARY KEY CLUSTERED ([ProductID])
    ,CONSTRAINT [AK_Product_ProductNumber] UNIQUE NONCLUSTERED ([ProductNumber])

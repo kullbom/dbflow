@@ -2,14 +2,10 @@ CREATE TABLE [Purchasing].[ShipMethod] (
    [ShipMethodID] [INT] NOT NULL
       IDENTITY (1,1),
    [Name] [NAME] NOT NULL,
-   [ShipBase] [MONEY] NOT NULL
-       DEFAULT ((0.00)),
-   [ShipRate] [MONEY] NOT NULL
-       DEFAULT ((0.00)),
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [ShipBase] [MONEY] NOT NULL,
+   [ShipRate] [MONEY] NOT NULL,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_ShipMethod_ShipMethodID] PRIMARY KEY CLUSTERED ([ShipMethodID])
 )

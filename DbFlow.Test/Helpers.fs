@@ -6,7 +6,7 @@ open Microsoft.Data.SqlClient
 open MyDbUp
 
 open DbFlow
-open DbFlow.SqlServer.Scripts
+open DbFlow.SqlServer
 
 module Helpers = 
     let separateTableKeys (fullTableScript : string) =
@@ -81,8 +81,8 @@ module Helpers =
                 | "check_constraints"
                 | "foreign_keys"
                 | "defaults" ->
-                    let defs0 = fileContent0.Split ("\r\nGO") |> Array.sort
-                    let defs1 = fileContent0.Split ("\r\nGO") |> Array.sort
+                    let defs0 = fileContent0 |> SqlParser.Batches.splitInSqlBatches |> List.sort |> List.toArray
+                    let defs1 = fileContent1 |> SqlParser.Batches.splitInSqlBatches |> List.sort |> List.toArray
 
                     if not (aEqual defs0 defs1)
                     then Assert.Fail $"The content of {dir}\\{file} is not the same"
@@ -119,9 +119,9 @@ module Helpers =
     
     let withLocalDb logger f =
         use localDb = new SqlServer.LocalTempDb(logger)
-        let localDbConnectionString = localDb.GetConnectionString ()
+        let localDbConnectionString = localDb.ConnectionString
         let timestamp = System.DateTime.Now.ToString("HH:mm:ss.fff")
-        logger $"{timestamp} New local db: {localDbConnectionString}" 
+        logger.info $"{timestamp} New local db: {localDbConnectionString}" 
         
         f localDbConnectionString
 
@@ -181,7 +181,7 @@ module Helpers =
                 else acc)
             []
         |> List.rev 
-        |> List.map Execute.scriptTransaction
+        |> List.map Execute.Internal.scriptTransaction
         |> DbTr.sequence_
         |> fun dbTransaction ->
             use connection = new SqlConnection(connectionStr)

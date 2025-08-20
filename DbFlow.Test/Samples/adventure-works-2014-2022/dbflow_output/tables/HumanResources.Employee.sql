@@ -9,18 +9,12 @@ CREATE TABLE [HumanResources].[Employee] (
    [MaritalStatus] [NCHAR](1) NOT NULL,
    [Gender] [NCHAR](1) NOT NULL,
    [HireDate] [DATE] NOT NULL,
-   [SalariedFlag] [FLAG] NOT NULL
-       DEFAULT ((1)),
-   [VacationHours] [SMALLINT] NOT NULL
-       DEFAULT ((0)),
-   [SickLeaveHours] [SMALLINT] NOT NULL
-       DEFAULT ((0)),
-   [CurrentFlag] [FLAG] NOT NULL
-       DEFAULT ((1)),
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [SalariedFlag] [FLAG] NOT NULL,
+   [VacationHours] [SMALLINT] NOT NULL,
+   [SickLeaveHours] [SMALLINT] NOT NULL,
+   [CurrentFlag] [FLAG] NOT NULL,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_Employee_BusinessEntityID] PRIMARY KEY CLUSTERED ([BusinessEntityID])
 )

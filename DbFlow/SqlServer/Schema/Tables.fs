@@ -32,20 +32,20 @@ module TABLE_TYPE =
             (fun acc r -> 
                 let object_id = readInt32 "type_table_object_id" r
                 {
-                    schema = PickMap.pick (readInt32 "schema_id" r) schemas
+                    schema = RCMap.pick (readInt32 "schema_id" r) schemas
                     type_name = readString "type_name" r
-                    object = PickMap.pick object_id objects
+                    object = RCMap.pick object_id objects
                   
-                    columns = match PickMap.tryPick object_id columns with Some cs -> cs | None -> [||]
-                    indexes = match PickMap.tryPick object_id indexes with Some ixs -> ixs | None -> [||]
-                    foreignKeys = match PickMap.tryPick object_id foreignKeys with Some trs -> trs | None -> [||]
-                    referencedForeignKeys = match PickMap.tryPick object_id referencedForeignKeys with Some trs -> trs | None -> [||]
-                    checkConstraints = match PickMap.tryPick object_id checkConstraints with Some ccs -> ccs | None -> [||] 
-                    defaultConstraints = match PickMap.tryPick object_id defaultConstraints with Some dcs -> dcs | None -> [||]
+                    columns = match RCMap.tryPick object_id columns with Some cs -> cs | None -> [||]
+                    indexes = match RCMap.tryPick object_id indexes with Some ixs -> ixs | None -> [||]
+                    foreignKeys = match RCMap.tryPick object_id foreignKeys with Some trs -> trs | None -> [||]
+                    referencedForeignKeys = match RCMap.tryPick object_id referencedForeignKeys with Some trs -> trs | None -> [||]
+                    checkConstraints = match RCMap.tryPick object_id checkConstraints with Some ccs -> ccs | None -> [||] 
+                    defaultConstraints = match RCMap.tryPick object_id defaultConstraints with Some dcs -> dcs | None -> [||]
 
                     ms_description = 
-                        //PickMap.tryPick (XPROPERTY_CLASS.TYPE, object_id, 0) ms_descriptions
-                        PickMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, 0) ms_descriptions
+                        //RCMap.tryPick (XPROPERTY_CLASS.TYPE, object_id, 0) ms_descriptions
+                        RCMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -80,21 +80,21 @@ module TABLE =
             (fun acc r -> 
                 let object_id = readInt32 "object_id" r
                 {
-                    schema = PickMap.pick (readInt32 "schema_id" r) schemas
+                    schema = RCMap.pick (readInt32 "schema_id" r) schemas
                     table_name = readString "table_name" r
-                    object = PickMap.pick object_id objects
+                    object = RCMap.pick object_id objects
                     
-                    columns = match PickMap.tryPick object_id columns with Some cs -> cs | None -> [||]
-                    indexes = match PickMap.tryPick object_id indexes with Some ixs -> ixs | None -> [||]
-                    triggers = match PickMap.tryPick object_id triggers with Some trs -> trs | None -> [||]
+                    columns = match RCMap.tryPick object_id columns with Some cs -> cs | None -> [||]
+                    indexes = match RCMap.tryPick object_id indexes with Some ixs -> ixs | None -> [||]
+                    triggers = match RCMap.tryPick object_id triggers with Some trs -> trs | None -> [||]
 
-                    foreignKeys = match PickMap.tryPick object_id foreignKeys with Some trs -> trs | None -> [||]
-                    referencedForeignKeys = match PickMap.tryPick object_id referencedForeignKeys with Some trs -> trs | None -> [||]
+                    foreignKeys = match RCMap.tryPick object_id foreignKeys with Some trs -> trs | None -> [||]
+                    referencedForeignKeys = match RCMap.tryPick object_id referencedForeignKeys with Some trs -> trs | None -> [||]
 
-                    checkConstraints = match PickMap.tryPick object_id checkConstraints with Some ccs -> ccs | None -> [||] 
-                    defaultConstraints = match PickMap.tryPick object_id defaultConstraints with Some dcs -> dcs | None -> [||]
+                    checkConstraints = match RCMap.tryPick object_id checkConstraints with Some ccs -> ccs | None -> [||] 
+                    defaultConstraints = match RCMap.tryPick object_id defaultConstraints with Some dcs -> dcs | None -> [||]
 
-                    ms_description = PickMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, 0) ms_descriptions
+                    ms_description = RCMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -118,7 +118,7 @@ type VIEW = {
 }
 
 module VIEW = 
-    let readAll schemas objects columns indexes triggers (sql_modules : PickMap<int, SQL_MODULE>) ms_descriptions connection =
+    let readAll schemas objects columns indexes triggers (sql_modules : RCMap<int, SQL_MODULE>) ms_descriptions connection =
         DbTr.reader
             "SELECT v.name view_name, v.object_id, v.schema_id
              FROM sys.views v"
@@ -126,17 +126,17 @@ module VIEW =
             (fun acc r -> 
                 let object_id = readInt32 "object_id" r
                 {
-                    schema = PickMap.pick (readInt32 "schema_id" r) schemas
+                    schema = RCMap.pick (readInt32 "schema_id" r) schemas
                     view_name = readString "view_name" r
-                    object = PickMap.pick object_id objects
+                    object = RCMap.pick object_id objects
                     
-                    definition = (PickMap.pick object_id sql_modules).definition.Trim()
+                    definition = (RCMap.pick object_id sql_modules).definition.Trim()
 
-                    columns = PickMap.tryPick object_id columns |> Option.escape [||]
-                    indexes = PickMap.tryPick object_id indexes |> Option.escape [||]
-                    triggers = PickMap.tryPick object_id triggers |> Option.escape [||]
+                    columns = RCMap.tryPick object_id columns |> Option.escape [||]
+                    indexes = RCMap.tryPick object_id indexes |> Option.escape [||]
+                    triggers = RCMap.tryPick object_id triggers |> Option.escape [||]
 
-                    ms_description = PickMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, 0) ms_descriptions
+                    ms_description = RCMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection

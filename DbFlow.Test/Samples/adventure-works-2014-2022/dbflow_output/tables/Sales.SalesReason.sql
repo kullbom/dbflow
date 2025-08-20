@@ -4,7 +4,6 @@ CREATE TABLE [Sales].[SalesReason] (
    [Name] [NAME] NOT NULL,
    [ReasonType] [NAME] NOT NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_SalesReason_SalesReasonID] PRIMARY KEY CLUSTERED ([SalesReasonID])
 )

@@ -1,21 +1,17 @@
 CREATE TABLE [Person].[Person] (
    [BusinessEntityID] [INT] NOT NULL,
    [PersonType] [NCHAR](2) NOT NULL,
-   [NameStyle] [NAMESTYLE] NOT NULL
-       DEFAULT ((0)),
+   [NameStyle] [NAMESTYLE] NOT NULL,
    [Title] [NVARCHAR](8) NULL,
    [FirstName] [NAME] NOT NULL,
    [MiddleName] [NAME] NULL,
    [LastName] [NAME] NOT NULL,
    [Suffix] [NVARCHAR](10) NULL,
-   [EmailPromotion] [INT] NOT NULL
-       DEFAULT ((0)),
+   [EmailPromotion] [INT] NOT NULL,
    [AdditionalContactInfo] [XML] NULL,
    [Demographics] [XML] NULL,
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_Person_BusinessEntityID] PRIMARY KEY CLUSTERED ([BusinessEntityID])
 )

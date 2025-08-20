@@ -3,7 +3,6 @@ CREATE TABLE [Production].[ScrapReason] (
       IDENTITY (1,1),
    [Name] [NAME] NOT NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_ScrapReason_ScrapReasonID] PRIMARY KEY CLUSTERED ([ScrapReasonID])
 )

@@ -3,10 +3,8 @@ CREATE TABLE [Production].[ProductSubcategory] (
       IDENTITY (1,1),
    [ProductCategoryID] [INT] NOT NULL,
    [Name] [NAME] NOT NULL,
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_ProductSubcategory_ProductSubcategoryID] PRIMARY KEY CLUSTERED ([ProductSubcategoryID])
 )

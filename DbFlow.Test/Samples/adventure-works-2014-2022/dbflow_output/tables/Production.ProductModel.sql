@@ -4,10 +4,8 @@ CREATE TABLE [Production].[ProductModel] (
    [Name] [NAME] NOT NULL,
    [CatalogDescription] [XML] NULL,
    [Instructions] [XML] NULL,
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_ProductModel_ProductModelID] PRIMARY KEY CLUSTERED ([ProductModelID])
 )

@@ -3,25 +3,6 @@
 open DbFlow
 open DbFlow.Readers
 
-// https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-sql-expression-dependencies-transact-sql?view=sql-server-ver17
-
-module DEPENDENCY =
-    let readAll connection =
-        DbTr.reader
-            "SELECT DISTINCT d.referencing_id, d.referenced_id, d.is_schema_bound_reference 
-             FROM sys.sql_expression_dependencies d
-             WHERE d.referencing_id IS NOT NULL 
-                AND d.referenced_id IS NOT NULL
-                AND d.referencing_id <> d.referenced_id"
-            []
-            (fun acc r -> 
-                (readInt32 "referencing_id" r, readInt32 "referenced_id" r) :: acc)
-            []
-        |> DbTr.commit_ connection
-        |> List.groupBy fst 
-        |> List.map (fun (referencing_id, xs) -> referencing_id, xs |> List.map snd)
-        |> Map.ofList
-
 type DATABASE = {
     SCHEMAS : SCHEMA list
     TABLES : TABLE list
@@ -45,6 +26,31 @@ type DATABASE = {
 }
 
 module DATABASE =
+    open Dependencies
+
+    // Read all views in order to redefined them - to get fresh/correct meta data 
+    let preReadAllViews logger connection =
+        let ms_descs = RCMap.ofMap Map.empty
+        let dependencies = DEPENDENCY.readAll |> Logger.logTime logger "Dependencies" connection
+        
+        let schemas = SCHEMA.readAll ms_descs connection
+        let objects = OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
+        let types = DATATYPE.readAll schemas objects ms_descs connection
+
+        let sql_modules = SQL_MODULE.readAll connection
+        
+        let (columns, columnsByObject) = COLUMN.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
+        let triggersByParent = TRIGGER.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
+        
+        let indexesColumnsByIndex = INDEX_COLUMN.readAll objects columns |> Logger.logTime logger "INDEX_COLUMN" connection
+        let indexesByParent = INDEX.readAll objects indexesColumnsByIndex ms_descs |> Logger.logTime logger "INDEX" connection
+        
+        let views = 
+            VIEW.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules ms_descs
+            |> Logger.logTime logger "VIEW" connection
+        
+        views, dependencies
+
     let read logger (options : Options) connection =
         let ms_descs = MS_Description.readAll |> Logger.logTime logger "MS_Description" connection
         let dependencies = DEPENDENCY.readAll |> Logger.logTime logger "Dependencies" connection
@@ -61,6 +67,7 @@ module DATABASE =
         let (columns, columnsByObject) = COLUMN.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
         let triggersByParent = TRIGGER.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
         
+        // A bit strange that keyConstraints isn't used...?!
         let keyConstraints = KEY_CONSTRAINT.readAll objects ms_descs connection
         let checkConstraintsByParent = 
             CHECK_CONSTRAINT.readAll objects columns ms_descs
@@ -97,11 +104,11 @@ module DATABASE =
             VIEW.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules ms_descs
             |> Logger.logTime logger "VIEW" connection
         
-        let db_msDesc = PickMap.tryPick (XPROPERTY_CLASS.DATABASE, 0, 0) ms_descs
+        let db_msDesc = RCMap.tryPick (XPROPERTY_CLASS.DATABASE, 0, 0) ms_descs
         let db_triggers = TRIGGER.readAllDatabaseTriggers objects sql_modules ms_descs connection
 
         let checkUnused (id : string) exclude pm =
-            match PickMap.unused exclude pm with
+            match RCMap.unused exclude pm with
             | [] -> ()
             | unused -> failwith $"{id} not mapped for {unused}" 
 
@@ -127,7 +134,7 @@ module DATABASE =
                     | _ -> false)
 
         {
-            SCHEMAS = schemas |> PickMap.toList 
+            SCHEMAS = schemas |> RCMap.toList 
             TABLES = tables
             VIEWS = views         
             
@@ -139,11 +146,11 @@ module DATABASE =
             XML_SCHEMA_COLLECTIONS = xml_schema_collections
 
             TRIGGERS = db_triggers
-            SYNONYMS = synonyms |> PickMap.toList
-            SEQUENCES = sequences |> PickMap.toList
+            SYNONYMS = synonyms |> RCMap.toList
+            SEQUENCES = sequences |> RCMap.toList
 
             ms_description = db_msDesc
 
-            all_objects = objects |> PickMap.toList
+            all_objects = objects |> RCMap.toList
             dependencies = dependencies
         }

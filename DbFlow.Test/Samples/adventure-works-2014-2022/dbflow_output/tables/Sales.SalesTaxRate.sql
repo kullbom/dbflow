@@ -3,13 +3,10 @@ CREATE TABLE [Sales].[SalesTaxRate] (
       IDENTITY (1,1),
    [StateProvinceID] [INT] NOT NULL,
    [TaxType] [TINYINT] NOT NULL,
-   [TaxRate] [SMALLMONEY] NOT NULL
-       DEFAULT ((0.00)),
+   [TaxRate] [SMALLMONEY] NOT NULL,
    [Name] [NAME] NOT NULL,
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_SalesTaxRate_SalesTaxRateID] PRIMARY KEY CLUSTERED ([SalesTaxRateID])
 )

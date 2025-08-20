@@ -4,7 +4,6 @@ CREATE TABLE [HumanResources].[JobCandidate] (
    [BusinessEntityID] [INT] NULL,
    [Resume] [XML] NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_JobCandidate_JobCandidateID] PRIMARY KEY CLUSTERED ([JobCandidateID])
 )

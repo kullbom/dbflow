@@ -7,13 +7,10 @@ CREATE TABLE [Sales].[SalesOrderDetail] (
    [ProductID] [INT] NOT NULL,
    [SpecialOfferID] [INT] NOT NULL,
    [UnitPrice] [MONEY] NOT NULL,
-   [UnitPriceDiscount] [MONEY] NOT NULL
-       DEFAULT ((0.0)),
+   [UnitPriceDiscount] [MONEY] NOT NULL,
    [LineTotal] AS (isnull(([UnitPrice]*((1.0)-[UnitPriceDiscount]))*[OrderQty],(0.0))),
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_SalesOrderDetail_SalesOrderID_SalesOrderDetailID] PRIMARY KEY CLUSTERED ([SalesOrderID], [SalesOrderDetailID])
 )

@@ -7,81 +7,9 @@ open DbFlow
 open DbFlow.SqlParser
 open DbFlow.SqlParser.CodeSearch
 
-type Search (outputHelper:ITestOutputHelper) = 
-    let logger s = outputHelper.WriteLine s
-    
-    [<Fact>]
-    member x.``Search 01``() =
-        let pattern = [isWS; isCh 'a'; isWS] 
-        let find_a s = 
-            let (startPos, endPos) = find pattern s
-            if startPos <> -1
-            then Assert.Equal(startPos + 3, endPos)
-            startPos
-                
-        Assert.Equal (8, find_a "fasdhj b a hj")
-        Assert.Equal (8, find_a "fasdhj b a ")
-        Assert.Equal (-1, find_a "fasdhj b a")
-        Assert.Equal (0, find_a " a  fasdhj b a")
-
-        Assert.Equal (8, find_a "FASDHJ B A HJ")
-        Assert.Equal (8, find_a "FASDHJ B A ")
-        Assert.Equal (-1, find_a "FASDHJ B A")
-        Assert.Equal (0, find_a " A  FASDHJ B A")
-
-    [<Fact>]
-    member x.``Search 02``() =
-        let pattern = [isWS; isStr "go"; isWS] 
-        let find_go s = 
-            let (startPos, endPos) = find pattern s
-            if startPos <> -1
-            then Assert.Equal(startPos + 4, endPos)
-            startPos
-                
-        Assert.Equal (8, find_go "fasdhj 
-GO b a hj")
-        Assert.Equal (8, find_go "fasdhj b GO a ")
-        Assert.Equal (9, find_go "fasdhj b\t\tGO\t a")
-        Assert.Equal (-1, find_go " a  fasdhj b a")
-        Assert.Equal (0, find_go " go  fasdhj b a")
-
-        Assert.Equal (8, find_go "FASDHJ 
-GO B A HJ")
-        Assert.Equal (8, find_go "FASDHJ B GO A ")
-        Assert.Equal (9, find_go "FASDHJ B\t\tGO\t A")
-        Assert.Equal (-1, find_go " A  FASDHJ B A")
-        Assert.Equal (0, find_go " GO  FASDHJ B A")
-
-        Assert.Equal (8, find_go "fasdhj 
-gO b a hj")
-        Assert.Equal (8, find_go "fasdhj b go a ")
-        Assert.Equal (9, find_go "fasdhj b\t\tGo\t a")
-        Assert.Equal (-1, find_go " a  fasdhj b a go")
-        Assert.Equal (-1, find_go "GO a  fasdhj b a go")
-        Assert.Equal (0, find_go " gO  fasdhj b a")
-
-    [<Fact>]
-    member x.``Find and skip`` () =
-        let input = "xjxoxhxaxnx"
-        let xs = 
-            let rec collect_x m i =
-                match findFrom [isCh 'x'] input i with
-                | (-1,_) -> m
-                | (s, e) -> collect_x (Map.add s e m) e
-            collect_x Map.empty 0
-        let cs =
-            xs |> Map.fold (fun acc s e -> input.Substring(s, e - s) :: acc) [] |> List.rev
-        let rest =
-            xs
-            |> Map.fold (fun (i, acc) s e -> e, input.Substring(i, s - i) :: acc) (0, []) 
-            |> fun (i, acc) -> input.Substring(i) :: acc
-            |> List.rev
-        let res = findFromSkipping [isStr "johan"] xs input 0
-        ()
-            
 type BatchParsing (outputHelper:ITestOutputHelper) = 
-    let logger s = outputHelper.WriteLine s
-    
+    let logger = Logger.create outputHelper.WriteLine
+
     [<Fact>]
     member x.``Sql batches 01`` () =
         let inputScript = "GO\r\nFoobar\r\nGO\r\n\r\nALTER F GO\r\nLast\r\nGO"
@@ -113,7 +41,7 @@ GO // 'foo'
 -- b */
 DROP
 """
-        let (m, _) = Batches.collectSqlCommentsAndStrings inputScript
+        let m = Batches.collectSqlCommentsAndStrings inputScript
         let cs =
             m |> Seq.fold (fun acc kv -> inputScript.Substring(kv.Key, kv.Value - kv.Key) :: acc) [] |> List.rev
         let rest =
@@ -159,7 +87,7 @@ GO -- /* This is GO
 -- Drop */
 DROP PROCEDURE A
 """
-        let (m, _) = Batches.collectSqlCommentsAndStrings inputScript
+        let m = Batches.collectSqlCommentsAndStrings inputScript
         let cs =
             m |> Seq.fold (fun acc kv -> inputScript.Substring(kv.Key, kv.Value - kv.Key) :: acc) [] |> List.rev
         let rest =
@@ -218,7 +146,7 @@ GO -- /* This is i good place to GO
 -- Drop the helper function */
 DROP PROCEDURE RenameAutoNamedConstraint
 """
-        let (m, _) = Batches.collectSqlCommentsAndStrings inputScript
+        let m = Batches.collectSqlCommentsAndStrings inputScript
         let cs =
             m |> Seq.fold (fun acc kv -> inputScript.Substring(kv.Key, kv.Value - kv.Key) :: acc) [] |> List.rev
 
@@ -260,7 +188,7 @@ GO
 EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'If ''tyberlu'' is y, this is a flue list of ''trufely'', ''Sct'', und ''Bdy''; otherwise it must be really empty.' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'Gruftiy', @level2type=N'COLUMN',@level2name=N'HoogaBooga3'
 GO
 """
-        let (m, _) = Batches.collectSqlCommentsAndStrings inputScript
+        let m = Batches.collectSqlCommentsAndStrings inputScript
         let cs =
             m |> Seq.fold (fun acc kv -> inputScript.Substring(kv.Key, kv.Value - kv.Key) :: acc) [] |> List.rev
 
@@ -277,7 +205,8 @@ GO
         ()
 
 type DefinitionParsing (outputHelper:ITestOutputHelper) = 
-    let logger s = outputHelper.WriteLine s
+    let logger = Logger.create outputHelper.WriteLine
+
     [<Fact>]
     member x.``Trigger``() =
         let input = "SET ANSI_NULLS ON 
@@ -313,7 +242,7 @@ AS BEGIN
         then
             let input = System.IO.File.ReadAllText file
 
-            logger $"File contains {input.Length} characters"
+            logger.info $"File contains {input.Length} characters"
 
             let bs = 
                 Batches.splitInSqlBatches
@@ -321,7 +250,7 @@ AS BEGIN
                 
             let nBatches = bs |> List.length
             
-            logger $"Found {nBatches} batches"
+            logger.info $"Found {nBatches} batches"
 
             Assert.Equal (3995, nBatches)
         else 

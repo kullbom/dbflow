@@ -4,7 +4,6 @@ CREATE TABLE [HumanResources].[Department] (
    [Name] [NAME] NOT NULL,
    [GroupName] [NAME] NOT NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_Department_DepartmentID] PRIMARY KEY CLUSTERED ([DepartmentID])
 )

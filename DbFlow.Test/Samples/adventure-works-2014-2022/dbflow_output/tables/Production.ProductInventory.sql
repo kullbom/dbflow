@@ -3,12 +3,9 @@ CREATE TABLE [Production].[ProductInventory] (
    [LocationID] [SMALLINT] NOT NULL,
    [Shelf] [NVARCHAR](10) NOT NULL,
    [Bin] [TINYINT] NOT NULL,
-   [Quantity] [SMALLINT] NOT NULL
-       DEFAULT ((0)),
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [Quantity] [SMALLINT] NOT NULL,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_ProductInventory_ProductID_LocationID] PRIMARY KEY CLUSTERED ([ProductID], [LocationID])
 )

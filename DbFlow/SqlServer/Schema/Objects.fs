@@ -3,6 +3,26 @@
 open DbFlow
 open DbFlow.Readers
 
+// https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-sql-expression-dependencies-transact-sql?view=sql-server-ver17
+
+module DEPENDENCY =
+    let readAll connection =
+        DbTr.reader
+            "SELECT DISTINCT d.referencing_id, d.referenced_id, d.is_schema_bound_reference 
+             FROM sys.sql_expression_dependencies d
+             WHERE d.referencing_id IS NOT NULL 
+                AND d.referenced_id IS NOT NULL
+                AND d.referencing_id <> d.referenced_id"
+            []
+            (fun acc r -> 
+                (readInt32 "referencing_id" r, readInt32 "referenced_id" r) :: acc)
+            []
+        |> DbTr.commit_ connection
+        |> List.groupBy fst 
+        |> List.map (fun (referencing_id, xs) -> referencing_id, xs |> List.map snd)
+        |> Map.ofList
+
+
 type SCHEMA = { 
     name : string; 
     schema_id : int; 
@@ -35,12 +55,12 @@ module SCHEMA =
 
                         is_system_schema = isSystemSchema schema_name schema_id
                     
-                        ms_description = PickMap.tryPick (XPROPERTY_CLASS.SCHEMA, schema_id, 0) ms_descriptions
+                        ms_description = RCMap.tryPick (XPROPERTY_CLASS.SCHEMA, schema_id, 0) ms_descriptions
                     } 
                     m)
             Map.empty
         |> DbTr.commit_ connection
-        |> PickMap.ofMap
+        |> RCMap.ofMap
 
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-objects-transact-sql?view=sql-server-ver17
@@ -162,7 +182,7 @@ module OBJECT =
                     {
                         name = readString "name" r
                         object_id = object_id
-                        schema = PickMap.pick (readInt32 "schema_id" r) schemas
+                        schema = RCMap.pick (readInt32 "schema_id" r) schemas
                         parent_object_id = nullable "parent_object_id" readInt32 r
                         object_type = readString "type" r |> OBJECT_TYPE.findType
                         create_date = readDateTime "create_date" r
@@ -171,7 +191,7 @@ module OBJECT =
                     m)
             Map.empty
         |> DbTr.commit_ connection
-        |> PickMap.ofMap
+        |> RCMap.ofMap
 
 
 type XML_SCHEMA_COLLECTION = {
@@ -201,7 +221,7 @@ module XML_SCHEMA_COLLECTION =
                 let xml_collection_id = readInt32 "xml_collection_id" r
                 {
                     xml_collection_id = xml_collection_id
-                    schema = PickMap.pick (readInt32 "schema_id" r) schemas
+                    schema = RCMap.pick (readInt32 "schema_id" r) schemas
                     //principal_id
                     name = readString "name" r
                     create_date = readDateTime "create_date" r
@@ -209,7 +229,7 @@ module XML_SCHEMA_COLLECTION =
 
                     definition = readString "definition" r
 
-                    ms_description = PickMap.tryPick (XPROPERTY_CLASS.XML_SCHEMA_COLLECTION, xml_collection_id, 0) ms_descriptions
+                    ms_description = RCMap.tryPick (XPROPERTY_CLASS.XML_SCHEMA_COLLECTION, xml_collection_id, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -232,7 +252,7 @@ module SQL_MODULE =
                 Map.add object_id { object_id = object_id; definition = readString "definition" r} m)
             Map.empty
         |> DbTr.commit_ connection
-        |> PickMap.ofMap
+        |> RCMap.ofMap
 
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-synonyms-transact-sql?view=sql-server-ver17
@@ -251,7 +271,7 @@ module SYNONYM =
             []
             (fun m r ->
                 let object_id = readInt32 "object_id" r
-                Map.add object_id { object = PickMap.pick object_id objects; base_object_name = readString "base_object_name" r } m)
+                Map.add object_id { object = RCMap.pick object_id objects; base_object_name = readString "base_object_name" r } m)
             Map.empty
         |> DbTr.commit_ connection
-        |> PickMap.ofMap
+        |> RCMap.ofMap

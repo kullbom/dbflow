@@ -3,7 +3,6 @@ CREATE TABLE [Person].[PhoneNumberType] (
       IDENTITY (1,1),
    [Name] [NAME] NOT NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_PhoneNumberType_PhoneNumberTypeID] PRIMARY KEY CLUSTERED ([PhoneNumberTypeID])
 )

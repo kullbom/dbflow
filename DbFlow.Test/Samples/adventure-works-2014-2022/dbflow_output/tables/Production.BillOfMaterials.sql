@@ -3,15 +3,12 @@ CREATE TABLE [Production].[BillOfMaterials] (
       IDENTITY (1,1),
    [ProductAssemblyID] [INT] NULL,
    [ComponentID] [INT] NOT NULL,
-   [StartDate] [DATETIME] NOT NULL
-       DEFAULT (getdate()),
+   [StartDate] [DATETIME] NOT NULL,
    [EndDate] [DATETIME] NULL,
    [UnitMeasureCode] [NCHAR](3) NOT NULL,
    [BOMLevel] [SMALLINT] NOT NULL,
-   [PerAssemblyQty] [DECIMAL](8,2) NOT NULL
-       DEFAULT ((1.00)),
+   [PerAssemblyQty] [DECIMAL](8,2) NOT NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_BillOfMaterials_BillOfMaterialsID] PRIMARY KEY NONCLUSTERED ([BillOfMaterialsID])
 )

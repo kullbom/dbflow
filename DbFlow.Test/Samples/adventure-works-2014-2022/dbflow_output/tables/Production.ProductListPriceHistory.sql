@@ -4,7 +4,6 @@ CREATE TABLE [Production].[ProductListPriceHistory] (
    [EndDate] [DATETIME] NULL,
    [ListPrice] [MONEY] NOT NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_ProductListPriceHistory_ProductID_StartDate] PRIMARY KEY CLUSTERED ([ProductID], [StartDate])
 )

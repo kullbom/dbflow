@@ -7,7 +7,6 @@ CREATE TABLE [Sales].[CurrencyRate] (
    [AverageRate] [MONEY] NOT NULL,
    [EndOfDayRate] [MONEY] NOT NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_CurrencyRate_CurrencyRateID] PRIMARY KEY CLUSTERED ([CurrencyRateID])
 )

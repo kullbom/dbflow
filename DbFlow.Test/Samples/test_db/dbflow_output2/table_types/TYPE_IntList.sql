@@ -7,6 +7,7 @@ CREATE TYPE [dbo].[IntList] AS TABLE (
    [ColWithNamedDefault] [INT] NOT NULL
        DEFAULT ((-1))
 
+   ,CHECK ([Value]>(0))
    ,PRIMARY KEY CLUSTERED ([Id])
 )
 

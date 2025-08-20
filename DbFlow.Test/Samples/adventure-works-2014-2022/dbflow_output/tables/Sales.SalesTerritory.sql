@@ -4,18 +4,12 @@ CREATE TABLE [Sales].[SalesTerritory] (
    [Name] [NAME] NOT NULL,
    [CountryRegionCode] [NVARCHAR](3) NOT NULL,
    [Group] [NVARCHAR](50) NOT NULL,
-   [SalesYTD] [MONEY] NOT NULL
-       DEFAULT ((0.00)),
-   [SalesLastYear] [MONEY] NOT NULL
-       DEFAULT ((0.00)),
-   [CostYTD] [MONEY] NOT NULL
-       DEFAULT ((0.00)),
-   [CostLastYear] [MONEY] NOT NULL
-       DEFAULT ((0.00)),
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [SalesYTD] [MONEY] NOT NULL,
+   [SalesLastYear] [MONEY] NOT NULL,
+   [CostYTD] [MONEY] NOT NULL,
+   [CostLastYear] [MONEY] NOT NULL,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_SalesTerritory_TerritoryID] PRIMARY KEY CLUSTERED ([TerritoryID])
 )

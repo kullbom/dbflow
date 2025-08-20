@@ -10,11 +10,18 @@ The current version of DbFlow can be used for
 DbFlow supports
 
 - Microsoft Sql Server
-- (PostgreSql is in planning stage)
+
+Planned features:
+
+- Replace need for DbUp
+- Generate documentation from (primary) ms_description
+- Support for PostgreSql 
 
 To clone a database:
 
 ```fsharp
+open Microsoft.Data.SqlClient
+open DbFlow
 open DbFlow.SqlServer
 
 let options = Options.Default
@@ -27,16 +34,18 @@ let dstConnectionStr = ...
 let dbSchema = 
     use connection = new SqlConnection(srcConnectionStr)
     connection.Open()
-    Schema.DATABASE.read logger options connection
+    Execute.readSchema logger options connection
 
 use connection = new SqlConnection(dstConnectionStr)
 connection.Open()
-Execute.clone logger options dbSchema 
+Execute.clone logger options dbSchema connection 
 ```
 
 To generate scripts from a database:
 
 ```fsharp
+open Microsoft.Data.SqlClient
+open DbFlow
 open DbFlow.SqlServer
 
 let options = Options.Default
@@ -46,7 +55,10 @@ let logger _message = ()
 let srcConnectionStr = ...
 let dstDirectory = ...
 
-let dbSchema = Schema.DATABASE.read logger options connection
+let dbSchema = 
+    use connection = new SqlConnection(srcConnectionStr)
+    connection.Open()
+    Execute.readSchema logger options connection
 
-Scripts.Execute.generateScriptFiles options dbSchema dstDirectory 
+Execute.generateScriptFiles options dbSchema dstDirectory   
 ```

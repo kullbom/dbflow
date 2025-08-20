@@ -5,11 +5,14 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>DbFlow</Title>
-    <Version>0.0.1-alpha03</Version>
+    <Version>0.0.1-alpha05</Version>
     <Copyright>2025 Johan Kullbom</Copyright>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>.net;f#;sql;mssqlserver</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/kullbom/dbflow</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kullbom/dbflow.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +20,7 @@
     <Compile Include="SqlParser.fs" />
     <Compile Include="DbTr.fs" />
     <Compile Include="DbFlow.fs" />
+    <Compile Include="Dependencies.fs" />
     <Compile Include="SqlServer\Schema\MSDescription.fs" />
     <Compile Include="SqlServer\Schema\Objects.fs" />
     <Compile Include="SqlServer\Schema\Types.fs" />
@@ -29,12 +33,11 @@
     <Compile Include="SqlServer\Schema\Tables.fs" />
     <Compile Include="SqlServer\Schema\Database.fs" />
     <Compile Include="SqlServer\Schema\Compare.fs" />
-    <Compile Include="SqlServer\Scripts\Script.fs" />
+    <Compile Include="SqlServer\Schema\CompareGen.fs" />
     <Compile Include="SqlServer\Scripts\Generate.fs" />
-    <Compile Include="SqlServer\Scripts\Execute.fs" />
     <Compile Include="SqlServer\LocalDatabase.fs" />
+    <Compile Include="SqlServer\Execute.fs" />
     <Compile Include="SqlServer\Rules.fs" />
-    <Compile Include="SqlServer\RawOut.fs" />
   </ItemGroup>
 
   <ItemGroup>

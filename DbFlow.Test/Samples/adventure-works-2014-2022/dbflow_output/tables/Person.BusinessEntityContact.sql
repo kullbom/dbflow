@@ -2,10 +2,8 @@ CREATE TABLE [Person].[BusinessEntityContact] (
    [BusinessEntityID] [INT] NOT NULL,
    [PersonID] [INT] NOT NULL,
    [ContactTypeID] [INT] NOT NULL,
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_BusinessEntityContact_BusinessEntityID_PersonID_ContactTypeID] PRIMARY KEY CLUSTERED ([BusinessEntityID], [PersonID], [ContactTypeID])
 )

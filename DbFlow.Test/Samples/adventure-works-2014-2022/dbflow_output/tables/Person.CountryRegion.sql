@@ -2,7 +2,6 @@ CREATE TABLE [Person].[CountryRegion] (
    [CountryRegionCode] [NVARCHAR](3) NOT NULL,
    [Name] [NAME] NOT NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_CountryRegion_CountryRegionCode] PRIMARY KEY CLUSTERED ([CountryRegionCode])
 )

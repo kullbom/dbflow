@@ -1,8 +1,7 @@
 CREATE TABLE [dbo].[ErrorLog] (
    [ErrorLogID] [INT] NOT NULL
       IDENTITY (1,1),
-   [ErrorTime] [DATETIME] NOT NULL
-       DEFAULT (getdate()),
+   [ErrorTime] [DATETIME] NOT NULL,
    [UserName] [SYSNAME] NOT NULL,
    [ErrorNumber] [INT] NOT NULL,
    [ErrorSeverity] [INT] NULL,

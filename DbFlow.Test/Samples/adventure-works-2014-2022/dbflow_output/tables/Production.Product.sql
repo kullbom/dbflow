@@ -3,10 +3,8 @@ CREATE TABLE [Production].[Product] (
       IDENTITY (1,1),
    [Name] [NAME] NOT NULL,
    [ProductNumber] [NVARCHAR](25) NOT NULL,
-   [MakeFlag] [FLAG] NOT NULL
-       DEFAULT ((1)),
-   [FinishedGoodsFlag] [FLAG] NOT NULL
-       DEFAULT ((1)),
+   [MakeFlag] [FLAG] NOT NULL,
+   [FinishedGoodsFlag] [FLAG] NOT NULL,
    [Color] [NVARCHAR](15) NULL,
    [SafetyStockLevel] [SMALLINT] NOT NULL,
    [ReorderPoint] [SMALLINT] NOT NULL,
@@ -25,10 +23,8 @@ CREATE TABLE [Production].[Product] (
    [SellStartDate] [DATETIME] NOT NULL,
    [SellEndDate] [DATETIME] NULL,
    [DiscontinuedDate] [DATETIME] NULL,
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_Product_ProductID] PRIMARY KEY CLUSTERED ([ProductID])
 )

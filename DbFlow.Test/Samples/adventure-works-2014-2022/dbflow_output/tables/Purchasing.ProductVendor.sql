@@ -10,7 +10,6 @@ CREATE TABLE [Purchasing].[ProductVendor] (
    [OnOrderQty] [INT] NULL,
    [UnitMeasureCode] [NCHAR](3) NOT NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_ProductVendor_ProductID_BusinessEntityID] PRIMARY KEY CLUSTERED ([ProductID], [BusinessEntityID])
 )

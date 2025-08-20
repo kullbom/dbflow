@@ -7,10 +7,8 @@ CREATE TABLE [Person].[Address] (
    [StateProvinceID] [INT] NOT NULL,
    [PostalCode] [NVARCHAR](15) NOT NULL,
    [SpatialLocation] [GEOGRAPHY] NULL,
-   [rowguid] [UNIQUEIDENTIFIER] NOT NULL
-       DEFAULT (newid()) ROWGUIDCOL ,
+   [rowguid] [UNIQUEIDENTIFIER] NOT NULL ROWGUIDCOL ,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_Address_AddressID] PRIMARY KEY CLUSTERED ([AddressID])
 )

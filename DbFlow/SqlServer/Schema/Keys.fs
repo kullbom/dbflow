@@ -28,11 +28,11 @@ module FOREIGN_KEY_COLUMN =
                 let referenced_object_id = readInt32 "referenced_object_id" r
                 let referenced_column_id = readInt32 "referenced_column_id" r
                 {
-                    constraint_object = PickMap.pick constraint_object_id objects
+                    constraint_object = RCMap.pick constraint_object_id objects
                     constraint_column_id = constraint_column_id
                     
-                    parent_column = PickMap.pick (parent_object_id, parent_column_id) columns
-                    referenced_column = PickMap.pick (referenced_object_id, referenced_column_id) columns
+                    parent_column = RCMap.pick (parent_object_id, parent_column_id) columns
+                    referenced_column = RCMap.pick (referenced_object_id, referenced_column_id) columns
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -44,11 +44,17 @@ module FOREIGN_KEY_COLUMN =
             |> List.groupBy (fun c -> c.constraint_object.object_id)
             |> List.map (fun (object_id, cs) -> object_id, cs |> List.sortBy (fun c -> c.constraint_column_id) |> List.toArray)
             |> Map.ofList
-            |> PickMap.ofMap
+            |> RCMap.ofMap
         fkColumnsByConstraint
         
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-foreign-keys-transact-sql?view=sql-server-ver17
+
+type REFERENTIAL_ACTION =
+    | No_action   // 0
+    | Cascade     // 1
+    | Set_null    // 2
+    | Set_default // 3
 
 type FOREIGN_KEY = {
     name : string
@@ -59,31 +65,47 @@ type FOREIGN_KEY = {
     is_disabled : bool
     is_system_named : bool
 
+    delete_referential_action : REFERENTIAL_ACTION
+    update_referential_action : REFERENTIAL_ACTION
+
     columns : FOREIGN_KEY_COLUMN array
 
     ms_description : string option
 }
 
 module FOREIGN_KEY =
+    let toREFERENTIAL_ACTION b =
+        match b with
+        | 0uy -> REFERENTIAL_ACTION.No_action
+        | 1uy -> REFERENTIAL_ACTION.Cascade
+        | 2uy -> REFERENTIAL_ACTION.Set_null
+        | 3uy -> REFERENTIAL_ACTION.Set_default
+        | _ -> failwithf "Unknown REFERENTIAL_ACTION: %i" b
+    
     let readAll' objects fkColumns ms_descriptions connection =
         DbTr.reader 
-            "SELECT fk.name, fk.object_id, fk.parent_object_id, fk.referenced_object_id, fk.is_disabled, fk.is_system_named, fk.key_index_id 
+            "SELECT 
+                fk.name, fk.object_id, fk.parent_object_id, fk.referenced_object_id, fk.is_disabled, fk.is_system_named, fk.key_index_id, 
+                fk.delete_referential_action, fk.update_referential_action
              FROM sys.foreign_keys fk"
             []
             (fun acc r -> 
                 let object_id = readInt32 "object_id" r
                 {
                     name = readString "name" r
-                    object = PickMap.pick object_id objects
-                    parent = PickMap.pick (readInt32 "parent_object_id" r) objects
-                    referenced = PickMap.pick (readInt32 "referenced_object_id" r) objects
+                    object = RCMap.pick object_id objects
+                    parent = RCMap.pick (readInt32 "parent_object_id" r) objects
+                    referenced = RCMap.pick (readInt32 "referenced_object_id" r) objects
                     key_index_id = readInt32 "key_index_id" r
                     is_disabled = readBool "is_disabled" r
                     is_system_named = readBool "is_system_named" r
 
-                    columns = match PickMap.tryPick object_id fkColumns with Some cs -> cs | None -> [||]
+                    delete_referential_action = toREFERENTIAL_ACTION (readByte "delete_referential_action" r)
+                    update_referential_action = toREFERENTIAL_ACTION (readByte "update_referential_action" r)
 
-                    ms_description = PickMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, 0) ms_descriptions
+                    columns = match RCMap.tryPick object_id fkColumns with Some cs -> cs | None -> [||]
+
+                    ms_description = RCMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -96,11 +118,11 @@ module FOREIGN_KEY =
             |> List.groupBy (fun fk -> fk.parent.object_id)
             |> List.map (fun (parent_id, fks) -> parent_id, fks |> List.sortBy (fun fk -> fk.key_index_id) |> List.toArray)
             |> Map.ofList
-            |> PickMap.ofMap
+            |> RCMap.ofMap
         let foreignKeysByReferenced =
             foreignKeys'
             |> List.groupBy (fun fk -> fk.referenced.object_id)
             |> List.map (fun (referenced_id, fks) -> referenced_id, fks |> List.sortBy (fun fk -> fk.name) |> List.toArray)
             |> Map.ofList
-            |> PickMap.ofMap
+            |> RCMap.ofMap
         foreignKeysByParent, foreignKeysByReferenced

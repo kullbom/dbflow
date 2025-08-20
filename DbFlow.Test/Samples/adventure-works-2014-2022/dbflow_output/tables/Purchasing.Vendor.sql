@@ -3,13 +3,10 @@ CREATE TABLE [Purchasing].[Vendor] (
    [AccountNumber] [ACCOUNTNUMBER] NOT NULL,
    [Name] [NAME] NOT NULL,
    [CreditRating] [TINYINT] NOT NULL,
-   [PreferredVendorStatus] [FLAG] NOT NULL
-       DEFAULT ((1)),
-   [ActiveFlag] [FLAG] NOT NULL
-       DEFAULT ((1)),
+   [PreferredVendorStatus] [FLAG] NOT NULL,
+   [ActiveFlag] [FLAG] NOT NULL,
    [PurchasingWebServiceURL] [NVARCHAR](1024) NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_Vendor_BusinessEntityID] PRIMARY KEY CLUSTERED ([BusinessEntityID])
 )

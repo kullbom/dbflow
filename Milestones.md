@@ -1,33 +1,57 @@
-# Grov plan
+Ôªø# Release plan
 
 ## Version 0.1.0(-beta)
 
-- Mˆjlighet att testa script-output utan faktisk scriptmapp...?
-- Tester som visar pÂ problem/buggar:
-    - CHECK_CONSTRAINT v‰l hÂrdkodad vad g‰ller "CHECK" etc. 
-        - T‰ck ordentligt med tester
-        - L‰gg ocksÂ till tester fˆr andra saker som kan vara disabled...
-    - Test fˆr disabled triggers
-    - Test fˆr triggers, procedures och views man bytt namn pÂ...
-    - Test for anonymous (system named) unique keys
-    - BUG: Named defaults blir fel - se [DF_TestTable01_ColWithNamedDefault]
-    - XML index fungar inte bra ... se AW - sˆk pÂ "[XMLPATH_Person_Demographics]"
-      (Det finns ett fallerande test fˆr detta) 
-- Dokumentera dessa i readme - eller som issues i github...? 
+[x] C# friendly interface to all functionality
+[ ] Add C# example - as a test-project and to the readme.md
+[x] The test most remove database files (both data och log) on clean up. 
+[x] THe meta data for views is wrong when underlying columns has been changed. Experiment with drop and recreate all views from the views (possibly updated) definition.
+    [x] Since views can depend on each other the dependency resolver must be used.
+    [x] Indexes on views must also be recreated
+[x] It seems that there is a problem with the order of foreign key columns - in the db comparison...?
+[x] It seems that there is a problem with the order of other constraint etc as well - in the db comparison...?
+[x] Check constaint missing after clone...? (See test "Test suite" for "test_db")
+[x] There is a problem with (comparision of) is_nullable of user defined types
+[x] There is a problem with (comparision of) ignore_dup_key of indexes 
+[x] Add test to illustrate problem with is_not-trusted of check constraints
+[ ] There is a problem with (comparision of) is_not-trusted of check constraints
+[ ] Add test to illustrate problem with "is ansi padded" of columns
+[ ] There is a problem with (comparision of) "is ansi padded" of columns
+[ ] Add test to illustrate problem with collation_name
+[ ] There is a problem with (comparision of) collation_name
 
+
+## Make the repo public
+
+[ ] License-header in all files
+[ ] Generate to temp directory and rename when finished
 
 ## Version 1.0.0
 
-- DbUp-kompatibel (kan anv‰nda dbo.SchemaVersion - om konfad sÂ) 
-- NÂgon form av db compare (syfte: hitta buggar)
-    - Och test med hj‰lp av detta som j‰mfˆr db frÂn originalscripten med db frÂn genererade script/clone
-- NÂgot form av dokumentationsgenerering
-- S‰kerst‰ll l‰mpliga r‰ttigheter innan "load" (https://github.com/sethreno/schemazen/issues/136)
-- Testerna klarar inte att kˆras parallellt - pga delade mappar?
+[x] Ensure that the db user has suitable privileges before readSchema ( IS_ROLEMEMBER ('db_ddladmin'))
+[ ] Tester som visar p√• problem/buggar (eller l√∂sning p√• problemet):
+    [ ] CHECK_CONSTRAINT v√§l h√•rdkodad vad g√§ller "CHECK" etc. 
+        [ ] T√§ck ordentligt med tester
+        [ ] L√§gg ocks√• till tester f√∂r andra saker som kan vara disabled...
+    [ ] Test f√∂r disabled triggers
+    [ ] Test f√∂r triggers, procedures och views man bytt namn p√•...
+    [ ] Test for anonymous (system named) unique keys
+    [x] BUG: Named defaults blir fel - se [DF_TestTable01_ColWithNamedDefault]
+    [ ] XML index fungar inte bra ... se AW - s√∂k p√• "[XMLPATH_Person_Demographics]"
+    [x] Index "FILLFACTOR" √§r inte med i de genererade scripten - och blir d√§rf√∂r fel i kloner.
+[ ] ms_description is not part of the generated scripts (and temporary excluded in the schema comparison)
+[ ] Dokumentera alla k√§nda problem i n√•gon slags readme - eller som issues i github...? Eller s√• f√•r fallerande test r√§cka...
+[ ] DbUp-kompatibel (kan anv√§nda dbo.SchemaVersion - om konfad s√•) 
+[x] N√•gon form av db compare (syfte: hitta buggar)
+[x] Test med hj√§lp av detta som j√§mf√∂r db fr√•n originalscripten med db fr√•n genererade script/clone
+[ ] N√•got form av dokumentationsgenerering
+[ ] Testerna klarar inte att k√∂ras parallellt - pga delade mappar?
  
 ## Kommande version
 
-- Stˆd fˆr CLR-grejor... (https://github.com/sethreno/schemazen/blob/master/Library/Models/Assembly.cs)
-- Statistikstˆd
-- Data import
-- Data export
+[ ] ("DbUp") St√∂d f√∂r att generera "cachade brytpunkter" som k√∂rs ist√§llet f√∂r originalen (vid behov)
+[ ] St√∂d f√∂r CLR-grejor... (https://github.com/sethreno/schemazen/blob/master/Library/Models/Assembly.cs)
+[ ] Statistikst√∂d (Inkl. TOP-usage)
+[ ] Data import
+[ ] Support for importing data from another database - following keys and copy data recursivly ...?
+[ ] Data export

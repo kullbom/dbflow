@@ -190,7 +190,7 @@ module DATATYPE =
                     user_type_id
                     {
                         name = name
-                        schema = PickMap.pick schema_id schemas
+                        schema = RCMap.pick schema_id schemas
 
                         system_type_id = system_type_id
                         user_type_id = user_type_id
@@ -215,7 +215,7 @@ module DATATYPE =
                             then 
                                 let object_id = readInt32 "type_table_object_id" r
                                 {
-                                    object = PickMap.pick object_id objects
+                                    object = RCMap.pick object_id objects
                                 }
                                 |> Some
                             else None
@@ -236,6 +236,9 @@ module DATATYPE =
             }
         }
 
+type COMPUTED_DEFINITION = { computed_definition : string; is_persisted : bool }
+type IDENTITY_DEFINITION = { seed_value : obj; increment_value : obj; last_value : obj } 
+
 type COLUMN = {
     column_name : string     
     object : OBJECT
@@ -244,8 +247,8 @@ type COLUMN = {
     data_type : DATATYPE
     
     is_ansi_padded : bool    
-    computed_definition : {| computed_definition : string; is_persisted : bool |} option
-    identity_definition : {| seed_value : obj; increment_value : obj; last_value : obj |} option
+    computed_definition : COMPUTED_DEFINITION option
+    identity_definition : IDENTITY_DEFINITION option
     masking_function : string option
     is_rowguidcol : bool     
 
@@ -272,7 +275,7 @@ module COLUMN =
             (fun acc r -> 
                 let object_id = readInt32 "object_id" r
                 let column_id = readInt32 "column_id" r
-                let object = PickMap.pick object_id objects
+                let object = RCMap.pick object_id objects
                 match object.object_type with
                 | OBJECT_TYPE.INTERNAL_TABLE 
                 | OBJECT_TYPE.SYSTEM_TABLE
@@ -290,19 +293,19 @@ module COLUMN =
                         computed_definition = 
                             match readBool "is_computed" r with
                             | true -> 
-                                {| 
+                                { 
                                     computed_definition = readString "computed_definition" r 
                                     is_persisted = readBool "computed_is_persisted" r 
-                                |} |> Some
+                                } |> Some
                             | false -> None
                         identity_definition = 
                             match readBool "is_identity" r with
                             | true -> 
-                                {| 
+                                { 
                                     seed_value = readObject "identity_seed_value" r
                                     increment_value = readObject "identity_increment_value" r
                                     last_value = readObject "identity_last_value" r 
-                                |} |> Some
+                                } |> Some
                             | false -> None
                         masking_function =
                             match readBool "is_masked" r with
@@ -310,7 +313,7 @@ module COLUMN =
                             | false -> None
                         is_rowguidcol = readBool "is_rowguidcol" r
 
-                        ms_description = PickMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, column_id) ms_descriptions 
+                        ms_description = RCMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, column_id) ms_descriptions 
                     } :: acc)
             []
         |> DbTr.commit_ connection
@@ -322,7 +325,7 @@ module COLUMN =
             columns' 
             |> List.map (fun c -> (c.object.object_id, c.column_id), c)
             |> Map.ofList
-            |> PickMap.ofMap
+            |> RCMap.ofMap
         let columnsByObject =
             columns'
             |> List.groupBy (fun c -> c.object.object_id)
@@ -330,7 +333,7 @@ module COLUMN =
                 (fun m (object_id, cs) -> 
                     Map.add object_id (cs |> List.sortBy (fun c -> c.column_id) |> List.toArray) m)
                 Map.empty
-            |> PickMap.ofMap
+            |> RCMap.ofMap
         columns, columnsByObject
 
 

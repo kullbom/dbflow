@@ -18,24 +18,27 @@ module Common =
                 use connection = new SqlConnection(connectionStr)
                 connection.Open()
                 
-                Execute.clone (fun m -> logger $"  {m}") options sourceSchema 
+                Execute.clone (Logger.decorate (fun m -> $"  {m}") logger) options sourceSchema 
                 |> Logger.logTime logger "DbFlow - clone db" connection
 
-                let dbSchema = 
-                    Schema.DATABASE.read (fun _s -> ()) options
+                let cloneSchema = 
+                    Execute.readSchema Logger.dummy options
                     |> Logger.logTime logger "DbFlow - load clone" connection
 
-                Execute.generateScriptFiles options dbSchema
+                Execute.generateScriptFiles options cloneSchema
                 |> Logger.logTime logger "DbFlow - generate scripts (of clone)" destScriptFolder 
 
                 Helpers.compareScriptFolders logger sourceScriptFolder 
-                |> Logger.logTime logger "Compare scripts (source vs. clone)"destScriptFolder)
-
+                |> Logger.logTime logger "Compare scripts (source vs. clone)"destScriptFolder
+                
+                match Execute.compare cloneSchema sourceSchema with
+                | [] -> ()
+                | diff -> Assert.Fail (sprintf "Schema is not same (%i differences)" diff.Length)
+                )
         
     let fullTestSuite logger options rules directory (dbName : string) =
         Helpers.withLocalDbFromScripts logger (directory + $"{dbName}\\scripts")
             (fun connectionString ->
-                let rawOutputFile = directory + $"{dbName}\\dbflow_rawout.txt"
                 let dbFlowOutputDir = directory + $"{dbName}\\dbflow_output"
                 let dbFlowOutputDir2 = directory + $"{dbName}\\dbflow_output2"
 
@@ -44,14 +47,11 @@ module Common =
                 connection.Open()
                 
                 let dbSchema = 
-                    Schema.DATABASE.read (fun _s -> ()) options
+                    Execute.readSchema Logger.dummy options
                     |> Logger.logTime logger "DbFlow - load model" connection
 
-                Scripts.Execute.generateScriptFiles options dbSchema 
+                Execute.generateScriptFiles options dbSchema 
                 |> Logger.logTime logger "DbFlow - generate scripts" dbFlowOutputDir 
-
-                RawOut.generateRawOutput rawOutputFile
-                |> Logger.logTime logger "DbFlow - generate raw output" dbSchema
 
                 // Test DbFlow "roundtrip"
                 testDbFlowRoundtrip logger options dbSchema dbFlowOutputDir dbFlowOutputDir2
@@ -78,10 +78,10 @@ module Common =
                 
                 let options = { Options.SchemazenCompatibility = true; BypassReferenceChecksOnLoad = false }
                 let dbSchema = 
-                    Schema.DATABASE.read (fun _s -> ()) options
+                    Execute.readSchema Logger.dummy options
                     |> Logger.logTime logger "DbFlow - load model" connection
 
-                Scripts.Execute.generateScriptFiles options dbSchema 
+                Execute.generateScriptFiles options dbSchema 
                 |> Logger.logTime logger "DbFlow - generate scripts" dbFlowOutputDir
 
                 // Compare the output from Schemazen and DbFlow
@@ -120,14 +120,14 @@ module Common =
         
 
 type ``Test suite`` (outputHelper:ITestOutputHelper) = 
-    let logger s = outputHelper.WriteLine s
+    let logger = Logger.create outputHelper.WriteLine
     let samplesFolder = __SOURCE_DIRECTORY__ + "\\Samples\\"
 
     [<Theory>]
     [<InlineData("test_db")>]
     member x.SampleDbs(db : string) = 
         let options = { Options.SchemazenCompatibility = false; BypassReferenceChecksOnLoad = false }
-        Common.fullTestSuite logger options [] samplesFolder db
+        Common.fullTestSuite logger options (Rule.ALL RuleExclusion.none) samplesFolder db
 
     // AdventureWorks in different versions - the scripts are modified to be compatible with DbUp
     // source: https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure?view=sql-server-ver17&tabs=ssms
@@ -143,7 +143,7 @@ type ``Test suite`` (outputHelper:ITestOutputHelper) =
 
 
 type ``Schemazen compatibility`` (outputHelper:ITestOutputHelper) = 
-    let logger s = outputHelper.WriteLine s
+    let logger = Logger.create outputHelper.WriteLine
     let samplesFolder = __SOURCE_DIRECTORY__ + "\\Samples\\"
 
     [<Theory>]
@@ -163,7 +163,7 @@ type ``Schemazen compatibility`` (outputHelper:ITestOutputHelper) =
     
 
 type ``Schemazen roundtrip`` (outputHelper:ITestOutputHelper) = 
-    let logger s = outputHelper.WriteLine s
+    let logger = Logger.create outputHelper.WriteLine
     let samplesFolder = __SOURCE_DIRECTORY__ + "\\Samples\\"
     
     [<Theory>]
@@ -173,8 +173,8 @@ type ``Schemazen roundtrip`` (outputHelper:ITestOutputHelper) =
 
     
 type ``Schemazen roundtrip - failure expected`` (outputHelper:ITestOutputHelper) = 
-    let logger s = outputHelper.WriteLine s
-    
+    let logger = Logger.create outputHelper.WriteLine
+
     // There is a fundamental problem with the order dependency of the scripts generated by Schemazen
 
     // AdventureWorks in different versions - the scripts are modified to be compatible with DbUp
@@ -189,7 +189,7 @@ type ``Schemazen roundtrip - failure expected`` (outputHelper:ITestOutputHelper)
         
 
 type ``Regression`` (outputHelper:ITestOutputHelper) = 
-    let logger s = outputHelper.WriteLine s
+    let logger = Logger.create outputHelper.WriteLine
     
     static member dbflow_regression_data = 
             let dbflow_regression_directory' = __SOURCE_DIRECTORY__ + "\\..\\..\dbflow-regression\\"

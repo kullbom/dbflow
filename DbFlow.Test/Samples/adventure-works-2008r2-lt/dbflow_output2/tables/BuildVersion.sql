@@ -4,7 +4,6 @@ CREATE TABLE [dbo].[BuildVersion] (
    [Database Version] [NVARCHAR](25) NOT NULL,
    [VersionDate] [DATETIME] NOT NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 )
 
 

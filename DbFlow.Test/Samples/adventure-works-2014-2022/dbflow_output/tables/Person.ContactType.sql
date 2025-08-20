@@ -3,7 +3,6 @@ CREATE TABLE [Person].[ContactType] (
       IDENTITY (1,1),
    [Name] [NAME] NOT NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_ContactType_ContactTypeID] PRIMARY KEY CLUSTERED ([ContactTypeID])
 )

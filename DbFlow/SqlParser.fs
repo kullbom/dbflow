@@ -1,11 +1,10 @@
 ﻿module DbFlow.SqlParser
 
-
-type SearchPattern =
-    | SimplePattern of (char -> bool)
-    | CompoundPattern of SearchPattern list
-
 module CodeSearch =
+    type SearchPattern =
+        | SimplePattern of (char -> bool)
+        | CompoundPattern of SearchPattern list
+    
     let isCh (c : char) =
         SimplePattern (fun c0 -> System.Char.ToUpperInvariant(c) = System.Char.ToUpperInvariant(c0)) 
 
@@ -33,7 +32,7 @@ module CodeSearch =
                     let sub = flattenPattern [] subPs
                     flattenPattern (sub @ flattened) ps'
         
-        let find searchPattern =
+        let findFromSkipping searchPattern =
             let origPattern = flattenPattern [] searchPattern |> List.rev
             let rec findPattern (s : string) (skip : System.Collections.Generic.IDictionary<int,int>) startAt endAt dir predicates candidate i =
                 let mutable e = 0 
@@ -56,22 +55,13 @@ module CodeSearch =
                                     origPattern -1 (if candidate = -1 then i + dir else candidate + dir) 
             fun (s : string) skip startAt endAt dir -> findPattern s skip startAt endAt dir origPattern -1 startAt
 
-    let find searchPattern =
-        let find' = Internal.find searchPattern
-        (fun s -> find' s Map.empty 0 (s.Length - 1) 1)
-    
-    let findFrom searchPattern =
-        let find' = Internal.find searchPattern 
-        (fun s startAt -> find' s Map.empty startAt (s.Length - 1) 1)
-
     let findFromSkipping searchPattern =
-        let find' = Internal.find searchPattern 
+        let find' = Internal.findFromSkipping searchPattern 
         (fun skip s startAt -> find' s skip startAt (s.Length - 1) 1)
+
     
 
 module Batches =
-    open CodeSearch
-
     let rec private findNewline (s : string) i stopAt =
         if i = stopAt 
         then -1
@@ -83,14 +73,11 @@ module Batches =
                 then i + 2
                 else i + 1
             | _ -> findNewline s (i + 1) stopAt
-
+    
     // 1. Rewrite this as a one-pass solution looking for the beginning of the three blocks ...
     let collectSqlCommentsAndStrings (script : string) =
         let blocks = System.Collections.Generic.Dictionary<_,_>()
-        let endings = System.Collections.Generic.HashSet<_>()
-        let inline addBlock s e =
-            blocks.Add (s, e)
-            endings.Add e |> ignore
+        let inline addBlock s e = blocks.Add (s, e)
         let sLen = script.Length
 
         let inline safeIsChar i c = i <= sLen &&  c = script.[i]
@@ -114,37 +101,12 @@ module Batches =
                     | e -> addBlock i (e + 1); collect (e + 1)
                 | _ -> collect (i + 1)
         collect 0
-        blocks, endings
+        blocks
 
-        // Split script in batches on "GO"-statements...
-
-    let inline private go_at (s : string) i =
-        (s.[i] = 'G' || s.[i] = 'g') && (s.[i + 1] = 'O' || s.[i + 1] = 'o')
-    
-    let private leadingGO (s : string) =
-        if go_at s 0 
-        then 
-            if s.[2] = ';' && Set.contains s.[3] WS
-            then 4
-            else if Set.contains s.[2] WS
-            then 3
-            else -1
-        else -1
-
-    let private endingGO (s : string) = 
-        let i = s.Length - 1
-        if go_at s (i-2) && s.[i] = ';' 
-        then i-2
-        else if go_at s (i-1)  
-        then i-1
-        else -1 
-
+    // Split a script in batches on "GO"-statements ...
 
     let splitInSqlBatches (script' : string) =
-        let script =
-            let i0 = match leadingGO script' with -1 -> 0 | x -> x 
-            let i1 = match endingGO script' with -1 -> script'.Length | x -> x
-            script'.Substring (i0, i1 - i0)
+        let script = script'
         
         let sLen = script.Length
 
@@ -156,26 +118,33 @@ module Batches =
             then acc, from
             else 
                 match script.[i] with
+                // Find line comments
                 | '-' when safeIsChar (i + 1) '-' ->
                     match findNewline script (i + 2) sLen with
                     | -1 -> acc, from
                     | e -> collect acc true from e
+                // Find block comments
                 | '/' when safeIsChar (i + 1) '*' ->
                     match script.IndexOf("*/", i + 2) with
                     | -1 -> acc, from
                     | e -> collect acc true from (e + 2)
                 | '\'' ->
+                // Find literal string
                     match script.IndexOf("'", i + 1) with
                     | -1 -> acc, from
                     | e -> collect acc true from (e + 1)
+                // Find "GO"s ...
                 | 'G' | 'g' when safeIsChar (i + 1) 'O' || safeIsChar (i + 1) 'o' ->
-                    // Check before GO. Accept WS or (skip)block end
-                    if justSkipped || charIsWS script.[i - 1]
+                    // Check before GO. Accept WS, begining of script or (skip)block end
+                    if justSkipped || i = 0 || charIsWS script.[i - 1]
                     then
                         let i' = 
-                            if charIsWS script.[i + 2] then i + 2
-                            else if script.[i + 2] = ';' then i + 3
-                            else -1
+                            if i + 2 = sLen
+                            then i + 2
+                            else 
+                                if charIsWS script.[i + 2] then i + 2
+                                else if script.[i + 2] = ';' then i + 3
+                                else -1
                         if i' <> -1
                         then 
                             match script.Substring(from, i - from).Trim() with
@@ -202,7 +171,7 @@ ON portability.NrdbMessage  AFTER INSERT
 AS BEGIN
 *)
     let updateTriggerDefinition name parentName definition =
-        let (skip, _) = Batches.collectSqlCommentsAndStrings definition
+        let skip = Batches.collectSqlCommentsAndStrings definition
         
         let (_ , i0) = findFromSkipping [isStr "CREATE"; isWS] skip definition 0
         let (_ , i1) = findFromSkipping [isWS; isStr "TRIGGER"; isWS] skip definition (i0 - 1)
@@ -229,7 +198,7 @@ CREATE PROCEDURE [dbo].[GetAllRoles]
 AS
 BEGIN*)
     let updateProcedureDefinition procName definingToken definition =
-        let (skip, _) = Batches.collectSqlCommentsAndStrings definition
+        let skip = Batches.collectSqlCommentsAndStrings definition
         
         let (_ , i0) = findFromSkipping [isStr "CREATE"; isWS] skip definition 0
         let (_ , i1) = findFromSkipping [isWS; isStr definingToken; isWS] skip definition (i0 - 1)

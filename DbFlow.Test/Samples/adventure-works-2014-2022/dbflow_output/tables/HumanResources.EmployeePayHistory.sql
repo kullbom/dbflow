@@ -4,7 +4,6 @@ CREATE TABLE [HumanResources].[EmployeePayHistory] (
    [Rate] [MONEY] NOT NULL,
    [PayFrequency] [TINYINT] NOT NULL,
    [ModifiedDate] [DATETIME] NOT NULL
-       DEFAULT (getdate())
 
    ,CONSTRAINT [PK_EmployeePayHistory_BusinessEntityID_RateChangeDate] PRIMARY KEY CLUSTERED ([BusinessEntityID], [RateChangeDate])
 )

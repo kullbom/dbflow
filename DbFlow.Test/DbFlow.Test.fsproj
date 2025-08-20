@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+	<Compile Include="Examples.fs" />
 	<None Include="Samples\**\*.*" />
 	
 	<Compile Include="DbUp.fs" />
@@ -17,6 +18,7 @@
 	
 	<Compile Include="Search.fs" />
     <Compile Include="Tests.fs" />
+    <Compile Include="CodeGenerator.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
