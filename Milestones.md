@@ -7,7 +7,7 @@
     [x] as a test-project 
     [ ] and to the readme.md
 [x] The test must remove database files (both data och log) on clean up. 
-[x] THe meta data for views is wrong when underlying columns has been changed. Experiment with drop and recreate all views from the views (possibly updated) definition.
+[x] The meta data for views is wrong when underlying columns has been changed. Experiment with drop and recreate all views from the views (possibly updated) definition.
     [x] Since views can depend on each other the dependency resolver must be used.
     [x] Indexes on views must also be recreated
 [x] It seems that there is a problem with the order of foreign key columns - in the db comparison...?
@@ -19,10 +19,10 @@
 [x] Add test to illustrate problem with collation_name
 [x] There is a (possible) problem with mismatching collation with a clone
     [x] Add all collation db settings to the model
-    [ ] Add all (relevant) db settings to the model
+    [x] Add all (relevant) db settings to the model
     [x] Add collation to columns (script) where not the same as the database default
     [x] Add settings/property file 
-    [ ] Include root folder in the schemazen compatibility tests
+    [x] Include root folder in the schemazen compatibility tests
 [x] There is a problem with (comparison of) collation_name
 [x] Should have the possibility to create a LocalTempDatabase as a clone of a source in one step
 [ ] There is a problem with (comparison of) is_not-trusted of check constraints
@@ -37,8 +37,8 @@
     [ ] Specifically think through the model of types
 [ ] Add interface to find i specific table, view etc. from schema+name or similar
 [ ] Consider adding concepts 
-    [ ] "key" (for a tuple of columns)
-    [ ] "value" (for a concrete sql value of a specifc type)
+    [ ] "key" (a tuple of columns?)
+    [ ] "value" (a concrete sql value of a specifc type?)
 [ ] "LocalTempDatabase" does not match its module (...and make the module private?)
 
 ## Version 1.0.0

@@ -29,93 +29,88 @@ module Helpers =
             inlineKeys |> List.sort |> List.toArray,
             standAloneKeys |> List.sort |> List.toArray
                     
+    let aEqual a0 a1 = 
+        (a0 |> Array.length) = (a1 |> Array.length) 
+        && (a0, a1) ||> Array.forall2 (fun (s0 : string) (s1 : string) -> s0.ToUpperInvariant() = s1.ToUpperInvariant()) 
+
+    let sortedSubdirs d =
+        System.IO.Directory.GetDirectories d 
+        |> Array.map (fun d -> d.Substring(d.LastIndexOf("\\") + 1))
+        |> Array.sortBy (fun s -> s.ToUpperInvariant())
+        
+    let sortedFiles d =
+        System.IO.Directory.GetFiles d 
+        |> Array.map (fun d -> d.Substring(d.LastIndexOf("\\") + 1))
+        |> Array.sortBy (fun s -> s.ToUpperInvariant())
+        
+    let compareScriptFolder logger dirName dir0 dir1 =
+        let files0 = sortedFiles dir0
+        let files1 = sortedFiles dir1
+
+        if not (aEqual files0 files1)
+        then Assert.Fail $"Different files in '{dirName}'"
+
+        for file in files0 do
+            let fileContent0 = System.IO.File.ReadAllText (System.IO.Path.Combine(dir0, file))
+            let fileContent1 = System.IO.File.ReadAllText (System.IO.Path.Combine(dir1, file))
+            match dirName with
+            // The order of constraints and keys does not seems to be deterministic
+            | "check_constraints"
+            | "foreign_keys"
+            | "defaults" ->
+                let defs0 = fileContent0 |> SqlParser.Batches.splitInSqlBatches |> List.sort |> List.toArray
+                let defs1 = fileContent1 |> SqlParser.Batches.splitInSqlBatches |> List.sort |> List.toArray
+
+                if not (aEqual defs0 defs1)
+                then Assert.Fail $"The content of {dirName}\\{file} is not the same"
+
+            | "tables" ->
+                // In table definitions the key order does not seems to be deterministic
+                let (content0, inlineKeys0, standAloneKeys0) = separateTableKeys fileContent0    
+                let (content1, inlineKeys1, standAloneKeys1) = separateTableKeys fileContent1
+
+                Assert.True ((content0 = content1), $"The content of {dirName}\\{file} is not the same")
+
+                if not (aEqual inlineKeys0 inlineKeys1)
+                then Assert.Fail $"The content ('inline keys') of {dirName}\\{file} is not the same"
+
+                if not (aEqual standAloneKeys0 standAloneKeys1)
+                then Assert.Fail $"The content ('stand alone keys') of {dirName}\\{file} is not the same"
+                ()
+            // These folders are expected to contain identical files
+            | "" // Root folder
+            | "table_types"
+            | "xmlschemacollections"
+            | "synonyms" 
+            | "functions" 
+            | "procedures" 
+            | "schemas" 
+            | "triggers" 
+            | "sequences" 
+            | "user_defined_types" 
+            // Schemazen adds files for indexes of all views to the same folder (!)
+            // This will make it hard to use the output for scripting (ensure working order)
+            | "views" -> 
+                Assert.True ((fileContent0 = fileContent1), $"The content of {dirName}\\{file} is not the same")
+                ()
+            | _ -> failwithf "Unknown subdirectory %s" dirName
     
-    let compareScriptFolders logger folder0 folder1 =
-        let sortedSubdirs d =
-            System.IO.Directory.GetDirectories d 
-            |> Array.map (fun d -> d.Substring(d.LastIndexOf("\\") + 1))
-            |> Array.sortBy (fun s -> s.ToUpperInvariant())
+    let compareScriptFolders logger dir0 dir1 =
+        
+        compareScriptFolder logger "" dir0 dir1
+        
+        let subdirs0 = sortedSubdirs dir0 
+        let subdirs1 = sortedSubdirs dir1 
+        
+        if not (aEqual subdirs0 subdirs1)
+        then Assert.Fail $"{subdirs0} != {subdirs1}"
+
+        for dir in subdirs0 do
+            let subdir0 = System.IO.Path.Combine(dir0, dir)
+            let subdir1 = System.IO.Path.Combine(dir1, dir)
             
-        let sortedFiles d =
-            System.IO.Directory.GetFiles d 
-            |> Array.map (fun d -> d.Substring(d.LastIndexOf("\\") + 1))
-            |> Array.sortBy (fun s -> s.ToUpperInvariant())
-        
-        let aEqual a0 a1 = 
-            (a0 |> Array.length) = (a1 |> Array.length) 
-            && (a0, a1) ||> Array.forall2 (fun (s0 : string) (s1 : string) -> s0.ToUpperInvariant() = s1.ToUpperInvariant()) 
-
-        //let files0 = sortedFiles folder0
-        //let files1 = sortedFiles folder1
-        //
-        //if not (aEqual files0 files1)
-        //then Assert.Fail $"Different files in '\\'"
-        //
-        //for file in files0 do
-        //    let fileContent0 = System.IO.File.ReadAllText (System.IO.Path.Combine(folder0, file))
-        //    let fileContent1 = System.IO.File.ReadAllText (System.IO.Path.Combine(folder1, file))
-        //    
-        //    Assert.True ((fileContent0 = fileContent1), $"The content of \\{file} is not the same")
-        
-        let dirs0 = sortedSubdirs folder0 
-        let dirs1 = sortedSubdirs folder1 
-        
-        if not (aEqual dirs0 dirs1)
-        then Assert.Fail $"{dirs0} != {dirs1}"
-
-        for dir in dirs0 do
-            let dir0 = System.IO.Path.Combine(folder0, dir)
-            let dir1 = System.IO.Path.Combine(folder1, dir)
+            compareScriptFolder logger dir subdir0 subdir1
             
-            let files0 = sortedFiles dir0
-            let files1 = sortedFiles dir1
-
-            if not (aEqual files0 files1)
-            then Assert.Fail $"Different files in '{dir}'"
-
-            for file in files0 do
-                let fileContent0 = System.IO.File.ReadAllText (System.IO.Path.Combine(dir0, file))
-                let fileContent1 = System.IO.File.ReadAllText (System.IO.Path.Combine(dir1, file))
-                match dir with
-                // The order of constraints and keys does not seems to be deterministic
-                | "check_constraints"
-                | "foreign_keys"
-                | "defaults" ->
-                    let defs0 = fileContent0 |> SqlParser.Batches.splitInSqlBatches |> List.sort |> List.toArray
-                    let defs1 = fileContent1 |> SqlParser.Batches.splitInSqlBatches |> List.sort |> List.toArray
-
-                    if not (aEqual defs0 defs1)
-                    then Assert.Fail $"The content of {dir}\\{file} is not the same"
-
-                | "tables" ->
-                    // In table definitions the key order does not seems to be deterministic
-                    let (content0, inlineKeys0, standAloneKeys0) = separateTableKeys fileContent0    
-                    let (content1, inlineKeys1, standAloneKeys1) = separateTableKeys fileContent1
-
-                    Assert.True ((content0 = content1), $"The content of {dir}\\{file} is not the same")
-
-                    if not (aEqual inlineKeys0 inlineKeys1)
-                    then Assert.Fail $"The content ('inline keys') of {dir}\\{file} is not the same"
-
-                    if not (aEqual standAloneKeys0 standAloneKeys1)
-                    then Assert.Fail $"The content ('stand alone keys') of {dir}\\{file} is not the same"
-                    ()
-                // These folders are expected to contain identical files
-                | "table_types"
-                | "xmlschemacollections"
-                | "synonyms" 
-                | "functions" 
-                | "procedures" 
-                | "schemas" 
-                | "triggers" 
-                | "sequences" 
-                | "user_defined_types" 
-                // Schemazen adds files for indexes of all views to the same folder (!)
-                // This will make it hard to use the output for scripting (ensure working order)
-                | "views" -> 
-                    Assert.True ((fileContent0 = fileContent1), $"The content of {dir}\\{file} is not the same")
-                    ()
-                | _ -> failwithf "Unknown subdirectory %s" dir
     
     let withLocalDb logger f =
         use localDb = new SqlServer.LocalTempDb(logger)

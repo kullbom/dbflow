@@ -8,41 +8,33 @@ open DbFlow.Readers
 type DATABASE_SETTINGS = {
     compatibility_level : byte
     collation_name : string
+    is_auto_close_on : bool
+    is_auto_shrink_on : bool
+    snapshot_isolation_state : byte // See documentation...
+    is_read_committed_snapshot_on : bool
+    recovery_model : byte // 1 = FULL, 2 = BULK_LOGGED, 3 = SIMPLE
+    page_verify_option : byte // 0 = NONE, 1 = TORN_PAGE_DETECTION, 2 = CHECKSUM
+    is_auto_create_stats_on : bool
+    is_auto_update_stats_on : bool
+    is_auto_update_stats_async_on : bool
+    is_ansi_null_default_on : bool
+    is_ansi_nulls_on : bool
+    is_ansi_padding_on : bool
+    is_ansi_warnings_on : bool
+    is_arithabort_on : bool
+    is_concat_null_yields_null_on : bool
+    is_numeric_roundabort_on : bool
+    is_quoted_identifier_on : bool
+    is_recursive_triggers_on : bool
+    is_cursor_close_on_commit_on : bool
+    is_local_cursor_default : bool
+    is_trustworthy_on : bool
+    is_db_chaining_on : bool
+    is_parameterization_forced : bool
+    is_date_correlation_on : bool
 }
     (*
     https://github.com/sethreno/schemazen/blob/6787ba30e555220c61186cb7b9cd3713cc9226d0/Library/Models/Database.cs#L1131
-
-    select
-	[compatibility_level],
-	[collation_name],
-	[is_auto_close_on],
-	[is_auto_shrink_on],
-	[snapshot_isolation_state],
-	[is_read_committed_snapshot_on],
-	[recovery_model_desc],
-	[page_verify_option_desc],
-	[is_auto_create_stats_on],
-	[is_auto_update_stats_on],
-	[is_auto_update_stats_async_on],
-	[is_ansi_null_default_on],
-	[is_ansi_nulls_on],
-	[is_ansi_padding_on],
-	[is_ansi_warnings_on],
-	[is_arithabort_on],
-	[is_concat_null_yields_null_on],
-	[is_numeric_roundabort_on],
-	[is_quoted_identifier_on],
-	[is_recursive_triggers_on],
-	[is_cursor_close_on_commit_on],
-	[is_local_cursor_default],
-	[is_trustworthy_on],
-	[is_db_chaining_on],
-	[is_parameterization_forced],
-	[is_date_correlation_on]
-from sys.databases
-where name = @dbname
-
-(Undersök om/hur "CURRENT" kan användas...)
     *)
 module DATABASE_SETTINGS = 
     let readAll connection =
@@ -54,8 +46,8 @@ module DATABASE_SETTINGS =
                 [is_auto_shrink_on],
                 [snapshot_isolation_state],
                 [is_read_committed_snapshot_on],
-                [recovery_model_desc],
-                [page_verify_option_desc],
+                [recovery_model],
+                [page_verify_option],
                 [is_auto_create_stats_on],
                 [is_auto_update_stats_on],
                 [is_auto_update_stats_async_on],
@@ -81,6 +73,30 @@ module DATABASE_SETTINGS =
                 {
                     compatibility_level = readByte "compatibility_level" r
                     collation_name = readString "collation_name" r
+                    is_auto_close_on = readBool "is_auto_close_on" r
+                    is_auto_shrink_on = readBool "is_auto_shrink_on" r
+                    snapshot_isolation_state = readByte "snapshot_isolation_state" r
+                    is_read_committed_snapshot_on = readBool "is_read_committed_snapshot_on" r
+                    recovery_model = readByte "recovery_model" r
+                    page_verify_option = readByte "page_verify_option" r
+                    is_auto_create_stats_on = readBool "is_auto_create_stats_on" r
+                    is_auto_update_stats_on = readBool "is_auto_update_stats_on" r
+                    is_auto_update_stats_async_on = readBool "is_auto_update_stats_async_on" r
+                    is_ansi_null_default_on = readBool "is_ansi_null_default_on" r
+                    is_ansi_nulls_on = readBool "is_ansi_nulls_on" r
+                    is_ansi_padding_on = readBool "is_ansi_padding_on" r
+                    is_ansi_warnings_on = readBool "is_ansi_warnings_on" r
+                    is_arithabort_on = readBool "is_arithabort_on" r
+                    is_concat_null_yields_null_on = readBool "is_concat_null_yields_null_on" r
+                    is_numeric_roundabort_on = readBool "is_numeric_roundabort_on" r
+                    is_quoted_identifier_on = readBool "is_quoted_identifier_on" r
+                    is_recursive_triggers_on = readBool "is_recursive_triggers_on" r
+                    is_cursor_close_on_commit_on = readBool "is_cursor_close_on_commit_on" r
+                    is_local_cursor_default = readBool "is_local_cursor_default" r
+                    is_trustworthy_on = readBool "is_trustworthy_on" r
+                    is_db_chaining_on = readBool "is_db_chaining_on" r
+                    is_parameterization_forced = readBool "is_parameterization_forced" r
+                    is_date_correlation_on = readBool "is_date_correlation_on" r
                 } :: acc)
             []
         |> DbTr.commit_ connection
