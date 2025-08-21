@@ -28,7 +28,7 @@ module Common =
         Helpers.compareScriptFolders logger sourceScriptFolder 
         |> Logger.logTime logger "Compare scripts (source vs. clone)"destScriptFolder
         
-        match Execute.compare cloneSchema sourceSchema with
+        match Execute.compare sourceSchema cloneSchema with
         | [] -> ()
         | diff -> Assert.Fail (sprintf "Schema is not same (%i differences)" diff.Length)
         

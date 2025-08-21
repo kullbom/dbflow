@@ -356,6 +356,7 @@ let generateViewScript (w : System.IO.StreamWriter) (opt : Options) (view : VIEW
 
     ObjectDefinitions {| contains_objects = [view.object.object_id]; depends_on = [] |}
 
+
 let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options) 
                             (schemaName : string, tableName : string, table_object_id : int, ccs : CHECK_CONSTRAINT array) =
     let object_ids =
@@ -363,11 +364,19 @@ let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options)
         |> Array.fold 
             (fun acc cc ->
                 let tableFullname = $"[{schemaName}].[{tableName}]"
-                let additionalSpace = if opt.SchemazenCompatibility then " " else ""
-                if cc.is_system_named
-                then $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK{additionalSpace} {cc.definition}"
-                else $"ALTER TABLE {tableFullname} WITH CHECK ADD CONSTRAINT [{cc.object.name}] CHECK{additionalSpace} {cc.definition}"
-                |> w.WriteLine 
+                if opt.SchemazenCompatibility
+                then 
+                    if cc.is_system_named
+                    then w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK  {cc.definition}"
+                    else w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CONSTRAINT [{cc.object.name}] CHECK  {cc.definition}"
+                else
+                    if cc.is_system_named
+                    then w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK {cc.definition}"
+                    else 
+                        let trustClause = if cc.is_not_trusted then "NOCHECK" else "CHECK" 
+                        w.WriteLine $"ALTER TABLE {tableFullname} WITH {trustClause} ADD CONSTRAINT [{cc.object.name}] CHECK {cc.definition}"
+                        if cc.is_disabled
+                        then w.WriteLine $"ALTER TABLE {tableFullname} NOCHECK CONSTRAINT [{cc.object.name}]"
                 "GO" |> w.WriteLine
                 cc.object.object_id :: acc)
             []

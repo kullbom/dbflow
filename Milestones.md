@@ -25,7 +25,7 @@
     [x] Include root folder in the schemazen compatibility tests
 [x] There is a problem with (comparison of) collation_name
 [x] Should have the possibility to create a LocalTempDatabase as a clone of a source in one step
-[ ] There is a problem with (comparison of) is_not-trusted of check constraints
+[x] There is a problem with (comparison of) is_not-trusted of check constraints
 [ ] Add test to illustrate problem with "is ansi padded" of columns
 [ ] There is a problem with (comparison of) "is ansi padded" of columns
 
