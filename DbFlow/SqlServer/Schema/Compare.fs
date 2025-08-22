@@ -9,25 +9,25 @@ type SortOrder = SortOrder
         static member orderBy (x : Schema) = x.Name 
         static member orderBy (x : TABLE) = SortOrder.orderBy x.Object 
         static member orderBy (x : VIEW) = SortOrder.orderBy x.Object 
-        static member orderBy (x : INDEX) = match x.name with Some n -> n | None -> x.columns |> Array.joinBy "," (fun c -> c.column.column_name)
-        static member orderBy (x : COLUMN) = SortOrder.orderBy x.object, x.column_name
+        static member orderBy (x : INDEX) = match x.name with Some n -> n | None -> x.columns |> Array.joinBy "," (fun c -> c.column.Name)
+        static member orderBy (x : Column) = SortOrder.orderBy x.Object, x.Name
         static member orderBy (x : FOREIGN_KEY) =
             if x.IsSystemNamed
             then
-                let parentColumns = x.columns |> Array.joinBy "," (fun c -> c.parent_column.column_name)
-                let refsColumns = x.columns |> Array.joinBy "," (fun c -> c.referenced_column.column_name)
+                let parentColumns = x.columns |> Array.joinBy "," (fun c -> c.parent_column.Name)
+                let refsColumns = x.columns |> Array.joinBy "," (fun c -> c.referenced_column.Name)
                 $"[{x.parent.Schema.Name}].[{x.parent.Name}]({parentColumns})>[{x.referenced.Schema.Name}].[{x.referenced.Name}]({refsColumns})"
             else x.name
         static member orderBy (x : Trigger) = SortOrder.orderBy x.Object, x.Name 
         static member orderBy (x : PARAMETER) = SortOrder.orderBy x.object, x.name, x.parameter_id 
-        static member orderBy (x : DefaultConstraint) = x.Column.column_name
+        static member orderBy (x : DefaultConstraint) = x.Column.Name
         static member orderBy (x : Synonym) = SortOrder.orderBy x.Object
         static member orderBy (x : Datatype) = x.Name
         static member orderBy (x : TableType) = x.Name
         static member orderBy (x : Procedure) = x.Name 
         static member orderBy (x : XmlSchemaCollection) = SortOrder.orderBy x.Schema, x.Name 
         static member orderBy (x : DatabaseTrigger) = x.Name
-        static member orderBy (x : CheckConstraint) = match x.column with Some c -> c.column_name | None -> x.definition
+        static member orderBy (x : CheckConstraint) = match x.column with Some c -> c.Name | None -> x.definition
         static member orderBy (x : FOREIGN_KEY_COLUMN) = SortOrder.orderBy x.parent_column
         static member orderBy (x : INDEX_COLUMN) = SortOrder.orderBy x.column
         static member orderBy (x : Sequence) = SortOrder.orderBy x.Object
@@ -38,11 +38,11 @@ type ElementId = ElementId
         static member elementId (x : Schema) = x.Name 
         static member elementId (x : VIEW) = x.Name
         static member elementId (x : INDEX) = match x.name with Some n -> n | None -> "???"
-        static member elementId (x : COLUMN) = x.column_name
+        static member elementId (x : Column) = x.Name
         static member elementId (x : FOREIGN_KEY) = x.name
         static member elementId (x : Trigger) = x.Name
         static member elementId (x : PARAMETER) = x.name
-        static member elementId (x : DefaultConstraint) = "DF???" + x.Column.column_name
+        static member elementId (x : DefaultConstraint) = "DF???" + x.Column.Name
         static member elementId (x : Synonym) = x.Object.Name
         static member elementId (x : Datatype) = x.Name
         static member elementId (x : TableType) = x.Name
@@ -50,8 +50,8 @@ type ElementId = ElementId
         static member elementId (x : XmlSchemaCollection) = x.Name 
         static member elementId (x : DatabaseTrigger) = x.Name
         static member elementId (x : CheckConstraint) = x.object.Name
-        static member elementId (x : FOREIGN_KEY_COLUMN) = $"{x.parent_column.column_name} -> {x.referenced_column.column_name}"
-        static member elementId (x : INDEX_COLUMN) = x.column.column_name
+        static member elementId (x : FOREIGN_KEY_COLUMN) = $"{x.parent_column.Name} -> {x.referenced_column.Name}"
+        static member elementId (x : INDEX_COLUMN) = x.column.Name
         static member elementId (x : OBJECT) = x.Name
         static member elementId (x : Sequence) = x.Object.Name
 
@@ -139,8 +139,8 @@ module Compare =
         |> collectOption x0.MinimumValue x1.MinimumValue equalCollector ("minimum_value" :: path)
         |> collectOption x0.MaximumValue x1.MaximumValue equalCollector ("maximum_value" :: path)
 
-    let identityDefinition (x0 : IDENTITY_DEFINITION, x1 : IDENTITY_DEFINITION) path diff =
-        equalCollector (x0.increment_value, x1.increment_value) path diff
+    let identityDefinition (x0 : IdentityDefinition, x1 : IdentityDefinition) path diff =
+        equalCollector (x0.IncrementValue, x1.IncrementValue) path diff
         
 
         
@@ -176,13 +176,13 @@ module Generator =
                 sDefNoneT<OBJECT> "ParentObjectId"
                 sDefNoneT<CheckConstraint> "parent_column_id"
                 sDefNoneT<FOREIGN_KEY> "key_index_id"
-                sDefNoneT<COLUMN> "column_id"
+                sDefNoneT<Column> "ColumnId"
                 sDefNoneT<INDEX> "index_id"
                 sDefNoneT<INDEX_COLUMN> "index_id"
                 sDefNoneT<Datatype> "UserTypeId"
                 
-                sDefT<FOREIGN_KEY> "delete_referential_action" equalCollector
-                sDefT<FOREIGN_KEY> "update_referential_action" equalCollector
+                sDefT<FOREIGN_KEY> "DeleteReferentialAction" equalCollector
+                sDefT<FOREIGN_KEY> "UpdateReferentialAction" equalCollector
 
                 sDefT<OBJECT> "Name" (fun _ -> $"|> Compare.objectName (x0, x1) path") 
                 sDefT<OBJECT> "ObjectType" equalCollector
@@ -204,7 +204,7 @@ module Generator =
 
                 sDefT<Sequence> "SequenceDefinition" (fun pname -> $"|> Compare.sequenceDefinition (x0.{pname}, x1.{pname}) (\"{pname}\" :: path)")
    
-                sDefT<COLUMN> "identity_definition" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.identityDefinition (\"{pname}\" :: path)")
+                sDefT<Column> "IdentityDefinition" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.identityDefinition (\"{pname}\" :: path)")
                 sDefT<Datatype> "SystemDatatype" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.equalCollector (\"{pname}\" :: path)")
                 
             ] |> Map.ofList
@@ -292,8 +292,8 @@ type CompareGen = CompareGenCase
         let skipObjects =
             [ 
                 "Object"
-                "REFERENTIAL_ACTION"; "ObjectType"; "SystemDatatype"; "INDEX_TYPE"; 
-                "IDENTITY_DEFINITION"; "SequenceDefinition"
+                "ReferentialAction"; "ObjectType"; "SystemDatatype"; "INDEX_TYPE"; 
+                "IdentityDefinition"; "SequenceDefinition"
             ]
             |> Set.ofList
 

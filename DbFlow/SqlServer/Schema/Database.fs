@@ -139,7 +139,7 @@ module DatabaseSchema =
 
         let sql_modules = SqlModule.readAll connection
         
-        let (columns, columnsByObject) = COLUMN.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
+        let (columns, columnsByObject) = Column.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
         let triggersByParent = Trigger.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
         
         let indexesColumnsByIndex = INDEX_COLUMN.readAll objects columns |> Logger.logTime logger "INDEX_COLUMN" connection
@@ -166,7 +166,7 @@ module DatabaseSchema =
         let sql_modules = SqlModule.readAll connection
         let xml_schema_collections = XmlSchemaCollection.readAll schemas ms_descs connection
         
-        let (columns, columnsByObject) = COLUMN.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
+        let (columns, columnsByObject) = Column.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
         let triggersByParent = Trigger.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
         
         // A bit strange that keyConstraints isn't used...?!

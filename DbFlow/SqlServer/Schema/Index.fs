@@ -9,7 +9,7 @@ type INDEX_COLUMN = {
     object : OBJECT
     index_id : int
     index_column_id : int
-    column : COLUMN
+    column : Column
     key_ordinal : byte option
     partition_ordinal : byte option
     is_descending_key : bool

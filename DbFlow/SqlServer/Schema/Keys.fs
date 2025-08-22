@@ -10,8 +10,8 @@ type FOREIGN_KEY_COLUMN = {
     constraint_object : OBJECT
     constraint_column_id : int 
 
-    parent_column : COLUMN
-    referenced_column : COLUMN
+    parent_column : Column
+    referenced_column : Column
 }
 
 module FOREIGN_KEY_COLUMN =
@@ -50,11 +50,11 @@ module FOREIGN_KEY_COLUMN =
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-foreign-keys-transact-sql?view=sql-server-ver17
 
-type REFERENTIAL_ACTION =
-    | No_action   // 0
+type ReferentialAction =
+    | NoAction   // 0
     | Cascade     // 1
-    | Set_null    // 2
-    | Set_default // 3
+    | SetNull    // 2
+    | SetDefault // 3
 
 type FOREIGN_KEY = {
     name : string
@@ -65,8 +65,8 @@ type FOREIGN_KEY = {
     is_disabled : bool
     IsSystemNamed : bool
 
-    delete_referential_action : REFERENTIAL_ACTION
-    update_referential_action : REFERENTIAL_ACTION
+    DeleteReferentialAction : ReferentialAction
+    UpdateReferentialAction : ReferentialAction
 
     columns : FOREIGN_KEY_COLUMN array
 
@@ -76,10 +76,10 @@ type FOREIGN_KEY = {
 module FOREIGN_KEY =
     let toREFERENTIAL_ACTION b =
         match b with
-        | 0uy -> REFERENTIAL_ACTION.No_action
-        | 1uy -> REFERENTIAL_ACTION.Cascade
-        | 2uy -> REFERENTIAL_ACTION.Set_null
-        | 3uy -> REFERENTIAL_ACTION.Set_default
+        | 0uy -> ReferentialAction.NoAction
+        | 1uy -> ReferentialAction.Cascade
+        | 2uy -> ReferentialAction.SetNull
+        | 3uy -> ReferentialAction.SetDefault
         | _ -> failwithf "Unknown REFERENTIAL_ACTION: %i" b
     
     let readAll' objects fkColumns ms_descriptions connection =
@@ -100,8 +100,8 @@ module FOREIGN_KEY =
                     is_disabled = readBool "is_disabled" r
                     IsSystemNamed = readBool "is_system_named" r
 
-                    delete_referential_action = toREFERENTIAL_ACTION (readByte "delete_referential_action" r)
-                    update_referential_action = toREFERENTIAL_ACTION (readByte "update_referential_action" r)
+                    DeleteReferentialAction = toREFERENTIAL_ACTION (readByte "delete_referential_action" r)
+                    UpdateReferentialAction = toREFERENTIAL_ACTION (readByte "update_referential_action" r)
 
                     columns = match RCMap.tryPick object_id fkColumns with Some cs -> cs | None -> [||]
 

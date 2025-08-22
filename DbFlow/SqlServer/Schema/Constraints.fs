@@ -8,7 +8,7 @@ open DbFlow.Readers
 type DefaultConstraint = {
     Object : OBJECT
     Parent : OBJECT
-    Column : COLUMN
+    Column : Column
 
     IsSystemNamed : bool
     
@@ -92,7 +92,7 @@ type CheckConstraint = {
     object : OBJECT
     parent : OBJECT
     parent_column_id : int
-    column : COLUMN option
+    column : Column option
     
     is_disabled : bool
     is_not_for_replication : bool

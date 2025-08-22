@@ -10,7 +10,7 @@ type TableType = {
     Name : string
     Object : OBJECT
   
-    Columns : COLUMN array
+    Columns : Column array
     Indexes : INDEX array
     //mutable triggers : TRIGGER array
     
@@ -59,7 +59,7 @@ type TABLE = {
     Name : string
     Object : OBJECT
     
-    Columns : COLUMN array
+    Columns : Column array
     Indexes : INDEX array
     Triggers : Trigger array
 
@@ -110,7 +110,7 @@ type VIEW = {
     
     Definition : string
 
-    Columns : COLUMN array
+    Columns : Column array
     Indexes : INDEX array
     Triggers : Trigger array
 

@@ -17,58 +17,58 @@ type SchemaScriptPart =
     | XmlSchemaCollectionDefinition
 
 
-let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes isTableType (columnInlineDefaults : Map<int, DefaultConstraint>) (column : COLUMN) =
+let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes isTableType (columnInlineDefaults : Map<int, DefaultConstraint>) (column : Column) =
     let columnDefStr =
-        match column.computed_definition with
+        match column.ComputedDefinition with
         | Some computed ->
             let persistStr = 
-                if computed.is_persisted 
+                if computed.IsPersisted 
                 then 
-                    if opt.SchemazenCompatibility || column.data_type.Parameter.is_nullable 
+                    if opt.SchemazenCompatibility || column.Datatype.Parameter.IsNullable 
                     then " PERSISTED" 
                     else " PERSISTED NOT NULL"
                 else ""
-            $"AS {computed.computed_definition}{persistStr}"
+            $"AS {computed.ComputedDefinition}{persistStr}"
         | None -> 
             let collateStr = 
                 if opt.SchemazenCompatibility
                 then ""
                 else
-                    match column.data_type.Parameter.collation_name with
+                    match column.Datatype.Parameter.CollationName with
                     | Some c when c <> dbProps.collation_name -> $" COLLATE {c}"
                     | _ -> ""
-            let nullStr = if column.data_type.Parameter.is_nullable then "NULL" else "NOT NULL"
+            let nullStr = if column.Datatype.Parameter.IsNullable then "NULL" else "NOT NULL"
             let maskedStr =
                 if opt.SchemazenCompatibility
                 then ""
                 else 
-                    match column.masking_function with
+                    match column.MaskingFunction with
                     | Some m -> $" MASKED WITH ( FUNCTION = '{m}' )"
                     | None -> ""
             let identityStr = 
                 if opt.SchemazenCompatibility && isTableType
                 then ""
                 else
-                    match column.identity_definition with
-                    | Some def -> $"\r\n      IDENTITY ({def.seed_value},{def.increment_value})"
+                    match column.IdentityDefinition with
+                    | Some def -> $"\r\n      IDENTITY ({def.SeedValue},{def.IncrementValue})"
                     | None -> ""
             let checkStr = 
-                match Map.tryFind column.column_id columnInlineDefaults with
+                match Map.tryFind column.ColumnId columnInlineDefaults with
                 | Some dc -> $"\r\n       DEFAULT {dc.Definition}"
                 | None -> ""
             let rowGuidStr =
-                if column.is_rowguidcol
+                if column.IsRowguidcol
                 then " ROWGUIDCOL "
                 else ""
             let typeStr = 
                 if opt.SchemazenCompatibility 
-                    && (column.data_type.IsUserDefined || column.data_type.Name = "sysname")
+                    && (column.Datatype.IsUserDefined || column.Datatype.Name = "sysname")
                 then 
                     Datatype.typeStr opt.SchemazenCompatibility false 
-                        { (Map.find (int column.data_type.SystemTypeId) allTypes) with Parameter = column.data_type.Parameter }
-                else Datatype.typeStr opt.SchemazenCompatibility false column.data_type
+                        { (Map.find (int column.Datatype.SystemTypeId) allTypes) with Parameter = column.Datatype.Parameter }
+                else Datatype.typeStr opt.SchemazenCompatibility false column.Datatype
             $"{typeStr}{collateStr}{maskedStr} {nullStr}{identityStr}{checkStr}{rowGuidStr}"
-    $"[{column.column_name}] {columnDefStr}"
+    $"[{column.Name}] {columnDefStr}"
 
 let separateBy f xs =
     xs 
@@ -138,7 +138,7 @@ let indexColumnsStr (columns : INDEX_COLUMN array) =
         ", "
         (fun c -> 
             let descStr = if c.is_descending_key then " DESC" else ""
-            $"[{c.column.column_name}]{descStr}")
+            $"[{c.column.Name}]{descStr}")
 
 let indexWithSettings parentIsView (index : INDEX) =
     [|
@@ -192,7 +192,7 @@ let generateStandardIndexScript (opt : Options) (index : INDEX) (parentName : st
         then ""
         else 
             includeColumns
-            |> Array.joinBy ", " (fun c -> $"[{c.column.column_name}]") 
+            |> Array.joinBy ", " (fun c -> $"[{c.column.Name}]") 
             |> fun s -> $" INCLUDE ({s})"
     let filterStr =
         match index.filter with
@@ -301,7 +301,7 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) ds allType
         |> Array.fold
             (fun tableInlineDefaults' dc ->
                  if isTableType
-                 then Map.add dc.Column.column_id dc tableInlineDefaults'
+                 then Map.add dc.Column.ColumnId dc tableInlineDefaults'
                  else tableInlineDefaults')
             Map.empty
 
@@ -321,7 +321,7 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) ds allType
     w.WriteLine "GO"
 
     []
-    |> (fun acc -> columns |> Array.fold (fun acc' c -> c.object.ObjectId :: acc') acc)
+    |> (fun acc -> columns |> Array.fold (fun acc' c -> c.Object.ObjectId :: acc') acc)
     |> (fun acc -> indexes |> Array.fold (fun acc' i -> match i.object with Some o -> o.ObjectId :: acc' | None -> acc') acc)
     |> (fun acc -> columnInlineDefaults |> Map.fold (fun acc' _ dc -> dc.Object.ObjectId :: acc') acc)
     
@@ -392,9 +392,9 @@ let generateDefaultConstraintsScript (w : System.IO.StreamWriter) (opt : Options
                 if dc.IsSystemNamed
                 then 
                     if opt.SchemazenCompatibility
-                    then $"ALTER TABLE {tableName} ADD  DEFAULT {dc.Definition} FOR [{dc.Column.column_name}]"
-                    else $"ALTER TABLE {tableName} ADD DEFAULT {dc.Definition} FOR [{dc.Column.column_name}]"
-                else $"ALTER TABLE {tableName} ADD CONSTRAINT [{dc.Object.Name}] DEFAULT {dc.Definition} FOR [{dc.Column.column_name}]"
+                    then $"ALTER TABLE {tableName} ADD  DEFAULT {dc.Definition} FOR [{dc.Column.Name}]"
+                    else $"ALTER TABLE {tableName} ADD DEFAULT {dc.Definition} FOR [{dc.Column.Name}]"
+                else $"ALTER TABLE {tableName} ADD CONSTRAINT [{dc.Object.Name}] DEFAULT {dc.Definition} FOR [{dc.Column.Name}]"
                 |> w.WriteLine
                 "GO" |> w.WriteLine
                 
@@ -407,21 +407,21 @@ let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (tabl
         fks
         |> Array.fold 
             (fun (object_ids, depends_on) fk ->
-                let columnsStr = fk.columns |> Array.joinBy ", " (fun c -> $"[{c.parent_column.column_name}]")
-                let refColumnsStr = fk.columns |> Array.joinBy ", " (fun c -> $"[{c.referenced_column.column_name}]")
+                let columnsStr = fk.columns |> Array.joinBy ", " (fun c -> $"[{c.parent_column.Name}]")
+                let refColumnsStr = fk.columns |> Array.joinBy ", " (fun c -> $"[{c.referenced_column.Name}]")
                 let name = if fk.IsSystemNamed then "" else $"CONSTRAINT [{fk.name}]"
                 w.WriteLine $"ALTER TABLE [{table.Schema.Name}].[{table.Name}] WITH CHECK ADD {name}"
                 w.WriteLine $"   FOREIGN KEY({columnsStr}) REFERENCES [{fk.referenced.Schema.Name}].[{fk.referenced.Name}] ({refColumnsStr})"
-                match fk.update_referential_action with
-                | REFERENTIAL_ACTION.No_action -> () 
-                | REFERENTIAL_ACTION.Cascade -> w.WriteLine "   ON UPDATE CASCADE"
-                | REFERENTIAL_ACTION.Set_null -> w.WriteLine "   ON UPDATE SET NULL"
-                | REFERENTIAL_ACTION.Set_default -> w.WriteLine "   ON UPDATE SET DEFAULT"
-                match fk.delete_referential_action with
-                | REFERENTIAL_ACTION.No_action -> () 
-                | REFERENTIAL_ACTION.Cascade -> w.WriteLine "   ON DELETE CASCADE"
-                | REFERENTIAL_ACTION.Set_null -> w.WriteLine "   ON DELETE SET NULL"
-                | REFERENTIAL_ACTION.Set_default -> w.WriteLine "   ON DELETE SET DEFAULT"
+                match fk.UpdateReferentialAction with
+                | ReferentialAction.NoAction -> () 
+                | ReferentialAction.Cascade -> w.WriteLine "   ON UPDATE CASCADE"
+                | ReferentialAction.SetNull -> w.WriteLine "   ON UPDATE SET NULL"
+                | ReferentialAction.SetDefault -> w.WriteLine "   ON UPDATE SET DEFAULT"
+                match fk.DeleteReferentialAction with
+                | ReferentialAction.NoAction -> () 
+                | ReferentialAction.Cascade -> w.WriteLine "   ON DELETE CASCADE"
+                | ReferentialAction.SetNull -> w.WriteLine "   ON DELETE SET NULL"
+                | ReferentialAction.SetDefault -> w.WriteLine "   ON DELETE SET DEFAULT"
                 w.WriteLine ""
                 w.WriteLine "GO"
 
@@ -508,7 +508,7 @@ let generateUserDefinedTypeScript (types : Map<int, Datatype>) (w : System.IO.St
     let tDef =
         let baseType = types |> Map.find (int t.SystemTypeId)
         Datatype.typeStr' opt.SchemazenCompatibility true baseType.Name baseType.SystemDatatype t.Parameter
-    let nullStr = if t.Parameter.is_nullable then "NULL" else "NOT NULL"
+    let nullStr = if t.Parameter.IsNullable then "NULL" else "NOT NULL"
     w.WriteLine $"CREATE TYPE [{t.Schema.Name}].[{t.Name}] FROM {tDef} {nullStr}"
     w.WriteLine "GO"
     UserDefinedTypeDefinition

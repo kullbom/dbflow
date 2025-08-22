@@ -56,17 +56,17 @@ type CompareGen = CompareGenCase
 
         static member Collect (x0 : System.DateTime, x1 : System.DateTime) = Compare.equalCollector (x0, x1)
 
-        static member Collect (x0 : COLUMN, x1 : COLUMN) =
+        static member Collect (x0 : Column, x1 : Column) =
                     fun path diffs ->
                        diffs
-                       |> CompareGen.Collect (x0.column_name, x1.column_name) ("column_name" :: path)
-                       |> CompareGen.Collect (x0.object, x1.object) ("object" :: path)
-                       |> CompareGen.Collect (x0.data_type, x1.data_type) ("data_type" :: path)
-                       |> CompareGen.Collect (x0.is_ansi_padded, x1.is_ansi_padded) ("is_ansi_padded" :: path)
-                       |> Compare.collectOption x0.computed_definition x1.computed_definition CompareGen.Collect ("computed_definition" :: path)
-                       |> Compare.collectOption x0.identity_definition x1.identity_definition Compare.identityDefinition ("identity_definition" :: path)
-                       |> Compare.collectOption x0.masking_function x1.masking_function CompareGen.Collect ("masking_function" :: path)
-                       |> CompareGen.Collect (x0.is_rowguidcol, x1.is_rowguidcol) ("is_rowguidcol" :: path)
+                       |> CompareGen.Collect (x0.Name, x1.Name) ("Name" :: path)
+                       |> CompareGen.Collect (x0.Object, x1.Object) ("Object" :: path)
+                       |> CompareGen.Collect (x0.Datatype, x1.Datatype) ("Datatype" :: path)
+                       |> CompareGen.Collect (x0.IsAnsiPadded, x1.IsAnsiPadded) ("IsAnsiPadded" :: path)
+                       |> Compare.collectOption x0.ComputedDefinition x1.ComputedDefinition CompareGen.Collect ("ComputedDefinition" :: path)
+                       |> Compare.collectOption x0.IdentityDefinition x1.IdentityDefinition Compare.identityDefinition ("IdentityDefinition" :: path)
+                       |> Compare.collectOption x0.MaskingFunction x1.MaskingFunction CompareGen.Collect ("MaskingFunction" :: path)
+                       |> CompareGen.Collect (x0.IsRowguidcol, x1.IsRowguidcol) ("IsRowguidcol" :: path)
 
         static member Collect (x0 : Datatype, x1 : Datatype) =
                     fun path diffs ->
@@ -84,24 +84,24 @@ type CompareGen = CompareGenCase
         static member Collect (x0 : DatatypeParameter, x1 : DatatypeParameter) =
                     fun path diffs ->
                        diffs
-                       |> CompareGen.Collect (x0.max_length, x1.max_length) ("max_length" :: path)
-                       |> CompareGen.Collect (x0.precision, x1.precision) ("precision" :: path)
-                       |> CompareGen.Collect (x0.scale, x1.scale) ("scale" :: path)
-                       |> Compare.collectOption x0.collation_name x1.collation_name CompareGen.Collect ("collation_name" :: path)
-                       |> CompareGen.Collect (x0.is_nullable, x1.is_nullable) ("is_nullable" :: path)
+                       |> CompareGen.Collect (x0.MaxLength, x1.MaxLength) ("MaxLength" :: path)
+                       |> CompareGen.Collect (x0.Precision, x1.Precision) ("Precision" :: path)
+                       |> CompareGen.Collect (x0.Scale, x1.Scale) ("Scale" :: path)
+                       |> Compare.collectOption x0.CollationName x1.CollationName CompareGen.Collect ("CollationName" :: path)
+                       |> CompareGen.Collect (x0.IsNullable, x1.IsNullable) ("IsNullable" :: path)
 
         static member Collect (x0 : System.Int16, x1 : System.Int16) = Compare.equalCollector (x0, x1)
 
         static member Collect (x0 : TableDatatype, x1 : TableDatatype) =
                     fun path diffs ->
                        diffs
-                       |> CompareGen.Collect (x0.object, x1.object) ("object" :: path)
+                       |> CompareGen.Collect (x0.Object, x1.Object) ("Object" :: path)
 
-        static member Collect (x0 : COMPUTED_DEFINITION, x1 : COMPUTED_DEFINITION) =
+        static member Collect (x0 : ComputedDefinition, x1 : ComputedDefinition) =
                     fun path diffs ->
                        diffs
-                       |> CompareGen.Collect (x0.computed_definition, x1.computed_definition) ("computed_definition" :: path)
-                       |> CompareGen.Collect (x0.is_persisted, x1.is_persisted) ("is_persisted" :: path)
+                       |> CompareGen.Collect (x0.ComputedDefinition, x1.ComputedDefinition) ("ComputedDefinition" :: path)
+                       |> CompareGen.Collect (x0.IsPersisted, x1.IsPersisted) ("IsPersisted" :: path)
 
         static member Collect (x0 : INDEX, x1 : INDEX) =
                     fun path diffs ->
@@ -151,8 +151,8 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.parent, x1.parent) ("parent" :: path)
                        |> CompareGen.Collect (x0.referenced, x1.referenced) ("referenced" :: path)
                        |> CompareGen.Collect (x0.is_disabled, x1.is_disabled) ("is_disabled" :: path)
-                       |> Compare.equalCollector (x0.delete_referential_action, x1.delete_referential_action) ("delete_referential_action" :: path)
-                       |> Compare.equalCollector (x0.update_referential_action, x1.update_referential_action) ("update_referential_action" :: path)
+                       |> Compare.equalCollector (x0.DeleteReferentialAction, x1.DeleteReferentialAction) ("DeleteReferentialAction" :: path)
+                       |> Compare.equalCollector (x0.UpdateReferentialAction, x1.UpdateReferentialAction) ("UpdateReferentialAction" :: path)
                        |> Compare.collectArray x0.columns x1.columns SortOrder.orderBy ElementId.elementId CompareGen.Collect ("columns" :: path)
 
         static member Collect (x0 : FOREIGN_KEY_COLUMN, x1 : FOREIGN_KEY_COLUMN) =

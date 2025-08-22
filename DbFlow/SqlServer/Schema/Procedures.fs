@@ -75,7 +75,7 @@ type Procedure = {
     Name : string
 
     Parameters : PARAMETER array
-    Columns : COLUMN array // Should only exist for SQL_TABLE_VALUED_FUNCTION
+    Columns : Column array // Should only exist for SQL_TABLE_VALUED_FUNCTION
     
     OrigDefinition : string
     Definition : string

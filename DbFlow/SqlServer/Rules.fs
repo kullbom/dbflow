@@ -25,15 +25,15 @@ type Rule = { Title : string; Description : string; CheckRule : Schema.DatabaseS
 
 
 module Helpers =
-    let foldAllColumns (exclude : RuleExclusion) (db : Schema.DatabaseSchema) (f : 'a -> Schema.COLUMN -> 'a) (seed : 'a) =
+    let foldAllColumns (exclude : RuleExclusion) (db : Schema.DatabaseSchema) (f : 'a -> Schema.Column -> 'a) (seed : 'a) =
         let excludeObject (o : Schema.OBJECT) =
             Set.contains { schema = o.Schema.Name; name = o.Name } exclude.Objects
         
-        let foldColumns f seed (columns : Schema.COLUMN array) =
+        let foldColumns f seed (columns : Schema.Column array) =
             columns
             |> Array.fold 
                 (fun acc c -> 
-                    if Set.contains { schema = c.object.Schema.Name; parent = c.object.Name; name = c.column_name } exclude.Columns
+                    if Set.contains { schema = c.Object.Schema.Name; parent = c.Object.Name; name = c.Name } exclude.Columns
                     then acc
                     else f acc c)
                 seed
@@ -54,9 +54,9 @@ module Rule =
                 (fun db ->
                     Helpers.foldAllColumns exclude db
                         (fun acc c -> 
-                            match c.data_type.SystemDatatype with
+                            match c.Datatype.SystemDatatype with
                             | Some Schema.SystemDatatype.DATETIME ->
-                                $"{c.object.Schema.Name}.{c.object.Name}.{c.column_name}" :: acc
+                                $"{c.Object.Schema.Name}.{c.Object.Name}.{c.Name}" :: acc
                             | _ -> acc)
                         []
                     |> function 
@@ -74,11 +74,11 @@ module Rule =
                 (fun db ->
                     Helpers.foldAllColumns exclude db
                         (fun acc c -> 
-                            match c.data_type.SystemDatatype with
-                            | Some Schema.SystemDatatype.DATETIME when not (c.column_name.ToUpperInvariant().EndsWith "UTC") ->
-                                $"{c.object.Schema.Name}.{c.object.Name}.{c.column_name}" :: acc
-                            | Some Schema.SystemDatatype.DATETIME2 when not (c.column_name.ToUpperInvariant().EndsWith "UTC") -> 
-                                $"{c.object.Schema.Name}.{c.object.Name}.{c.column_name}" :: acc
+                            match c.Datatype.SystemDatatype with
+                            | Some Schema.SystemDatatype.DATETIME when not (c.Name.ToUpperInvariant().EndsWith "UTC") ->
+                                $"{c.Object.Schema.Name}.{c.Object.Name}.{c.Name}" :: acc
+                            | Some Schema.SystemDatatype.DATETIME2 when not (c.Name.ToUpperInvariant().EndsWith "UTC") -> 
+                                $"{c.Object.Schema.Name}.{c.Object.Name}.{c.Name}" :: acc
                             | _ -> acc)
                         []
                     |> function 
@@ -97,9 +97,9 @@ See: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-ansi-padding-tra
                 (fun db ->
                     Helpers.foldAllColumns exclude db
                         (fun acc c -> 
-                            if c.is_ansi_padded 
+                            if c.IsAnsiPadded 
                             then acc
-                            else $"{c.object.Schema.Name}.{c.object.Name}.{c.column_name}" :: acc)
+                            else $"{c.Object.Schema.Name}.{c.Object.Name}.{c.Name}" :: acc)
                         []
                     |> function 
                         | [] -> Ok () 

@@ -28,15 +28,15 @@ type SystemDatatype =
     | TIMESTAMP // ???
 
 type DatatypeParameter = {
-    max_length : int16
-    precision : byte
-    scale : byte
-    collation_name : string option
-    is_nullable : bool
+    MaxLength : int16
+    Precision : byte
+    Scale : byte
+    CollationName : string option
+    IsNullable : bool
 }
 
 type TableDatatype = {
-    object : OBJECT
+    Object : OBJECT
 }
 
 type Datatype = {
@@ -72,19 +72,19 @@ module Datatype =
             $"[{formatTypeName tName}]({precision},{scale})"
         match sys_datatype with
         | Some(SystemDatatype.DATETIME2) -> 
-            if schemazenCompatibility then plain dtName else withPrecision dtName p.scale
+            if schemazenCompatibility then plain dtName else withPrecision dtName p.Scale
         | Some(SystemDatatype.DATETIMEOFFSET) -> 
-            if schemazenCompatibility then plain dtName else withPrecision dtName p.scale
+            if schemazenCompatibility then plain dtName else withPrecision dtName p.Scale
 
-        | Some(SystemDatatype.CHAR) -> withSize dtName p.max_length 1s
-        | Some(SystemDatatype.VARCHAR) -> withSize dtName p.max_length 1s
-        | Some(SystemDatatype.NCHAR) -> withSize dtName p.max_length 2s
-        | Some(SystemDatatype.NVARCHAR) -> withSize dtName p.max_length 2s
-        | Some(SystemDatatype.BINARY) -> withSize dtName p.max_length 1s
-        | Some(SystemDatatype.VARBINARY) -> withSize dtName p.max_length 1s
+        | Some(SystemDatatype.CHAR) -> withSize dtName p.MaxLength 1s
+        | Some(SystemDatatype.VARCHAR) -> withSize dtName p.MaxLength 1s
+        | Some(SystemDatatype.NCHAR) -> withSize dtName p.MaxLength 2s
+        | Some(SystemDatatype.NVARCHAR) -> withSize dtName p.MaxLength 2s
+        | Some(SystemDatatype.BINARY) -> withSize dtName p.MaxLength 1s
+        | Some(SystemDatatype.VARBINARY) -> withSize dtName p.MaxLength 1s
 
-        | Some(SystemDatatype.DECIMAL) -> withPrecisionScale dtName p.precision p.scale
-        | Some(SystemDatatype.NUMERIC) -> withPrecisionScale dtName p.precision p.scale
+        | Some(SystemDatatype.DECIMAL) -> withPrecisionScale dtName p.Precision p.Scale
+        | Some(SystemDatatype.NUMERIC) -> withPrecisionScale dtName p.Precision p.Scale
 
         | _ -> plain dtName
 
@@ -181,7 +181,7 @@ module Datatype =
             (fun m r ->
                 let schemaId = readInt32 "schema_id" r
                 let userTypeId = readInt32 "user_type_id" r
-                let system_type_id = readByte "system_type_id" r
+                let systemTypeId = readByte "system_type_id" r
                 let isUserDefined = readBool "is_user_defined" r
                 let isTableType = readBool "is_table_type" r
                 let name = readString "name" r
@@ -192,16 +192,16 @@ module Datatype =
                         Name = name
                         Schema = RCMap.pick schemaId schemas
 
-                        SystemTypeId = system_type_id
+                        SystemTypeId = systemTypeId
                         UserTypeId = userTypeId
 
                         Parameter = 
                             { 
-                                max_length = readInt16 "max_length" r
-                                precision = readByte "precision" r
-                                scale = readByte "scale" r
-                                collation_name = nullable "collation_name" readString r
-                                is_nullable = readBool "is_nullable" r
+                                MaxLength = readInt16 "max_length" r
+                                Precision = readByte "precision" r
+                                Scale = readByte "scale" r
+                                CollationName = nullable "collation_name" readString r
+                                IsNullable = readBool "is_nullable" r
                             }
                         
                         IsUserDefined = isUserDefined
@@ -213,9 +213,9 @@ module Datatype =
                         TableDatatype = 
                             if isTableType
                             then 
-                                let object_id = readInt32 "type_table_object_id" r
+                                let objectId = readInt32 "type_table_object_id" r
                                 {
-                                    object = RCMap.pick object_id objects
+                                    Object = RCMap.pick objectId objects
                                 }
                                 |> Some
                             else None
@@ -225,37 +225,37 @@ module Datatype =
         |> DbTr.commit_ connection
 
     let readType types collation r =
-        let user_type_id = readInt32 "user_type_id" r
-        { Map.find user_type_id types with
+        let userTypeId = readInt32 "user_type_id" r
+        { Map.find userTypeId types with
             Parameter = {
-                max_length = readInt16 "max_length" r
-                precision = readByte "precision" r
-                scale = readByte "scale" r
-                collation_name = collation
-                is_nullable = readBool "is_nullable" r
+                MaxLength = readInt16 "max_length" r
+                Precision = readByte "precision" r
+                Scale = readByte "scale" r
+                CollationName = collation
+                IsNullable = readBool "is_nullable" r
             }
         }
 
-type COMPUTED_DEFINITION = { computed_definition : string; is_persisted : bool }
-type IDENTITY_DEFINITION = { seed_value : obj; increment_value : obj; last_value : obj } 
+type ComputedDefinition = { ComputedDefinition : string; IsPersisted : bool }
+type IdentityDefinition = { SeedValue : obj; IncrementValue : obj; LastValue : obj } 
 
-type COLUMN = {
-    column_name : string     
-    object : OBJECT
-    column_id : int           
+type Column = {
+    Name : string     
+    Object : OBJECT
+    ColumnId : int           
     
-    data_type : Datatype
+    Datatype : Datatype
     
-    is_ansi_padded : bool    
-    computed_definition : COMPUTED_DEFINITION option
-    identity_definition : IDENTITY_DEFINITION option
-    masking_function : string option
-    is_rowguidcol : bool     
+    IsAnsiPadded : bool    
+    ComputedDefinition : ComputedDefinition option
+    IdentityDefinition : IdentityDefinition option
+    MaskingFunction : string option
+    IsRowguidcol : bool     
 
-    ms_description : string option
+    MSDescription : string option
 }    
 
-module COLUMN =
+module Column =
     let readAll' objects types ms_descriptions connection =
         DbTr.reader 
             "SELECT 
@@ -282,38 +282,38 @@ module COLUMN =
                     -> acc
                 | _ ->
                     {
-                        column_name = readString "column_name" r
-                        object = object
+                        Name = readString "column_name" r
+                        Object = object
                             
-                        column_id = column_id
+                        ColumnId = column_id
                         
-                        data_type = Datatype.readType types (nullable "collation_name" readString r) r
+                        Datatype = Datatype.readType types (nullable "collation_name" readString r) r
                         
-                        is_ansi_padded = readBool "is_ansi_padded" r
-                        computed_definition = 
+                        IsAnsiPadded = readBool "is_ansi_padded" r
+                        ComputedDefinition = 
                             match readBool "is_computed" r with
                             | true -> 
                                 { 
-                                    computed_definition = readString "computed_definition" r 
-                                    is_persisted = readBool "computed_is_persisted" r 
+                                    ComputedDefinition = readString "computed_definition" r 
+                                    IsPersisted = readBool "computed_is_persisted" r 
                                 } |> Some
                             | false -> None
-                        identity_definition = 
+                        IdentityDefinition = 
                             match readBool "is_identity" r with
                             | true -> 
                                 { 
-                                    seed_value = readObject "identity_seed_value" r
-                                    increment_value = readObject "identity_increment_value" r
-                                    last_value = readObject "identity_last_value" r 
+                                    SeedValue = readObject "identity_seed_value" r
+                                    IncrementValue = readObject "identity_increment_value" r
+                                    LastValue = readObject "identity_last_value" r 
                                 } |> Some
                             | false -> None
-                        masking_function =
+                        MaskingFunction =
                             match readBool "is_masked" r with
                             | true -> readString "masking_function" r |> Some 
                             | false -> None
-                        is_rowguidcol = readBool "is_rowguidcol" r
+                        IsRowguidcol = readBool "is_rowguidcol" r
 
-                        ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, column_id) ms_descriptions 
+                        MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, column_id) ms_descriptions 
                     } :: acc)
             []
         |> DbTr.commit_ connection
@@ -323,15 +323,15 @@ module COLUMN =
         let columns' = readAll' objects types ms_descriptions connection
         let columns =
             columns' 
-            |> List.map (fun c -> (c.object.ObjectId, c.column_id), c)
+            |> List.map (fun c -> (c.Object.ObjectId, c.ColumnId), c)
             |> Map.ofList
             |> RCMap.ofMap
         let columnsByObject =
             columns'
-            |> List.groupBy (fun c -> c.object.ObjectId)
+            |> List.groupBy (fun c -> c.Object.ObjectId)
             |> List.fold 
                 (fun m (object_id, cs) -> 
-                    Map.add object_id (cs |> List.sortBy (fun c -> c.column_id) |> List.toArray) m)
+                    Map.add object_id (cs |> List.sortBy (fun c -> c.ColumnId) |> List.toArray) m)
                 Map.empty
             |> RCMap.ofMap
         columns, columnsByObject
