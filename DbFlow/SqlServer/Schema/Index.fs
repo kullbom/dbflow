@@ -27,10 +27,10 @@ module INDEX_COLUMN =
             (fun acc r -> 
                 let object_id = readInt32 "object_id" r
                 let column_id = readInt32 "column_id" r
-                let object = RCMap.pick object_id objects
-                match object.object_type with
-                | OBJECT_TYPE.INTERNAL_TABLE 
-                | OBJECT_TYPE.SYSTEM_TABLE
+                let object : OBJECT = RCMap.pick object_id objects
+                match object.ObjectType with
+                | ObjectType.INTERNAL_TABLE 
+                | ObjectType.SYSTEM_TABLE
                     -> acc
                 | _ ->
                     let column = RCMap.pick (object_id, column_id) columns
@@ -51,7 +51,7 @@ module INDEX_COLUMN =
         let indexColumns = readAll' objects columns connection
         let indexColumnsByIndex =
             indexColumns
-            |> List.groupBy (fun c -> c.object.object_id, c.index_id)
+            |> List.groupBy (fun c -> c.object.ObjectId, c.index_id)
             |> List.map 
                 (fun (key, cs) -> 
                     key, 
@@ -154,9 +154,9 @@ module INDEX =
                     | Some cs -> cs 
                     | None -> [||]
                 let ms_description =
-                    match index_object_id, RCMap.tryPick (XPROPERTY_CLASS.INDEX, parent_object_id, index_id) ms_descriptions with
+                    match index_object_id, RCMap.tryPick (XPropertyClass.Index, parent_object_id, index_id) ms_descriptions with
                     | _, Some d -> Some d
-                    | Some id, None -> RCMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, id, 0) ms_descriptions
+                    | Some id, None -> RCMap.tryPick (XPropertyClass.ObjectOrColumn, id, 0) ms_descriptions
                     | _ -> None 
                 {
                     parent = parent
@@ -196,8 +196,8 @@ module INDEX =
         let indexes = readAll' objects indexColumnsByIndex ms_descriptions connection 
         let indexesByParent =
             indexes
-            |> List.groupBy (fun i -> i.parent.object_id)
-            |> List.map (fun (object_id, is) -> object_id, is |> List.sortBy (fun i -> i.index_id) |> List.toArray)
+            |> List.groupBy (fun i -> i.parent.ObjectId)
+            |> List.map (fun (objectId, is) -> objectId, is |> List.sortBy (fun i -> i.index_id) |> List.toArray)
             |> Map.ofList
             |> RCMap.ofMap
         indexesByParent

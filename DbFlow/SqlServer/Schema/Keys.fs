@@ -41,7 +41,7 @@ module FOREIGN_KEY_COLUMN =
         let fkColumns' = readAll' foreignKeys columns connection
         let fkColumnsByConstraint =
             fkColumns'
-            |> List.groupBy (fun c -> c.constraint_object.object_id)
+            |> List.groupBy (fun c -> c.constraint_object.ObjectId)
             |> List.map (fun (object_id, cs) -> object_id, cs |> List.sortBy (fun c -> c.constraint_column_id) |> List.toArray)
             |> Map.ofList
             |> RCMap.ofMap
@@ -105,7 +105,7 @@ module FOREIGN_KEY =
 
                     columns = match RCMap.tryPick object_id fkColumns with Some cs -> cs | None -> [||]
 
-                    ms_description = RCMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, 0) ms_descriptions
+                    ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -115,13 +115,13 @@ module FOREIGN_KEY =
         let foreignKeys' = readAll' objects fkColumns ms_descriptions connection
         let foreignKeysByParent =
             foreignKeys'
-            |> List.groupBy (fun fk -> fk.parent.object_id)
+            |> List.groupBy (fun fk -> fk.parent.ObjectId)
             |> List.map (fun (parent_id, fks) -> parent_id, fks |> List.sortBy (fun fk -> fk.key_index_id) |> List.toArray)
             |> Map.ofList
             |> RCMap.ofMap
         let foreignKeysByReferenced =
             foreignKeys'
-            |> List.groupBy (fun fk -> fk.referenced.object_id)
+            |> List.groupBy (fun fk -> fk.referenced.ObjectId)
             |> List.map (fun (referenced_id, fks) -> referenced_id, fks |> List.sortBy (fun fk -> fk.name) |> List.toArray)
             |> Map.ofList
             |> RCMap.ofMap

@@ -17,7 +17,7 @@ type SchemaScriptPart =
     | XmlSchemaCollectionDefinition
 
 
-let columnDefinitionStr (opt : Options) (ds : DATABASE_SETTINGS) allTypes isTableType (columnInlineDefaults : Map<int, DEFAULT_CONSTRAINT>) (column : COLUMN) =
+let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes isTableType (columnInlineDefaults : Map<int, DEFAULT_CONSTRAINT>) (column : COLUMN) =
     let columnDefStr =
         match column.computed_definition with
         | Some computed ->
@@ -35,7 +35,7 @@ let columnDefinitionStr (opt : Options) (ds : DATABASE_SETTINGS) allTypes isTabl
                 then ""
                 else
                     match column.data_type.parameter.collation_name with
-                    | Some c when c <> ds.collation_name -> $" COLLATE {c}"
+                    | Some c when c <> dbProps.collation_name -> $" COLLATE {c}"
                     | _ -> ""
             let nullStr = if column.data_type.parameter.is_nullable then "NULL" else "NOT NULL"
             let maskedStr =
@@ -75,14 +75,14 @@ let separateBy f xs =
     |> Array.fold (fun (xs, ys) x -> if f x then x :: xs, ys else xs, x :: ys) ([], [])
     |> fun (xs, ys) -> xs |> List.rev |> List.toArray, ys |> List.rev |> List.toArray
     
-let generateSettingsScript (w : System.IO.StreamWriter) (opt : Options) (s : DATABASE_SETTINGS) =
+let generateSettingsScript (w : System.IO.StreamWriter) (opt : Options) (s : DatabaseProperties) =
     let wl : string -> unit = w.WriteLine
     let onOff isSet = if isSet then "ON" else "OFF"
-    let recoveryModel = match s.recovery_model with 1uy -> "FULL" | 2uy -> "BULK_LOGGED" | 3uy -> "SIMPLE"
+    let recoveryModel = match s.recovery_model with 1uy -> "FULL" | 2uy -> "BULK_LOGGED" | 3uy -> "SIMPLE" | rm -> failwithf "Unknown recovery model %i" rm
     let parameterization = if s.is_parameterization_forced then "FORCED" else "SIMPLE"
     let cursorDefault = if s.is_local_cursor_default then "LOCAL" else "GLOBAL"
-    let allowSnapshotIsolation = match s.snapshot_isolation_state with 0uy | 2uy -> "OFF" | 1uy | 3uy -> "ON"
-    let pageVerify = match s.page_verify_option with 0uy -> "NONE" | 1uy -> "TORN_PAGE_DETECTION" | 2uy -> "CHECKSUM"
+    let allowSnapshotIsolation = match s.snapshot_isolation_state with 0uy | 2uy -> "OFF" | 1uy | 3uy -> "ON" | sis -> failwithf "Unknown snapshot isolation state %i" sis
+    let pageVerify = match s.page_verify_option with 0uy -> "NONE" | 1uy -> "TORN_PAGE_DETECTION" | 2uy -> "CHECKSUM" | sis -> failwithf "Unknown page verify option %i" sis
     wl "DECLARE @DB VARCHAR(255)"
     wl "SET @DB = DB_NAME()"
     wl $"EXEC dbo.sp_dbcmptlevel @DB, {s.compatibility_level}"
@@ -117,10 +117,10 @@ let generateSettingsScript (w : System.IO.StreamWriter) (opt : Options) (s : DAT
     DatabaseDefinition
 
 
-let generateSchemaScript (w : System.IO.StreamWriter) (opt : Options) (schema : SCHEMA) =
+let generateSchemaScript (w : System.IO.StreamWriter) (opt : Options) (schema : Schema) =
     if opt.SchemazenCompatibility
-    then w.WriteLine $"create schema [{schema.name}] authorization [{schema.principal_name}]"
-    else w.WriteLine $"CREATE SCHEMA [{schema.name}] AUTHORIZATION [{schema.principal_name}]"
+    then w.WriteLine $"create schema [{schema.Name}] authorization [{schema.PrincipalName}]"
+    else w.WriteLine $"CREATE SCHEMA [{schema.Name}] AUTHORIZATION [{schema.PrincipalName}]"
     w.WriteLine "GO"
     SchemaDefinition
 
@@ -265,7 +265,7 @@ let generateTableBody (w : System.IO.StreamWriter) (opt : Options) ds allTypes i
                 then 
                     let extraSpace = if opt.SchemazenCompatibility then " " else ""
                     $"   ,CHECK {extraSpace}{inlineCheck.definition}"
-                else $"   ,CONSTRAINT [{inlineCheck.object.name}] CHECK ({inlineCheck.definition})")
+                else $"   ,CONSTRAINT [{inlineCheck.object.Name}] CHECK ({inlineCheck.definition})")
 
         
     match indexDefs, checkDefs with
@@ -321,40 +321,40 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) ds allType
     w.WriteLine "GO"
 
     []
-    |> (fun acc -> columns |> Array.fold (fun acc' c -> c.object.object_id :: acc') acc)
-    |> (fun acc -> indexes |> Array.fold (fun acc' i -> match i.object with Some o -> o.object_id :: acc' | None -> acc') acc)
-    |> (fun acc -> columnInlineDefaults |> Map.fold (fun acc' _ dc -> dc.object.object_id :: acc') acc)
+    |> (fun acc -> columns |> Array.fold (fun acc' c -> c.object.ObjectId :: acc') acc)
+    |> (fun acc -> indexes |> Array.fold (fun acc' i -> match i.object with Some o -> o.ObjectId :: acc' | None -> acc') acc)
+    |> (fun acc -> columnInlineDefaults |> Map.fold (fun acc' _ dc -> dc.object.ObjectId :: acc') acc)
     
 
 let generateTableScript allTypes ds (w : System.IO.StreamWriter) (opt : Options) (t : TABLE) =
-    let tableName = $"[{t.schema.name}].[{t.table_name}]"
+    let tableName = $"[{t.Schema.Name}].[{t.Name}]"
     w.WriteLine $"CREATE TABLE {tableName} ("
     
     let object_ids =
         generateTableScript' w opt ds allTypes false tableName 
-            t.columns t.indexes t.checkConstraints t.defaultConstraints
+            t.Columns t.Indexes t.CheckConstraints t.DefaultConstraints
     
-    ObjectDefinitions {| contains_objects = t.object.object_id :: object_ids; depends_on = [] |}
+    ObjectDefinitions {| contains_objects = t.Object.ObjectId :: object_ids; depends_on = [] |}
 
-let generateTableTypeScript allTypes ds (w : System.IO.StreamWriter) (opt : Options) (t : TABLE_TYPE) =
-    let tName = $"[{t.schema.name}].[{t.type_name}]"
+let generateTableTypeScript allTypes ds (w : System.IO.StreamWriter) (opt : Options) (t : TableType) =
+    let tName = $"[{t.Schema.Name}].[{t.Name}]"
     w.WriteLine $"CREATE TYPE {tName} AS TABLE ("
     
     let object_ids =
         generateTableScript' w opt ds allTypes true tName 
-            t.columns t.indexes t.checkConstraints t.defaultConstraints
-    ObjectDefinitions {| contains_objects = t.object.object_id :: object_ids; depends_on = [] |}
+            t.Columns t.Indexes t.CheckConstraints t.DefaultConstraints
+    ObjectDefinitions {| contains_objects = t.Object.ObjectId :: object_ids; depends_on = [] |}
 
 
 let generateViewScript (w : System.IO.StreamWriter) (opt : Options) (view : VIEW)=
     [
         "SET QUOTED_IDENTIFIER ON "; "GO"; "SET ANSI_NULLS ON "; "GO"
-        view.definition
+        view.Definition
         "GO"; "SET QUOTED_IDENTIFIER OFF "; "GO"; "SET ANSI_NULLS OFF "; "GO"; ""; "GO"
     ]
     |> List.iter w.WriteLine
 
-    ObjectDefinitions {| contains_objects = [view.object.object_id]; depends_on = [] |}
+    ObjectDefinitions {| contains_objects = [view.Object.ObjectId]; depends_on = [] |}
 
 
 let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options) 
@@ -368,39 +368,39 @@ let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options)
                 then 
                     if cc.is_system_named
                     then w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK  {cc.definition}"
-                    else w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CONSTRAINT [{cc.object.name}] CHECK  {cc.definition}"
+                    else w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CONSTRAINT [{cc.object.Name}] CHECK  {cc.definition}"
                 else
                     if cc.is_system_named
                     then w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK {cc.definition}"
                     else 
                         let trustClause = if cc.is_not_trusted then "NOCHECK" else "CHECK" 
-                        w.WriteLine $"ALTER TABLE {tableFullname} WITH {trustClause} ADD CONSTRAINT [{cc.object.name}] CHECK {cc.definition}"
+                        w.WriteLine $"ALTER TABLE {tableFullname} WITH {trustClause} ADD CONSTRAINT [{cc.object.Name}] CHECK {cc.definition}"
                         if cc.is_disabled
-                        then w.WriteLine $"ALTER TABLE {tableFullname} NOCHECK CONSTRAINT [{cc.object.name}]"
+                        then w.WriteLine $"ALTER TABLE {tableFullname} NOCHECK CONSTRAINT [{cc.object.Name}]"
                 "GO" |> w.WriteLine
-                cc.object.object_id :: acc)
+                cc.object.ObjectId :: acc)
             []
     ObjectDefinitions {| contains_objects = object_ids; depends_on = [table_object_id] |}
 
 let generateDefaultConstraintsScript (w : System.IO.StreamWriter) (opt : Options) (table : TABLE, dcs : DEFAULT_CONSTRAINT array) =
     let object_ids =
         dcs 
-        |> Array.sortBy (fun dc -> dc.object.object_id)
+        |> Array.sortBy (fun dc -> dc.object.ObjectId)
         |> Array.fold
             (fun acc dc ->
-                let tableName = $"[{table.schema.name}].[{table.table_name}]"
+                let tableName = $"[{table.Schema.Name}].[{table.Name}]"
                 if dc.is_system_named
                 then 
                     if opt.SchemazenCompatibility
                     then $"ALTER TABLE {tableName} ADD  DEFAULT {dc.definition} FOR [{dc.column.column_name}]"
                     else $"ALTER TABLE {tableName} ADD DEFAULT {dc.definition} FOR [{dc.column.column_name}]"
-                else $"ALTER TABLE {tableName} ADD CONSTRAINT [{dc.object.name}] DEFAULT {dc.definition} FOR [{dc.column.column_name}]"
+                else $"ALTER TABLE {tableName} ADD CONSTRAINT [{dc.object.Name}] DEFAULT {dc.definition} FOR [{dc.column.column_name}]"
                 |> w.WriteLine
                 "GO" |> w.WriteLine
                 
-                dc.object.object_id :: acc)
+                dc.object.ObjectId :: acc)
             []
-    ObjectDefinitions {| contains_objects = object_ids; depends_on = [table.object.object_id] |}
+    ObjectDefinitions {| contains_objects = object_ids; depends_on = [table.Object.ObjectId] |}
 
 let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (table : TABLE, fks : FOREIGN_KEY array) =
     let (object_ids, depends_on) =
@@ -410,8 +410,8 @@ let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (tabl
                 let columnsStr = fk.columns |> Array.joinBy ", " (fun c -> $"[{c.parent_column.column_name}]")
                 let refColumnsStr = fk.columns |> Array.joinBy ", " (fun c -> $"[{c.referenced_column.column_name}]")
                 let name = if fk.is_system_named then "" else $"CONSTRAINT [{fk.name}]"
-                w.WriteLine $"ALTER TABLE [{table.schema.name}].[{table.table_name}] WITH CHECK ADD {name}"
-                w.WriteLine $"   FOREIGN KEY({columnsStr}) REFERENCES [{fk.referenced.schema.name}].[{fk.referenced.name}] ({refColumnsStr})"
+                w.WriteLine $"ALTER TABLE [{table.Schema.Name}].[{table.Name}] WITH CHECK ADD {name}"
+                w.WriteLine $"   FOREIGN KEY({columnsStr}) REFERENCES [{fk.referenced.Schema.Name}].[{fk.referenced.Name}] ({refColumnsStr})"
                 match fk.update_referential_action with
                 | REFERENTIAL_ACTION.No_action -> () 
                 | REFERENTIAL_ACTION.Cascade -> w.WriteLine "   ON UPDATE CASCADE"
@@ -425,8 +425,8 @@ let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (tabl
                 w.WriteLine ""
                 w.WriteLine "GO"
 
-                fk.object.object_id :: object_ids,
-                fk.parent.object_id :: fk.referenced.object_id :: depends_on)
+                fk.object.ObjectId :: object_ids,
+                fk.parent.ObjectId :: fk.referenced.ObjectId :: depends_on)
             ([], [])
     ObjectDefinitions {| contains_objects = object_ids; depends_on = depends_on |}
 
@@ -435,15 +435,15 @@ let generateTriggerScript (w : System.IO.StreamWriter) (opt : Options) (trigger 
         "SET QUOTED_IDENTIFIER ON "; "GO"; "SET ANSI_NULLS ON "; "GO"
         if opt.SchemazenCompatibility then trigger.orig_definition else trigger.definition
         "GO"; "SET QUOTED_IDENTIFIER OFF "; "GO"; "SET ANSI_NULLS OFF "; "GO"; ""; 
-        $"ENABLE TRIGGER [{trigger.object.schema.name}].[{trigger.object.name}] ON [{trigger.parent.schema.name}].[{trigger.parent.name}]"
+        $"ENABLE TRIGGER [{trigger.object.Schema.Name}].[{trigger.object.Name}] ON [{trigger.parent.Schema.Name}].[{trigger.parent.Name}]"
         "GO"; ""; "GO"
     ]
     |> List.iter w.WriteLine
 
     ObjectDefinitions 
         {| 
-            contains_objects = [trigger.object.object_id]
-            depends_on = [trigger.parent.object_id]
+            contains_objects = [trigger.object.ObjectId]
+            depends_on = [trigger.parent.ObjectId]
         |}
 
 let generateProcedureScript (w : System.IO.StreamWriter) (opt : Options) (p : PROCEDURE) =
@@ -453,20 +453,20 @@ let generateProcedureScript (w : System.IO.StreamWriter) (opt : Options) (p : PR
         "GO"; "SET QUOTED_IDENTIFIER OFF "; "GO"; "SET ANSI_NULLS OFF "; "GO"; ""; "GO"
     ]
     |> List.iter w.WriteLine
-    ObjectDefinitions {| contains_objects = [p.object.object_id]; depends_on = [] |}
+    ObjectDefinitions {| contains_objects = [p.object.ObjectId]; depends_on = [] |}
 
 let generateSynonymScript (w : System.IO.StreamWriter) (opt : Options) (synonym : SYNONYM) =
-    w.WriteLine $"CREATE SYNONYM [{synonym.object.schema.name}].[{synonym.object.name}] FOR {synonym.base_object_name}"
+    w.WriteLine $"CREATE SYNONYM [{synonym.object.Schema.Name}].[{synonym.object.Name}] FOR {synonym.base_object_name}"
     w.WriteLine "GO"
-    ObjectDefinitions {| contains_objects = [synonym.object.object_id]; depends_on = [] |}
+    ObjectDefinitions {| contains_objects = [synonym.object.ObjectId]; depends_on = [] |}
 
 
-let generateXmlSchemaCollectionScript (w : System.IO.StreamWriter) (opt : Options) (s : XML_SCHEMA_COLLECTION) =
+let generateXmlSchemaCollectionScript (w : System.IO.StreamWriter) (opt : Options) (s : XmlSchemaCollection) =
     let name =
         if opt.SchemazenCompatibility
-        then $"{s.schema.name}.{s.name}"
-        else $"[{s.schema.name}].[{s.name}]"
-    w.WriteLine $"CREATE XML SCHEMA COLLECTION {name} AS N'{s.definition}'"
+        then $"{s.Schema.Name}.{s.Name}"
+        else $"[{s.Schema.Name}].[{s.Name}]"
+    w.WriteLine $"CREATE XML SCHEMA COLLECTION {name} AS N'{s.Definition}'"
     w.WriteLine "GO"
     XmlSchemaCollectionDefinition
 
@@ -483,7 +483,7 @@ CREATE SEQUENCE [schema_name . ] sequence_name
 *)
 
 let generateSequenceScript (w : System.IO.StreamWriter) (opt : Options) (s : SEQUENCE) =
-    let name = $"[{s.object.schema.name}].[{s.object.name}]"
+    let name = $"[{s.object.Schema.Name}].[{s.object.Name}]"
     let typeStr = DATATYPE.typeStr opt.SchemazenCompatibility false s.data_type
     let startWith = match s.sequence_definition.start_value with Some v -> $" START WITH {v}" | None -> ""
     let incrementBy = $" INCREMENT BY {s.sequence_definition.increment}"
@@ -493,7 +493,7 @@ let generateSequenceScript (w : System.IO.StreamWriter) (opt : Options) (s : SEQ
     let cache = match s.cache_size with Some s -> $" CACHE {s}" | None -> if s.is_cached then "" else " NO CACHE"
     w.WriteLine $"CREATE SEQUENCE {name} AS {typeStr}{startWith}{incrementBy}{minValue}{maxValue}{cycle}{cache}"
 
-    ObjectDefinitions {| contains_objects = [s.object.object_id]; depends_on = [] |}
+    ObjectDefinitions {| contains_objects = [s.object.ObjectId]; depends_on = [] |}
 
 (*
 CREATE TYPE [ schema_name. ] type_name
@@ -513,12 +513,12 @@ let generateUserDefinedTypeScript (types : Map<int, DATATYPE>) (w : System.IO.St
         let base_type = types |> Map.find (int t.system_type_id)
         DATATYPE.typeStr' opt.SchemazenCompatibility true base_type.name base_type.sys_datatype t.parameter
     let nullStr = if t.parameter.is_nullable then "NULL" else "NOT NULL"
-    w.WriteLine $"CREATE TYPE [{t.schema.name}].[{t.name}] FROM {tDef} {nullStr}"
+    w.WriteLine $"CREATE TYPE [{t.schema.Name}].[{t.name}] FROM {tDef} {nullStr}"
     w.WriteLine "GO"
     UserDefinedTypeDefinition
 
 
-let generateScripts (opt : Options) (schema : DATABASE) scriptConsumer =
+let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
     let db = schema
     let dataForFolder subfolderName (nameFn : 'a -> string) f (xs : 'a list) =
         if xs |> List.isEmpty |> not 
@@ -552,37 +552,37 @@ let generateScripts (opt : Options) (schema : DATABASE) scriptConsumer =
                 scriptConsumer isDatabaseDefinition script
     
     let allTypes = 
-        db.TYPES
+        db.Types
         |> List.map (fun t -> t.user_type_id, t)
         |> Map.ofList
     
-    [db.SETTINGS]
+    [db.Properties]
     |> dataForFolder "" (fun s -> $"props.sql") generateSettingsScript
 
-    db.SCHEMAS |> List.filter (fun s -> not s.is_system_schema)
-    |> dataForFolder "schemas" (fun s -> $"{s.name}.sql") generateSchemaScript
+    db.Schemas |> List.filter (fun s -> not s.IsSystemSchema)
+    |> dataForFolder "schemas" (fun s -> $"{s.Name}.sql") generateSchemaScript
 
-    db.TYPES
+    db.Types
     |> List.filter (fun t -> t.is_user_defined && t.table_datatype.IsNone)
-    |> dataForFolder "user_defined_types" (fun t -> objectFilename t.schema.name t.name) (generateUserDefinedTypeScript allTypes)
+    |> dataForFolder "user_defined_types" (fun t -> objectFilename t.schema.Name t.name) (generateUserDefinedTypeScript allTypes)
 
-    db.TABLE_TYPES
-    |> dataForFolder "table_types" (fun t -> $"TYPE_{t.type_name}.sql") 
-        (generateTableTypeScript allTypes db.SETTINGS)
+    db.TableTypes
+    |> dataForFolder "table_types" (fun t -> $"TYPE_{t.Name}.sql") 
+        (generateTableTypeScript allTypes db.Properties)
 
-    db.TABLES 
-    |> dataForFolder "tables" (fun t -> objectFilename t.schema.name t.table_name) 
-        (generateTableScript allTypes db.SETTINGS)
+    db.Tables 
+    |> dataForFolder "tables" (fun t -> objectFilename t.Schema.Name t.Name) 
+        (generateTableScript allTypes db.Properties)
     
-    db.VIEWS 
-    |> dataForFolder "views" (fun v -> objectFilename v.schema.name v.view_name) generateViewScript
-    db.VIEWS 
+    db.Views
+    |> dataForFolder "views" (fun v -> objectFilename v.Schema.Name v.Name) generateViewScript
+    db.Views 
     |> List.collect 
         (fun v -> 
-            v.indexes 
+            v.Indexes 
             |> Array.choose 
                 (fun i -> 
-                    match i.name, getIndexDefinitionStr opt $"[{v.schema.name}].[{v.view_name}]" true i with 
+                    match i.name, getIndexDefinitionStr opt $"[{v.Schema.Name}].[{v.Name}]" true i with 
                     | Some n, Some def -> Some (n, v, i, def) 
                     | _ -> None) 
             |> Array.toList) 
@@ -592,43 +592,43 @@ let generateScripts (opt : Options) (schema : DATABASE) scriptConsumer =
             w.WriteLine "GO"
             ObjectDefinitions 
                 {| 
-                    contains_objects = match index.object with Some o -> [o.object_id] | None -> []; 
-                    depends_on = [view.object.object_id] 
+                    contains_objects = match index.object with Some o -> [o.ObjectId] | None -> []; 
+                    depends_on = [view.Object.ObjectId] 
                 |})
     
-    db.PROCEDURES |> List.filter  (fun p -> p.object.object_type <> OBJECT_TYPE.SQL_STORED_PROCEDURE)
-    |> dataForFolder "functions" (fun p -> objectFilename p.object.schema.name p.name) generateProcedureScript
+    db.Procedures |> List.filter  (fun p -> p.object.ObjectType <> ObjectType.SQL_STORED_PROCEDURE)
+    |> dataForFolder "functions" (fun p -> objectFilename p.object.Schema.Name p.name) generateProcedureScript
 
-    db.TABLES 
+    db.Tables 
     |> List.choose 
         (fun t -> 
-            match t.checkConstraints |> Array.filter (fun cc -> not cc.is_system_named) with 
+            match t.CheckConstraints |> Array.filter (fun cc -> not cc.is_system_named) with 
             | [||] -> None 
-            | ccs -> Some (t.schema.name, t.table_name, t.object.object_id, ccs))
+            | ccs -> Some (t.Schema.Name, t.Name, t.Object.ObjectId, ccs))
     |> dataForFolder "check_constraints" (fun (sn, tn, _, _) -> objectFilename sn tn) generateCheckConstraintsScript
 
 
-    db.TABLES |> List.choose (fun t -> match t.defaultConstraints with [||] -> None | dcs -> Some (t, dcs))
-    |> dataForFolder "defaults" (fun (t, _) -> objectFilename t.schema.name t.table_name) generateDefaultConstraintsScript
+    db.Tables |> List.choose (fun t -> match t.DefaultConstraints with [||] -> None | dcs -> Some (t, dcs))
+    |> dataForFolder "defaults" (fun (t, _) -> objectFilename t.Schema.Name t.Name) generateDefaultConstraintsScript
 
-    db.TABLES 
-    |> List.collect (fun t -> t.triggers |> Array.toList)
-    |> dataForFolder "triggers" (fun tr -> objectFilename tr.object.schema.name tr.trigger_name) generateTriggerScript
+    db.Tables 
+    |> List.collect (fun t -> t.Triggers |> Array.toList)
+    |> dataForFolder "triggers" (fun tr -> objectFilename tr.object.Schema.Name tr.trigger_name) generateTriggerScript
 
-    db.TABLES |> List.choose (fun t -> match t.foreignKeys with [||] -> None | fks -> Some (t, fks))
-    |> dataForFolder "foreign_keys" (fun (t, _) -> objectFilename t.schema.name t.table_name) generateForeignKeysScript
+    db.Tables |> List.choose (fun t -> match t.ForeignKeys with [||] -> None | fks -> Some (t, fks))
+    |> dataForFolder "foreign_keys" (fun (t, _) -> objectFilename t.Schema.Name t.Name) generateForeignKeysScript
 
-    db.PROCEDURES |> List.filter  (fun p -> p.object.object_type = OBJECT_TYPE.SQL_STORED_PROCEDURE)
-    |> dataForFolder "procedures" (fun p -> objectFilename p.object.schema.name p.name) generateProcedureScript
+    db.Procedures |> List.filter  (fun p -> p.object.ObjectType = ObjectType.SQL_STORED_PROCEDURE)
+    |> dataForFolder "procedures" (fun p -> objectFilename p.object.Schema.Name p.name) generateProcedureScript
 
-    db.SYNONYMS
-    |> dataForFolder "synonyms" (fun s -> objectFilename s.object.schema.name s.object.name) generateSynonymScript
+    db.Synonyms
+    |> dataForFolder "synonyms" (fun s -> objectFilename s.object.Schema.Name s.object.Name) generateSynonymScript
 
-    db.XML_SCHEMA_COLLECTIONS
-    |> dataForFolder "xmlschemacollections" (fun s -> objectFilename s.schema.name s.name) generateXmlSchemaCollectionScript
+    db.XmlSchemaCollections
+    |> dataForFolder "xmlschemacollections" (fun s -> objectFilename s.Schema.Name s.Name) generateXmlSchemaCollectionScript
 
     if not (opt.SchemazenCompatibility)
     then 
-        db.SEQUENCES
-        |> dataForFolder "sequences" (fun s -> objectFilename s.object.schema.name s.object.name) generateSequenceScript    
+        db.Sequences
+        |> dataForFolder "sequences" (fun s -> objectFilename s.object.Schema.Name s.object.Name) generateSequenceScript    
 

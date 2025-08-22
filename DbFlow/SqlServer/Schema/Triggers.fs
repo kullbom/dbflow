@@ -45,7 +45,7 @@ module TRIGGER =
                         is_disabled = readBool "is_disabled" r
                         is_instead_of_trigger = readBool "is_instead_of_trigger" r
 
-                        ms_description = RCMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, 0) ms_descriptions
+                        ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -66,9 +66,8 @@ module TRIGGER =
                 let trigger_definition = (RCMap.pick object_id sql_modules).definition.Trim()
                 let updated_trigger_definition = 
                     SqlParser.SqlDefinitions.updateTriggerDefinition 
-                        $"[{object.schema.name}].[{name}]" $"[{parent.schema.name}].[{parent.name}]"
+                        $"[{object.Schema.Name}].[{name}]" $"[{parent.Schema.Name}].[{parent.Name}]"
                         trigger_definition
-                let foo = 0
                 {
                         object = object
                         parent = parent
@@ -78,7 +77,7 @@ module TRIGGER =
                         is_disabled = readBool "is_disabled" r
                         is_instead_of_trigger = readBool "is_instead_of_trigger" r
 
-                        ms_description = RCMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, 0) ms_descriptions
+                        ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -87,7 +86,7 @@ module TRIGGER =
     let readAll objects sql_modules ms_descriptions connection =
         let triggers' = readAll' objects sql_modules ms_descriptions connection
         triggers' 
-        |> List.groupBy (fun tr -> tr.parent.object_id)
+        |> List.groupBy (fun tr -> tr.parent.ObjectId)
         |> List.fold 
             (fun m (object_id, trs) -> 
                 Map.add object_id (trs |> List.toArray) m)

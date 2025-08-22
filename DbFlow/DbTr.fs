@@ -60,7 +60,7 @@ module DbTr =
                     raise (Exception($"Batch failed: {cmdText}", e)))
 
     
-    let reader cmdText parameters f seed =
+    let reader' cmdText parameters f =
         DbTr
             (fun ctx -> 
                 let cmd = ctx.Connection.CreateCommand()
@@ -74,6 +74,11 @@ module DbTr =
                     p.Value <- parameterValue
                     cmd.Parameters.Add(p) |> ignore
                 use dataReader = cmd.ExecuteReader() 
+                f dataReader)
+
+    let reader cmdText parameters f seed =
+        reader' cmdText parameters
+            (fun dataReader ->
                 let mutable acc = seed
                 let f' = OptimizedClosures.FSharpFunc<_,_,_>.Adapt(f)
                 while (dataReader.Read()) do

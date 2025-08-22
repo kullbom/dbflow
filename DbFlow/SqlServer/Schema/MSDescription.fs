@@ -6,48 +6,48 @@ open DbFlow.Readers
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/extended-properties-catalog-views-sys-extended-properties?view=sql-server-ver17
 
 [<RequireQualifiedAccess>]
-type XPROPERTY_CLASS = 
-    | DATABASE = 0uy
-    | OBJECT_OR_COLUMN = 1uy
-    | PARAMETER = 2uy
-    | SCHEMA = 3uy
-    | DATABASE_PRINCIPAL = 4uy
-    | ASSEMBLY = 5uy
-    | TYPE = 6uy
-    | INDEX = 7uy
+type XPropertyClass = 
+    | Database = 0uy
+    | ObjectOrColumn = 1uy
+    | Parameter = 2uy
+    | Schema = 3uy
+    | DatabasePrincipal = 4uy
+    | Assembly = 5uy
+    | Type = 6uy
+    | Index = 7uy
     // 8 = User defined table type column
-    | XML_SCHEMA_COLLECTION = 10uy
-    | MESSAGE_TYPE = 15uy
-    | SERVICE_CONTRACT = 16uy
-    | SERVICE = 17uy
-    | REMOTE_SERVICE_BINDING = 18uy
-    | ROUTE = 19uy
-    | DATASPACE = 20uy
-    | PARTITION_FUNCTION = 21uy
-    | DATABASE_FILE = 22uy
-    | PLAN_GUIDE = 27uy
+    | XmlSchemaCollection = 10uy
+    | MessageType = 15uy
+    | ServiceContract = 16uy
+    | Service = 17uy
+    | RemoteServiceBinding = 18uy
+    | Route = 19uy
+    | Dataspace = 20uy
+    | PartitionFunction = 21uy
+    | DatabaseFile = 22uy
+    | PlanGuide = 27uy
 
 module XPROPERTY_CLASS = 
     let findClass classCode =
         match classCode with
-        |  0uy -> XPROPERTY_CLASS.DATABASE
-        |  1uy -> XPROPERTY_CLASS.OBJECT_OR_COLUMN
-        |  2uy -> XPROPERTY_CLASS.PARAMETER
-        |  3uy -> XPROPERTY_CLASS.SCHEMA
-        |  4uy -> XPROPERTY_CLASS.DATABASE_PRINCIPAL
-        |  5uy -> XPROPERTY_CLASS.ASSEMBLY
-        |  6uy -> XPROPERTY_CLASS.TYPE
-        |  7uy -> XPROPERTY_CLASS.INDEX
-        | 10uy -> XPROPERTY_CLASS.XML_SCHEMA_COLLECTION 
-        | 15uy -> XPROPERTY_CLASS.MESSAGE_TYPE          
-        | 16uy -> XPROPERTY_CLASS.SERVICE_CONTRACT      
-        | 17uy -> XPROPERTY_CLASS.SERVICE
-        | 18uy -> XPROPERTY_CLASS.REMOTE_SERVICE_BINDING 
-        | 19uy -> XPROPERTY_CLASS.ROUTE
-        | 20uy -> XPROPERTY_CLASS.DATASPACE
-        | 21uy -> XPROPERTY_CLASS.PARTITION_FUNCTION 
-        | 22uy -> XPROPERTY_CLASS.DATABASE_FILE 
-        | 27uy -> XPROPERTY_CLASS.PLAN_GUIDE 
+        |  0uy -> XPropertyClass.Database
+        |  1uy -> XPropertyClass.ObjectOrColumn
+        |  2uy -> XPropertyClass.Parameter
+        |  3uy -> XPropertyClass.Schema
+        |  4uy -> XPropertyClass.DatabasePrincipal
+        |  5uy -> XPropertyClass.Assembly
+        |  6uy -> XPropertyClass.Type
+        |  7uy -> XPropertyClass.Index
+        | 10uy -> XPropertyClass.XmlSchemaCollection 
+        | 15uy -> XPropertyClass.MessageType          
+        | 16uy -> XPropertyClass.ServiceContract      
+        | 17uy -> XPropertyClass.Service
+        | 18uy -> XPropertyClass.RemoteServiceBinding 
+        | 19uy -> XPropertyClass.Route
+        | 20uy -> XPropertyClass.Dataspace
+        | 21uy -> XPropertyClass.PartitionFunction 
+        | 22uy -> XPropertyClass.DatabaseFile 
+        | 27uy -> XPropertyClass.PlanGuide 
         | _ -> failwithf "Unknown XPROPERTY_CLASS : %i" classCode
 
 module MS_Description =

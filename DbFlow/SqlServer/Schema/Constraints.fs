@@ -36,7 +36,7 @@ module DEFAULT_CONSTRAINT =
                     
                     definition = readString "definition" r
 
-                    ms_description = RCMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, 0) ms_descriptions
+                    ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -44,7 +44,7 @@ module DEFAULT_CONSTRAINT =
     let readAll objects columns ms_descriptions connection =
         let defaultConstraints' = readAll' objects columns ms_descriptions connection
         defaultConstraints'
-        |> List.groupBy (fun cc -> cc.parent.object_id)
+        |> List.groupBy (fun cc -> cc.parent.ObjectId)
         |> List.fold 
             (fun m (object_id, trs) -> 
                 Map.add object_id (trs |> List.toArray) m)
@@ -78,7 +78,7 @@ module KEY_CONSTRAINT =
                         is_system_named = readBool "is_system_named" r
                         unique_index_id = readInt32 "unique_index_id" r
                         
-                        ms_description = RCMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, 0) ms_descriptions
+                        ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
                     }
                     m)
             Map.empty
@@ -134,7 +134,7 @@ module CHECK_CONSTRAINT =
                         uses_database_collation = readBool "uses_database_collation" r
                         is_system_named = readBool "is_system_named" r
 
-                        ms_description = RCMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, 0) ms_descriptions
+                        ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -143,7 +143,7 @@ module CHECK_CONSTRAINT =
     let readAll objects columns ms_descriptions connection =
         let checkConstraints' = readAll' objects columns ms_descriptions connection
         checkConstraints'
-        |> List.groupBy (fun cc -> cc.parent.object_id)
+        |> List.groupBy (fun cc -> cc.parent.ObjectId)
         |> List.fold 
             (fun m (object_id, trs) -> 
                 Map.add object_id (trs |> List.toArray) m)

@@ -21,28 +21,28 @@ module RuleExclusion =
         |> fun (columns, objects) ->
             { Columns = columns; Objects = objects }
 
-type Rule = { Title : string; Description : string; CheckRule : Schema.DATABASE -> Result<unit, string> }
+type Rule = { Title : string; Description : string; CheckRule : Schema.DatabaseSchema -> Result<unit, string> }
 
 
 module Helpers =
-    let foldAllColumns (exclude : RuleExclusion) (db : Schema.DATABASE) (f : 'a -> Schema.COLUMN -> 'a) (seed : 'a) =
+    let foldAllColumns (exclude : RuleExclusion) (db : Schema.DatabaseSchema) (f : 'a -> Schema.COLUMN -> 'a) (seed : 'a) =
         let excludeObject (o : Schema.OBJECT) =
-            Set.contains { schema = o.schema.name; name = o.name } exclude.Objects
+            Set.contains { schema = o.Schema.Name; name = o.Name } exclude.Objects
         
         let foldColumns f seed (columns : Schema.COLUMN array) =
             columns
             |> Array.fold 
                 (fun acc c -> 
-                    if Set.contains { schema = c.object.schema.name; parent = c.object.name; name = c.column_name } exclude.Columns
+                    if Set.contains { schema = c.object.Schema.Name; parent = c.object.Name; name = c.column_name } exclude.Columns
                     then acc
                     else f acc c)
                 seed
 
         let acc = 
-            db.TABLES |> List.fold (fun acc' t -> if excludeObject t.object then acc' else t.columns |> foldColumns f acc') seed
-        let acc = db.VIEWS |> List.fold (fun acc' v -> if excludeObject v.object then acc' else v.columns |> foldColumns f acc') acc
-        let acc = db.TABLE_TYPES |> List.fold (fun acc' tt -> if excludeObject tt.object then acc' else tt.columns |> foldColumns f acc') acc
-        let acc = db.PROCEDURES |> List.fold (fun acc' p -> if excludeObject p.object then acc' else p.columns |> foldColumns f acc') acc
+            db.Tables |> List.fold (fun acc' t -> if excludeObject t.Object then acc' else t.Columns |> foldColumns f acc') seed
+        let acc = db.Views |> List.fold (fun acc' v -> if excludeObject v.Object then acc' else v.Columns |> foldColumns f acc') acc
+        let acc = db.TableTypes |> List.fold (fun acc' tt -> if excludeObject tt.Object then acc' else tt.Columns |> foldColumns f acc') acc
+        let acc = db.Procedures |> List.fold (fun acc' p -> if excludeObject p.object then acc' else p.columns |> foldColumns f acc') acc
         acc
 
 module Rule =
@@ -56,7 +56,7 @@ module Rule =
                         (fun acc c -> 
                             match c.data_type.sys_datatype with
                             | Some Schema.SYS_DATATYPE.DATETIME ->
-                                $"{c.object.schema.name}.{c.object.name}.{c.column_name}" :: acc
+                                $"{c.object.Schema.Name}.{c.object.Name}.{c.column_name}" :: acc
                             | _ -> acc)
                         []
                     |> function 
@@ -76,9 +76,9 @@ module Rule =
                         (fun acc c -> 
                             match c.data_type.sys_datatype with
                             | Some Schema.SYS_DATATYPE.DATETIME when not (c.column_name.ToUpperInvariant().EndsWith "UTC") ->
-                                $"{c.object.schema.name}.{c.object.name}.{c.column_name}" :: acc
+                                $"{c.object.Schema.Name}.{c.object.Name}.{c.column_name}" :: acc
                             | Some Schema.SYS_DATATYPE.DATETIME2 when not (c.column_name.ToUpperInvariant().EndsWith "UTC") -> 
-                                $"{c.object.schema.name}.{c.object.name}.{c.column_name}" :: acc
+                                $"{c.object.Schema.Name}.{c.object.Name}.{c.column_name}" :: acc
                             | _ -> acc)
                         []
                     |> function 
@@ -99,7 +99,7 @@ See: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-ansi-padding-tra
                         (fun acc c -> 
                             if c.is_ansi_padded 
                             then acc
-                            else $"{c.object.schema.name}.{c.object.name}.{c.column_name}" :: acc)
+                            else $"{c.object.Schema.Name}.{c.object.Name}.{c.column_name}" :: acc)
                         []
                     |> function 
                         | [] -> Ok () 

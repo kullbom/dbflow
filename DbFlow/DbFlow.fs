@@ -1,5 +1,6 @@
 ﻿namespace DbFlow
 
+// Should have a better name
 type Options = {
     SchemazenCompatibility : bool
     BypassReferenceChecksOnLoad : bool

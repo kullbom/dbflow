@@ -5,27 +5,27 @@ open DbFlow
 type CompareGen = CompareGenCase
     with
 
-        static member Collect (x0 : DATABASE, x1 : DATABASE) =
+        static member Collect (x0 : DatabaseSchema, x1 : DatabaseSchema) =
                     fun path diffs ->
                        diffs
-                       |> Compare.collectList x0.SCHEMAS x1.SCHEMAS SortOrder.orderBy Sequence.elementId CompareGen.Collect ("SCHEMAS" :: path)
-                       |> Compare.collectList x0.TABLES x1.TABLES SortOrder.orderBy Sequence.elementId CompareGen.Collect ("TABLES" :: path)
-                       |> Compare.collectList x0.VIEWS x1.VIEWS SortOrder.orderBy Sequence.elementId CompareGen.Collect ("VIEWS" :: path)
-                       |> Compare.collectList x0.TYPES x1.TYPES SortOrder.orderBy Sequence.elementId CompareGen.Collect ("TYPES" :: path)
-                       |> Compare.collectList x0.TABLE_TYPES x1.TABLE_TYPES SortOrder.orderBy Sequence.elementId CompareGen.Collect ("TABLE_TYPES" :: path)
-                       |> Compare.collectList x0.PROCEDURES x1.PROCEDURES SortOrder.orderBy Sequence.elementId CompareGen.Collect ("PROCEDURES" :: path)
-                       |> Compare.collectList x0.XML_SCHEMA_COLLECTIONS x1.XML_SCHEMA_COLLECTIONS SortOrder.orderBy Sequence.elementId CompareGen.Collect ("XML_SCHEMA_COLLECTIONS" :: path)
-                       |> Compare.collectList x0.TRIGGERS x1.TRIGGERS SortOrder.orderBy Sequence.elementId CompareGen.Collect ("TRIGGERS" :: path)
-                       |> Compare.collectList x0.SYNONYMS x1.SYNONYMS SortOrder.orderBy Sequence.elementId CompareGen.Collect ("SYNONYMS" :: path)
-                       |> Compare.collectList x0.SEQUENCES x1.SEQUENCES SortOrder.orderBy Sequence.elementId CompareGen.Collect ("SEQUENCES" :: path)
-                       |> CompareGen.Collect (x0.SETTINGS, x1.SETTINGS) ("SETTINGS" :: path)
+                       |> Compare.collectList x0.Schemas x1.Schemas SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Schemas" :: path)
+                       |> Compare.collectList x0.Tables x1.Tables SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Tables" :: path)
+                       |> Compare.collectList x0.Views x1.Views SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Views" :: path)
+                       |> Compare.collectList x0.Types x1.Types SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Types" :: path)
+                       |> Compare.collectList x0.TableTypes x1.TableTypes SortOrder.orderBy Sequence.elementId CompareGen.Collect ("TableTypes" :: path)
+                       |> Compare.collectList x0.Procedures x1.Procedures SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Procedures" :: path)
+                       |> Compare.collectList x0.XmlSchemaCollections x1.XmlSchemaCollections SortOrder.orderBy Sequence.elementId CompareGen.Collect ("XmlSchemaCollections" :: path)
+                       |> Compare.collectList x0.Triggers x1.Triggers SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Triggers" :: path)
+                       |> Compare.collectList x0.Synonyms x1.Synonyms SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Synonyms" :: path)
+                       |> Compare.collectList x0.Sequences x1.Sequences SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Sequences" :: path)
+                       |> CompareGen.Collect (x0.Properties, x1.Properties) ("Properties" :: path)
 
-        static member Collect (x0 : SCHEMA, x1 : SCHEMA) =
+        static member Collect (x0 : Schema, x1 : Schema) =
                     fun path diffs ->
                        diffs
-                       |> CompareGen.Collect (x0.name, x1.name) ("name" :: path)
-                       |> CompareGen.Collect (x0.principal_name, x1.principal_name) ("principal_name" :: path)
-                       |> CompareGen.Collect (x0.is_system_schema, x1.is_system_schema) ("is_system_schema" :: path)
+                       |> CompareGen.Collect (x0.Name, x1.Name) ("Name" :: path)
+                       |> CompareGen.Collect (x0.PrincipalName, x1.PrincipalName) ("PrincipalName" :: path)
+                       |> CompareGen.Collect (x0.IsSystemSchema, x1.IsSystemSchema) ("IsSystemSchema" :: path)
 
         static member Collect (x0 : System.String, x1 : System.String) = Compare.equalCollector (x0, x1)
 
@@ -36,23 +36,23 @@ type CompareGen = CompareGenCase
         static member Collect (x0 : TABLE, x1 : TABLE) =
                     fun path diffs ->
                        diffs
-                       |> CompareGen.Collect (x0.schema, x1.schema) ("schema" :: path)
-                       |> CompareGen.Collect (x0.table_name, x1.table_name) ("table_name" :: path)
-                       |> CompareGen.Collect (x0.object, x1.object) ("object" :: path)
-                       |> Compare.collectArray x0.columns x1.columns SortOrder.orderBy Sequence.elementId CompareGen.Collect ("columns" :: path)
-                       |> Compare.collectArray x0.indexes x1.indexes SortOrder.orderBy Sequence.elementId CompareGen.Collect ("indexes" :: path)
-                       |> Compare.collectArray x0.triggers x1.triggers SortOrder.orderBy Sequence.elementId CompareGen.Collect ("triggers" :: path)
-                       |> Compare.collectArray x0.foreignKeys x1.foreignKeys SortOrder.orderBy Sequence.elementId CompareGen.Collect ("foreignKeys" :: path)
-                       |> Compare.collectArray x0.referencedForeignKeys x1.referencedForeignKeys SortOrder.orderBy Sequence.elementId CompareGen.Collect ("referencedForeignKeys" :: path)
-                       |> Compare.collectArray x0.checkConstraints x1.checkConstraints SortOrder.orderBy Sequence.elementId CompareGen.Collect ("checkConstraints" :: path)
-                       |> Compare.collectArray x0.defaultConstraints x1.defaultConstraints SortOrder.orderBy Sequence.elementId CompareGen.Collect ("defaultConstraints" :: path)
+                       |> CompareGen.Collect (x0.Schema, x1.Schema) ("Schema" :: path)
+                       |> CompareGen.Collect (x0.Name, x1.Name) ("Name" :: path)
+                       |> CompareGen.Collect (x0.Object, x1.Object) ("Object" :: path)
+                       |> Compare.collectArray x0.Columns x1.Columns SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Columns" :: path)
+                       |> Compare.collectArray x0.Indexes x1.Indexes SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Indexes" :: path)
+                       |> Compare.collectArray x0.Triggers x1.Triggers SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Triggers" :: path)
+                       |> Compare.collectArray x0.ForeignKeys x1.ForeignKeys SortOrder.orderBy Sequence.elementId CompareGen.Collect ("ForeignKeys" :: path)
+                       |> Compare.collectArray x0.ReferencedForeignKeys x1.ReferencedForeignKeys SortOrder.orderBy Sequence.elementId CompareGen.Collect ("ReferencedForeignKeys" :: path)
+                       |> Compare.collectArray x0.CheckConstraints x1.CheckConstraints SortOrder.orderBy Sequence.elementId CompareGen.Collect ("CheckConstraints" :: path)
+                       |> Compare.collectArray x0.DefaultConstraints x1.DefaultConstraints SortOrder.orderBy Sequence.elementId CompareGen.Collect ("DefaultConstraints" :: path)
 
         static member Collect (x0 : OBJECT, x1 : OBJECT) =
                     fun path diffs ->
                        diffs
                        |> Compare.object_name (x0, x1) path
-                       |> CompareGen.Collect (x0.schema, x1.schema) ("schema" :: path)
-                       |> Compare.equalCollector (x0.object_type, x1.object_type) ("object_type" :: path)
+                       |> CompareGen.Collect (x0.Schema, x1.Schema) ("Schema" :: path)
+                       |> Compare.equalCollector (x0.ObjectType, x1.ObjectType) ("ObjectType" :: path)
 
         static member Collect (x0 : System.DateTime, x1 : System.DateTime) = Compare.equalCollector (x0, x1)
 
@@ -140,6 +140,7 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.object, x1.object) ("object" :: path)
                        |> CompareGen.Collect (x0.parent, x1.parent) ("parent" :: path)
                        |> CompareGen.Collect (x0.trigger_name, x1.trigger_name) ("trigger_name" :: path)
+                       |> CompareGen.Collect (x0.orig_definition, x1.orig_definition) ("orig_definition" :: path)
                        |> CompareGen.Collect (x0.definition, x1.definition) ("definition" :: path)
                        |> CompareGen.Collect (x0.is_disabled, x1.is_disabled) ("is_disabled" :: path)
                        |> CompareGen.Collect (x0.is_instead_of_trigger, x1.is_instead_of_trigger) ("is_instead_of_trigger" :: path)
@@ -184,26 +185,26 @@ type CompareGen = CompareGenCase
         static member Collect (x0 : VIEW, x1 : VIEW) =
                     fun path diffs ->
                        diffs
-                       |> CompareGen.Collect (x0.schema, x1.schema) ("schema" :: path)
-                       |> CompareGen.Collect (x0.view_name, x1.view_name) ("view_name" :: path)
-                       |> CompareGen.Collect (x0.object, x1.object) ("object" :: path)
-                       |> CompareGen.Collect (x0.definition, x1.definition) ("definition" :: path)
-                       |> Compare.collectArray x0.columns x1.columns SortOrder.orderBy Sequence.elementId CompareGen.Collect ("columns" :: path)
-                       |> Compare.collectArray x0.indexes x1.indexes SortOrder.orderBy Sequence.elementId CompareGen.Collect ("indexes" :: path)
-                       |> Compare.collectArray x0.triggers x1.triggers SortOrder.orderBy Sequence.elementId CompareGen.Collect ("triggers" :: path)
+                       |> CompareGen.Collect (x0.Schema, x1.Schema) ("Schema" :: path)
+                       |> CompareGen.Collect (x0.Name, x1.Name) ("Name" :: path)
+                       |> CompareGen.Collect (x0.Object, x1.Object) ("Object" :: path)
+                       |> CompareGen.Collect (x0.Definition, x1.Definition) ("Definition" :: path)
+                       |> Compare.collectArray x0.Columns x1.Columns SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Columns" :: path)
+                       |> Compare.collectArray x0.Indexes x1.Indexes SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Indexes" :: path)
+                       |> Compare.collectArray x0.Triggers x1.Triggers SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Triggers" :: path)
 
-        static member Collect (x0 : TABLE_TYPE, x1 : TABLE_TYPE) =
+        static member Collect (x0 : TableType, x1 : TableType) =
                     fun path diffs ->
                        diffs
-                       |> CompareGen.Collect (x0.schema, x1.schema) ("schema" :: path)
-                       |> CompareGen.Collect (x0.type_name, x1.type_name) ("type_name" :: path)
-                       |> CompareGen.Collect (x0.object, x1.object) ("object" :: path)
-                       |> Compare.collectArray x0.columns x1.columns SortOrder.orderBy Sequence.elementId CompareGen.Collect ("columns" :: path)
-                       |> Compare.collectArray x0.indexes x1.indexes SortOrder.orderBy Sequence.elementId CompareGen.Collect ("indexes" :: path)
-                       |> Compare.collectArray x0.foreignKeys x1.foreignKeys SortOrder.orderBy Sequence.elementId CompareGen.Collect ("foreignKeys" :: path)
-                       |> Compare.collectArray x0.referencedForeignKeys x1.referencedForeignKeys SortOrder.orderBy Sequence.elementId CompareGen.Collect ("referencedForeignKeys" :: path)
-                       |> Compare.collectArray x0.checkConstraints x1.checkConstraints SortOrder.orderBy Sequence.elementId CompareGen.Collect ("checkConstraints" :: path)
-                       |> Compare.collectArray x0.defaultConstraints x1.defaultConstraints SortOrder.orderBy Sequence.elementId CompareGen.Collect ("defaultConstraints" :: path)
+                       |> CompareGen.Collect (x0.Schema, x1.Schema) ("Schema" :: path)
+                       |> CompareGen.Collect (x0.Name, x1.Name) ("Name" :: path)
+                       |> CompareGen.Collect (x0.Object, x1.Object) ("Object" :: path)
+                       |> Compare.collectArray x0.Columns x1.Columns SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Columns" :: path)
+                       |> Compare.collectArray x0.Indexes x1.Indexes SortOrder.orderBy Sequence.elementId CompareGen.Collect ("Indexes" :: path)
+                       |> Compare.collectArray x0.ForeignKeys x1.ForeignKeys SortOrder.orderBy Sequence.elementId CompareGen.Collect ("ForeignKeys" :: path)
+                       |> Compare.collectArray x0.ReferencedForeignKeys x1.ReferencedForeignKeys SortOrder.orderBy Sequence.elementId CompareGen.Collect ("ReferencedForeignKeys" :: path)
+                       |> Compare.collectArray x0.CheckConstraints x1.CheckConstraints SortOrder.orderBy Sequence.elementId CompareGen.Collect ("CheckConstraints" :: path)
+                       |> Compare.collectArray x0.DefaultConstraints x1.DefaultConstraints SortOrder.orderBy Sequence.elementId CompareGen.Collect ("DefaultConstraints" :: path)
 
         static member Collect (x0 : PROCEDURE, x1 : PROCEDURE) =
                     fun path diffs ->
@@ -212,6 +213,7 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.name, x1.name) ("name" :: path)
                        |> Compare.collectArray x0.parameters x1.parameters SortOrder.orderBy Sequence.elementId CompareGen.Collect ("parameters" :: path)
                        |> Compare.collectArray x0.columns x1.columns SortOrder.orderBy Sequence.elementId CompareGen.Collect ("columns" :: path)
+                       |> CompareGen.Collect (x0.orig_definition, x1.orig_definition) ("orig_definition" :: path)
                        |> CompareGen.Collect (x0.definition, x1.definition) ("definition" :: path)
                        |> Compare.collectArray x0.indexes x1.indexes SortOrder.orderBy Sequence.elementId CompareGen.Collect ("indexes" :: path)
 
@@ -223,13 +225,13 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.parameter_id, x1.parameter_id) ("parameter_id" :: path)
                        |> CompareGen.Collect (x0.data_type, x1.data_type) ("data_type" :: path)
 
-        static member Collect (x0 : XML_SCHEMA_COLLECTION, x1 : XML_SCHEMA_COLLECTION) =
+        static member Collect (x0 : XmlSchemaCollection, x1 : XmlSchemaCollection) =
                     fun path diffs ->
                        diffs
-                       |> CompareGen.Collect (x0.xml_collection_id, x1.xml_collection_id) ("xml_collection_id" :: path)
-                       |> CompareGen.Collect (x0.schema, x1.schema) ("schema" :: path)
-                       |> CompareGen.Collect (x0.name, x1.name) ("name" :: path)
-                       |> CompareGen.Collect (x0.definition, x1.definition) ("definition" :: path)
+                       |> CompareGen.Collect (x0.XmlCollectionId, x1.XmlCollectionId) ("XmlCollectionId" :: path)
+                       |> CompareGen.Collect (x0.Schema, x1.Schema) ("Schema" :: path)
+                       |> CompareGen.Collect (x0.Name, x1.Name) ("Name" :: path)
+                       |> CompareGen.Collect (x0.Definition, x1.Definition) ("Definition" :: path)
 
         static member Collect (x0 : DATABASE_TRIGGER, x1 : DATABASE_TRIGGER) =
                     fun path diffs ->
@@ -256,7 +258,7 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.data_type, x1.data_type) ("data_type" :: path)
                        |> CompareGen.Collect (x0.is_exhausted, x1.is_exhausted) ("is_exhausted" :: path)
 
-        static member Collect (x0 : DATABASE_SETTINGS, x1 : DATABASE_SETTINGS) =
+        static member Collect (x0 : DatabaseProperties, x1 : DatabaseProperties) =
                     fun path diffs ->
                        diffs
                        |> CompareGen.Collect (x0.compatibility_level, x1.compatibility_level) ("compatibility_level" :: path)

@@ -19,14 +19,14 @@ module Internal =
         |> DbTr.sequence_
 
     let redefineViews logger options connection =
-        let (views, deps) = DATABASE.preReadAllViews logger connection
+        let (views, deps) = DatabaseSchema.preReadAllViews logger connection
         // Drop scripts
         let dropScripts = 
             views 
             |> List.map 
                 (fun view -> 
-                    let drop_script = $"DROP VIEW [{view.schema.name}].[{view.view_name}]"
-                    Dependent.create drop_script [view.object.object_id] [] 0)
+                    let drop_script = $"DROP VIEW [{view.Schema.Name}].[{view.Name}]"
+                    Dependent.create drop_script [view.Object.ObjectId] [] 0)
             |> Dependent.resolveOrder (fun d -> d.Content) deps 
         // Create scripts
         let createScripts = 
@@ -34,18 +34,18 @@ module Internal =
             |> List.fold 
                 (fun scripts view -> 
                     let create_script =
-                        Dependent.create view.definition [view.object.object_id] [] 0
+                        Dependent.create view.Definition [view.Object.ObjectId] [] 0
                     let view_scripts =
-                        let view_name = $"[{view.schema.name}].[{view.view_name}]"
-                        view.indexes
+                        let view_name = $"[{view.Schema.Name}].[{view.Name}]"
+                        view.Indexes
                         |> Array.fold 
                             (fun acc index ->
                                 match Scripts.Generate.getIndexDefinitionStr options view_name true index with
                                 | None -> acc
                                 | Some indexScript -> 
                                     let index_contains_objects =
-                                        match index.object with Some o -> [o.object_id] | None -> []
-                                    Dependent.create indexScript index_contains_objects [view.object.object_id] 0 :: acc)
+                                        match index.object with Some o -> [o.ObjectId] | None -> []
+                                    Dependent.create indexScript index_contains_objects [view.Object.ObjectId] 0 :: acc)
                             (create_script :: scripts)
                     view_scripts)
                 []
@@ -60,7 +60,7 @@ module Internal =
         |> DbTr.commit_ connection 
         ()
 
-    let collectScriptsFromSchema (options : Options) (sourceDb : DATABASE) =
+    let collectScriptsFromSchema (options : Options) (sourceDb : DatabaseSchema) =
         let mutable settingsScripts = []
         let mutable scripts = []
         
@@ -104,16 +104,16 @@ let readSchema logger (options : Options) connection =
         Internal.redefineViews logger options 
         |> Logger.logTime logger "Refresh view meta data" connection 
 
-    DATABASE.read logger options connection
+    DatabaseSchema.read logger options connection
 
 /// Clone a schema into a database given a target connection
-let clone logger (options : Options) (sourceDb : DATABASE) (targetConnection : System.Data.IDbConnection) =
+let clone logger (options : Options) (sourceDb : DatabaseSchema) (targetConnection : System.Data.IDbConnection) =
     let (settingsScripts, collectedScripts) = 
         Internal.collectScriptsFromSchema options 
         |> Logger.logTime logger "DbFlow - collect scripts" sourceDb
     
     let resolvedScripts =
-        Dependent.resolveOrder (fun d -> d.Content) sourceDb.dependencies
+        Dependent.resolveOrder (fun d -> d.Content) sourceDb.Dependencies
         |> Logger.logTime logger "DbFlow - resolve scripts dependencies" collectedScripts
 
     (fun () -> 
@@ -131,7 +131,7 @@ let clone logger (options : Options) (sourceDb : DATABASE) (targetConnection : S
         |> DbTr.commit_ targetConnection)
     |> Logger.logTime logger "DbFlow - resolve and execute scripts" ()
 
-let cloneToLocal logger (options : Options) (sourceDb : DATABASE) =
+let cloneToLocal logger (options : Options) (sourceDb : DatabaseSchema) =
     let localDb = new LocalTempDb(logger)
     use conn = new Microsoft.Data.SqlClient.SqlConnection(localDb.ConnectionString)
     conn.Open ()
@@ -139,7 +139,7 @@ let cloneToLocal logger (options : Options) (sourceDb : DATABASE) =
     localDb
 
 /// Generate scripts of a schema to a folder structure
-let generateScriptFiles (opt : Options) (schema : DATABASE) folder =
+let generateScriptFiles (opt : Options) (schema : DatabaseSchema) folder =
     if System.IO.Directory.Exists folder
     then System.IO.Directory.Delete(folder,true)
 
@@ -158,7 +158,7 @@ let generateScriptFiles (opt : Options) (schema : DATABASE) folder =
 
 
 /// Schema compare. Compares two schemas returning a list of differences
-let compare (d0 : DATABASE) (d1 : DATABASE) =
+let compare (d0 : DatabaseSchema) (d1 : DatabaseSchema) =
     CompareGen.Collect (d0, d1) [] []
 
 

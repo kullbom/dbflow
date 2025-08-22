@@ -55,7 +55,7 @@ module PARAMETER =
 
                     data_type = DATATYPE.readType types None r
 
-                    ms_description = RCMap.tryPick (XPROPERTY_CLASS.PARAMETER, object_id, parameter_id) ms_descriptions
+                    ms_description = RCMap.tryPick (XPropertyClass.Parameter, object_id, parameter_id) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -63,7 +63,7 @@ module PARAMETER =
     let readAll objects types ms_descriptions connection =
         let parameters' = readAll' objects types ms_descriptions connection
         parameters'
-        |> List.groupBy (fun c -> c.object.object_id)
+        |> List.groupBy (fun c -> c.object.ObjectId)
         |> List.fold 
             (fun m (object_id, cs) -> 
                 Map.add object_id (cs |> List.sortBy (fun c -> c.parameter_id) |> List.toArray) m)
@@ -91,32 +91,32 @@ module PROCEDURE =
         |> RCMap.fold 
             (fun acc _ _ o ->
                 let procedureDefiningToken =
-                    match o.object_type with
-                    | OBJECT_TYPE.SQL_SCALAR_FUNCTION 
-                    | OBJECT_TYPE.SQL_INLINE_TABLE_VALUED_FUNCTION
-                    | OBJECT_TYPE.SQL_TABLE_VALUED_FUNCTION  -> Some "FUNCTION"
-                    | OBJECT_TYPE.SQL_STORED_PROCEDURE -> Some "PROCEDURE"
+                    match o.ObjectType with
+                    | ObjectType.SQL_SCALAR_FUNCTION 
+                    | ObjectType.SQL_INLINE_TABLE_VALUED_FUNCTION
+                    | ObjectType.SQL_TABLE_VALUED_FUNCTION  -> Some "FUNCTION"
+                    | ObjectType.SQL_STORED_PROCEDURE -> Some "PROCEDURE"
                     | _ -> None
                 match procedureDefiningToken with
                 | Some definingToken ->
-                    let object_id = o.object_id
-                    let object = RCMap.pick object_id objects // to increase the ref count
-                    let orig_definition = (RCMap.pick object_id sql_modules).definition.Trim()
+                    let objectId = o.ObjectId
+                    let object = RCMap.pick objectId objects // to increase the ref count
+                    let origDefinition = (RCMap.pick objectId sql_modules).definition.Trim()
                     {
                         object = object
-                        name = o.name
+                        name = o.Name
 
-                        parameters = match RCMap.tryPick object_id parameters with Some ps -> ps | None -> [||]
-                        columns = match RCMap.tryPick object_id columns with Some cs -> cs | None -> [||]
-                        orig_definition = orig_definition
+                        parameters = match RCMap.tryPick objectId parameters with Some ps -> ps | None -> [||]
+                        columns = match RCMap.tryPick objectId columns with Some cs -> cs | None -> [||]
+                        orig_definition = origDefinition
                         definition = 
                             SqlParser.SqlDefinitions.updateProcedureDefinition 
-                                $"[{object.schema.name}].[{object.name}]" 
-                                definingToken orig_definition
+                                $"[{object.Schema.Name}].[{object.Name}]" 
+                                definingToken origDefinition
 
-                        indexes = match RCMap.tryPick object_id indexes with Some is -> is | None -> [||]
+                        indexes = match RCMap.tryPick objectId indexes with Some is -> is | None -> [||]
 
-                        ms_description = RCMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, 0) ms_descriptions
+                        ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, objectId, 0) ms_descriptions
                     } :: acc
                 | None -> acc)
             []

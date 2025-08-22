@@ -41,7 +41,7 @@ type TABLE_DATATYPE = {
 
 type DATATYPE = {
     name : string
-    schema : SCHEMA
+    schema : Schema
 
     system_type_id : byte
     user_type_id : int // ID
@@ -275,10 +275,10 @@ module COLUMN =
             (fun acc r -> 
                 let object_id = readInt32 "object_id" r
                 let column_id = readInt32 "column_id" r
-                let object = RCMap.pick object_id objects
-                match object.object_type with
-                | OBJECT_TYPE.INTERNAL_TABLE 
-                | OBJECT_TYPE.SYSTEM_TABLE
+                let object : OBJECT = RCMap.pick object_id objects
+                match object.ObjectType with
+                | ObjectType.INTERNAL_TABLE 
+                | ObjectType.SYSTEM_TABLE
                     -> acc
                 | _ ->
                     {
@@ -313,7 +313,7 @@ module COLUMN =
                             | false -> None
                         is_rowguidcol = readBool "is_rowguidcol" r
 
-                        ms_description = RCMap.tryPick (XPROPERTY_CLASS.OBJECT_OR_COLUMN, object_id, column_id) ms_descriptions 
+                        ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, column_id) ms_descriptions 
                     } :: acc)
             []
         |> DbTr.commit_ connection
@@ -323,12 +323,12 @@ module COLUMN =
         let columns' = readAll' objects types ms_descriptions connection
         let columns =
             columns' 
-            |> List.map (fun c -> (c.object.object_id, c.column_id), c)
+            |> List.map (fun c -> (c.object.ObjectId, c.column_id), c)
             |> Map.ofList
             |> RCMap.ofMap
         let columnsByObject =
             columns'
-            |> List.groupBy (fun c -> c.object.object_id)
+            |> List.groupBy (fun c -> c.object.ObjectId)
             |> List.fold 
                 (fun m (object_id, cs) -> 
                     Map.add object_id (cs |> List.sortBy (fun c -> c.column_id) |> List.toArray) m)

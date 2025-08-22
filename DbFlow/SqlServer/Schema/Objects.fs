@@ -5,7 +5,7 @@ open DbFlow.Readers
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-sql-expression-dependencies-transact-sql?view=sql-server-ver17
 
-module DEPENDENCY =
+module Dependency =
     let readAll connection =
         DbTr.reader
             "SELECT DISTINCT d.referencing_id, d.referenced_id, d.is_schema_bound_reference 
@@ -23,14 +23,14 @@ module DEPENDENCY =
         |> Map.ofList
 
 
-type SCHEMA = { 
-    name : string; 
-    schema_id : int; 
-    principal_name : string;
+type Schema = { 
+    Name : string; 
+    SchemaId : int; 
+    PrincipalName : string;
 
-    is_system_schema : bool
+    IsSystemSchema : bool
 
-    ms_description : string option 
+    MSDescription : string option 
 }
 
 module SCHEMA =
@@ -44,18 +44,18 @@ module SCHEMA =
              INNER JOIN sys.database_principals p ON s.principal_id = p.principal_id" 
             []
             (fun m r -> 
-                let schema_id = readInt32 "schema_id" r
-                let schema_name = readString "schema_name" r
+                let schemaId = readInt32 "schema_id" r
+                let schemaName = readString "schema_name" r
                 Map.add 
-                    schema_id 
+                    schemaId 
                     { 
-                        name = schema_name
-                        schema_id = schema_id 
-                        principal_name = readString "principal_name" r
+                        Name = schemaName
+                        SchemaId = schemaId 
+                        PrincipalName = readString "principal_name" r
 
-                        is_system_schema = isSystemSchema schema_name schema_id
+                        IsSystemSchema = isSystemSchema schemaName schemaId
                     
-                        ms_description = RCMap.tryPick (XPROPERTY_CLASS.SCHEMA, schema_id, 0) ms_descriptions
+                        MSDescription = RCMap.tryPick (XPropertyClass.Schema, schemaId, 0) ms_descriptions
                     } 
                     m)
             Map.empty
@@ -66,7 +66,7 @@ module SCHEMA =
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-objects-transact-sql?view=sql-server-ver17
 
 [<RequireQualifiedAccess>]
-type OBJECT_TYPE =
+type ObjectType =
     | AGGREGATE_FUNCTION  // AF = Aggregate function (CLR)
     | CHECK_CONSTRAINT    // C = Check constraint
     | DEFAULT_CONSTRAINT  // D = Default (constraint or stand-alone)
@@ -110,37 +110,37 @@ type OBJECT_TYPE =
     | EDGE_CONSTRAINT // EC = Edge constraint
     
 
-module OBJECT_TYPE =
+module ObjectType =
     let mappingTable' =
         [
-            "AF", OBJECT_TYPE.AGGREGATE_FUNCTION 
-            "C ", OBJECT_TYPE.CHECK_CONSTRAINT
-            "D ", OBJECT_TYPE.DEFAULT_CONSTRAINT
-            "F ", OBJECT_TYPE.FOREIGN_KEY_CONSTRAINT
-            "FN", OBJECT_TYPE.SQL_SCALAR_FUNCTION
-            "FS", OBJECT_TYPE.CLR_SCALAR_FUNCTION
-            "FT", OBJECT_TYPE.CLR_TABLE_VALUED_FUNCTION
-            "IF", OBJECT_TYPE.SQL_INLINE_TABLE_VALUED_FUNCTION
-            "IT", OBJECT_TYPE.INTERNAL_TABLE
-            "P ", OBJECT_TYPE.SQL_STORED_PROCEDURE
-            "PC", OBJECT_TYPE.CLR_STORED_PROCEDURE
-            "PG", OBJECT_TYPE.PLAN_GUIDE
-            "PK", OBJECT_TYPE.PRIMARY_KEY_CONSTRAINT
-            "R ", OBJECT_TYPE.RULE
-            "RF", OBJECT_TYPE.REPLICATION_FILTER_PROCEDURE
-            "S ", OBJECT_TYPE.SYSTEM_TABLE
-            "SN", OBJECT_TYPE.SYNONYM
-            "SO", OBJECT_TYPE.SEQUENCE_OBJECT
-            "U ", OBJECT_TYPE.USER_TABLE
-            "V ", OBJECT_TYPE.VIEW
-            "SQ", OBJECT_TYPE.SERVICE_QUEUE
-            "TA", OBJECT_TYPE.CLR_TRIGGER
-            "TF", OBJECT_TYPE.SQL_TABLE_VALUED_FUNCTION
-            "TR", OBJECT_TYPE.SQL_TRIGGER
-            "TT", OBJECT_TYPE.TYPE_TABLE
-            "UQ", OBJECT_TYPE.UNIQUE_CONSTRAINT
-            "X ", OBJECT_TYPE.EXTENDED_STORED_PROCEDURE
-            "EC", OBJECT_TYPE.EDGE_CONSTRAINT
+            "AF", ObjectType.AGGREGATE_FUNCTION 
+            "C ", ObjectType.CHECK_CONSTRAINT
+            "D ", ObjectType.DEFAULT_CONSTRAINT
+            "F ", ObjectType.FOREIGN_KEY_CONSTRAINT
+            "FN", ObjectType.SQL_SCALAR_FUNCTION
+            "FS", ObjectType.CLR_SCALAR_FUNCTION
+            "FT", ObjectType.CLR_TABLE_VALUED_FUNCTION
+            "IF", ObjectType.SQL_INLINE_TABLE_VALUED_FUNCTION
+            "IT", ObjectType.INTERNAL_TABLE
+            "P ", ObjectType.SQL_STORED_PROCEDURE
+            "PC", ObjectType.CLR_STORED_PROCEDURE
+            "PG", ObjectType.PLAN_GUIDE
+            "PK", ObjectType.PRIMARY_KEY_CONSTRAINT
+            "R ", ObjectType.RULE
+            "RF", ObjectType.REPLICATION_FILTER_PROCEDURE
+            "S ", ObjectType.SYSTEM_TABLE
+            "SN", ObjectType.SYNONYM
+            "SO", ObjectType.SEQUENCE_OBJECT
+            "U ", ObjectType.USER_TABLE
+            "V ", ObjectType.VIEW
+            "SQ", ObjectType.SERVICE_QUEUE
+            "TA", ObjectType.CLR_TRIGGER
+            "TF", ObjectType.SQL_TABLE_VALUED_FUNCTION
+            "TR", ObjectType.SQL_TRIGGER
+            "TT", ObjectType.TYPE_TABLE
+            "UQ", ObjectType.UNIQUE_CONSTRAINT
+            "X ", ObjectType.EXTENDED_STORED_PROCEDURE
+            "EC", ObjectType.EDGE_CONSTRAINT
         ]
 
     let findType =
@@ -158,13 +158,13 @@ module OBJECT_TYPE =
             | None -> failwithf "Could not find code from object type '%A'" t
 
 type OBJECT = {
-    name : string
-    object_id : int
-    schema : SCHEMA
-    parent_object_id : int option
-    object_type : OBJECT_TYPE
-    create_date : System.DateTime
-    modify_date : System.DateTime
+    Name : string
+    ObjectId : int
+    Schema : Schema
+    ParentObjectId : int option
+    ObjectType : ObjectType
+    CreateDate : System.DateTime
+    ModifyDate : System.DateTime
 }
 
 module OBJECT = 
@@ -180,13 +180,13 @@ module OBJECT =
                 Map.add 
                     object_id
                     {
-                        name = readString "name" r
-                        object_id = object_id
-                        schema = RCMap.pick (readInt32 "schema_id" r) schemas
-                        parent_object_id = nullable "parent_object_id" readInt32 r
-                        object_type = readString "type" r |> OBJECT_TYPE.findType
-                        create_date = readDateTime "create_date" r
-                        modify_date = readDateTime "modify_date" r 
+                        Name = readString "name" r
+                        ObjectId = object_id
+                        Schema = RCMap.pick (readInt32 "schema_id" r) schemas
+                        ParentObjectId = nullable "parent_object_id" readInt32 r
+                        ObjectType = readString "type" r |> ObjectType.findType
+                        CreateDate = readDateTime "create_date" r
+                        ModifyDate = readDateTime "modify_date" r 
                     }
                     m)
             Map.empty
@@ -194,20 +194,20 @@ module OBJECT =
         |> RCMap.ofMap
 
 
-type XML_SCHEMA_COLLECTION = {
-    xml_collection_id : int 
-    schema : SCHEMA
+type XmlSchemaCollection = {
+    XmlCollectionId : int 
+    Schema : Schema
     //principal_id
-    name : string
-    create_date : System.DateTime
-    modify_date : System.DateTime
+    Name : string
+    CreateDate : System.DateTime
+    ModifyDate : System.DateTime
 
-    definition : string 
+    Definition : string 
 
-    ms_description : string option
+    MSDescription : string option
 }
 
-module XML_SCHEMA_COLLECTION = 
+module XmlSchemaCollection = 
     let readAll schemas ms_descriptions connection =
         DbTr.reader
             "SELECT 
@@ -218,18 +218,18 @@ module XML_SCHEMA_COLLECTION =
              WHERE s.name != 'sys'"
             []
             (fun acc r ->
-                let xml_collection_id = readInt32 "xml_collection_id" r
+                let xmlCollectionId = readInt32 "xml_collection_id" r
                 {
-                    xml_collection_id = xml_collection_id
-                    schema = RCMap.pick (readInt32 "schema_id" r) schemas
+                    XmlCollectionId = xmlCollectionId
+                    Schema = RCMap.pick (readInt32 "schema_id" r) schemas
                     //principal_id
-                    name = readString "name" r
-                    create_date = readDateTime "create_date" r
-                    modify_date = readDateTime "modify_date" r
+                    Name = readString "name" r
+                    CreateDate = readDateTime "create_date" r
+                    ModifyDate = readDateTime "modify_date" r
 
-                    definition = readString "definition" r
+                    Definition = readString "definition" r
 
-                    ms_description = RCMap.tryPick (XPROPERTY_CLASS.XML_SCHEMA_COLLECTION, xml_collection_id, 0) ms_descriptions
+                    MSDescription = RCMap.tryPick (XPropertyClass.XmlSchemaCollection, xmlCollectionId, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection

@@ -5,7 +5,7 @@ open DbFlow.Readers
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-databases-transact-sql?view=sql-server-ver17
 
-type DATABASE_SETTINGS = {
+type DatabaseProperties = {
     compatibility_level : byte
     collation_name : string
     is_auto_close_on : bool
@@ -34,7 +34,7 @@ type DATABASE_SETTINGS = {
     is_date_correlation_on : bool
 }
 
-module DATABASE_SETTINGS = 
+module DatabaseProperties = 
     let readAll connection =
         DbTr.reader
             "SELECT
@@ -103,35 +103,35 @@ module DATABASE_SETTINGS =
             | _ -> failwithf "Multiple of no settings found - should not happen"
         
 
-type DATABASE = {
-    SCHEMAS : SCHEMA list
-    TABLES : TABLE list
-    VIEWS : VIEW list
+type DatabaseSchema = {
+    Schemas : Schema list
+    Tables : TABLE list
+    Views : VIEW list
 
-    TYPES : DATATYPE list
-    TABLE_TYPES : TABLE_TYPE list
+    Types : DATATYPE list
+    TableTypes : TableType list
 
-    PROCEDURES : PROCEDURE list
+    Procedures : PROCEDURE list
 
-    XML_SCHEMA_COLLECTIONS : XML_SCHEMA_COLLECTION list
+    XmlSchemaCollections : XmlSchemaCollection list
 
-    TRIGGERS : DATABASE_TRIGGER list
-    SYNONYMS : SYNONYM list
-    SEQUENCES : SEQUENCE list
+    Triggers : DATABASE_TRIGGER list
+    Synonyms : SYNONYM list
+    Sequences : SEQUENCE list
+    
+    Properties : DatabaseProperties
 
-    SETTINGS : DATABASE_SETTINGS
+    MSDescription : string option
 
-    ms_description : string option
-
-    all_objects : OBJECT list
-    dependencies : Map<int, int list>
+    //all_objects : OBJECT list
+    Dependencies : Map<int, int list>
 }
 
-module DATABASE =
+module DatabaseSchema =
     // Read all views in order to redefined them - to get fresh/correct meta data 
     let preReadAllViews logger connection =
         let ms_descs = RCMap.ofMap Map.empty
-        let dependencies = DEPENDENCY.readAll |> Logger.logTime logger "Dependencies" connection
+        let dependencies = Dependency.readAll |> Logger.logTime logger "Dependencies" connection
         
         let schemas = SCHEMA.readAll ms_descs connection
         let objects = OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
@@ -153,9 +153,9 @@ module DATABASE =
 
     let read logger (options : Options) connection =
         let ms_descs = MS_Description.readAll |> Logger.logTime logger "MS_Description" connection
-        let dependencies = DEPENDENCY.readAll |> Logger.logTime logger "Dependencies" connection
+        let dependencies = Dependency.readAll |> Logger.logTime logger "Dependencies" connection
         
-        let settings = DATABASE_SETTINGS.readAll connection
+        let dbProperties = DatabaseProperties.readAll connection
 
         let schemas = SCHEMA.readAll ms_descs connection
         let objects = OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
@@ -164,7 +164,7 @@ module DATABASE =
         let sequences = SEQUENCE.readAll objects types connection
         let synonyms = SYNONYM.readAll objects connection
         let sql_modules = SQL_MODULE.readAll connection
-        let xml_schema_collections = XML_SCHEMA_COLLECTION.readAll schemas ms_descs connection
+        let xml_schema_collections = XmlSchemaCollection.readAll schemas ms_descs connection
         
         let (columns, columnsByObject) = COLUMN.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
         let triggersByParent = TRIGGER.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
@@ -188,7 +188,7 @@ module DATABASE =
         let indexesByParent = INDEX.readAll objects indexesColumnsByIndex ms_descs |> Logger.logTime logger "INDEX" connection
         
         let tableTypes =
-            TABLE_TYPE.readAll schemas objects ms_descs columnsByObject 
+            TableType.readAll schemas objects ms_descs columnsByObject 
                 indexesByParent foreignKeysByParent foreignKeysByReferenced checkConstraintsByParent defaultConstraintsByParent 
             |> Logger.logTime logger "TABLE_TYPE" connection
             
@@ -206,7 +206,7 @@ module DATABASE =
             VIEW.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules ms_descs
             |> Logger.logTime logger "VIEW" connection
         
-        let db_msDesc = RCMap.tryPick (XPROPERTY_CLASS.DATABASE, 0, 0) ms_descs
+        let db_msDesc = RCMap.tryPick (XPropertyClass.Database, 0, 0) ms_descs
         let db_triggers = TRIGGER.readAllDatabaseTriggers objects sql_modules ms_descs connection
 
         let checkUnused (id : string) exclude pm =
@@ -219,7 +219,7 @@ module DATABASE =
         then
             ms_descs |> checkUnused "ms_descriptions" (fun _ -> false)
             columnsByObject |> checkUnused "columns" (fun _ -> false)
-            objects |> checkUnused "objects" (fun c -> c.object_type = OBJECT_TYPE.SERVICE_QUEUE)
+            objects |> checkUnused "objects" (fun c -> c.ObjectType = ObjectType.SERVICE_QUEUE)
             triggersByParent |> checkUnused "triggers" (fun _ -> false)
             parametersByObject |> checkUnused "parameters" (fun _ -> false)
             checkConstraintsByParent |> checkUnused "check_constraints" (fun _ -> false)
@@ -230,30 +230,31 @@ module DATABASE =
             indexesByParent 
             |> checkUnused "indexes" 
                 (fun i -> 
-                    match i[0].parent.object_type with 
-                    | OBJECT_TYPE.INTERNAL_TABLE 
-                    | OBJECT_TYPE.SYSTEM_TABLE -> true 
+                    match i[0].parent.ObjectType with 
+                    | ObjectType.INTERNAL_TABLE 
+                    | ObjectType.SYSTEM_TABLE -> true 
                     | _ -> false)
 
         {
-            SCHEMAS = schemas |> RCMap.toList 
-            TABLES = tables
-            VIEWS = views         
+            Schemas = schemas |> RCMap.toList 
+            Tables = tables
+            Views = views         
             
-            TYPES = types |> Map.fold (fun acc _ v -> v :: acc) []
-            TABLE_TYPES = tableTypes
+            Types = types |> Map.fold (fun acc _ v -> v :: acc) []
+            TableTypes = tableTypes
 
-            PROCEDURES = procedures
+            Procedures = procedures
 
-            XML_SCHEMA_COLLECTIONS = xml_schema_collections
+            XmlSchemaCollections = xml_schema_collections
 
-            TRIGGERS = db_triggers
-            SYNONYMS = synonyms |> RCMap.toList
-            SEQUENCES = sequences |> RCMap.toList
+            Triggers = db_triggers
+            Synonyms = synonyms |> RCMap.toList
+            Sequences = sequences |> RCMap.toList
 
-            SETTINGS = settings
-            ms_description = db_msDesc
+            Properties = dbProperties
+            
+            MSDescription = db_msDesc
 
-            all_objects = objects |> RCMap.toList
-            dependencies = dependencies
+            //all_objects = objects |> RCMap.toList
+            Dependencies = dependencies
         }

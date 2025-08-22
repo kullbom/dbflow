@@ -26,10 +26,10 @@
 [x] There is a problem with (comparison of) collation_name
 [x] Should have the possibility to create a LocalTempDatabase as a clone of a source in one step
 [x] There is a problem with (comparison of) is_not-trusted of check constraints
-[ ] There is a problem with (comparison of) "is ansi padded" of columns
 [ ] Add a case in test_db to illustrate problem with "is ansi padded" of columns
-[ ] There is a problem with XML indexes... see failing test AdventureWorks 2024-2022 - or search for "[XMLPATH_Person_Demographics]"
+[ ] There is a problem with (comparison of) "is ansi padded" of columns
 [ ] Add a case in test_db to illustrate problem with XML indexes
+[ ] There is a problem with XML indexes... see failing test AdventureWorks 2024-2022 - or search for "[XMLPATH_Person_Demographics]"
 [ ] Error handling in commit
 [ ] Add support for disabled triggers
     
@@ -46,9 +46,11 @@
     [ ] "key" (a tuple of columns?)
     [ ] "value" (a concrete sql value of a specific type?)
 [x] "LocalTempDatabase" does not match its module (...and make the module private?)
+[ ] Ta bort all svenska... t.ex. i detta dokument 
 
 ## Version 1.0.0
 
+[ ] More flexible interface to Connections (a Union like Connection | ConnectionStr | ConnectionFactory... ?)
 [x] Ensure that the db user has suitable privileges before readSchema ( IS_ROLEMEMBER ('db_ddladmin'))
 [ ] Tester som visar på problem/buggar (eller lösning på problemet):
     [x] CHECK_CONSTRAINT väl hårdkodad vad gäller "CHECK" etc. 
@@ -79,3 +81,5 @@
 [ ] Data import
 [ ] Support for importing data from another database - following keys and copy data recursivly ...?
 [ ] Data export
+
+ 
