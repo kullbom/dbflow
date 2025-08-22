@@ -77,7 +77,7 @@ type PROCEDURE = {
     parameters : PARAMETER array
     columns : COLUMN array // Should only exist for SQL_TABLE_VALUED_FUNCTION
     
-    orig_definition : string
+    OrigDefinition : string
     definition : string
 
     indexes : INDEX array
@@ -86,7 +86,7 @@ type PROCEDURE = {
 } 
 
 module PROCEDURE =
-    let readAll (objects : RCMap<_,OBJECT>) parameters columns indexes (sql_modules : RCMap<int, SQL_MODULE>) ms_descriptions _connection =
+    let readAll (objects : RCMap<_,OBJECT>) parameters columns indexes (sql_modules : RCMap<int, SqlModule>) ms_descriptions _connection =
         objects
         |> RCMap.fold 
             (fun acc _ _ o ->
@@ -101,14 +101,14 @@ module PROCEDURE =
                 | Some definingToken ->
                     let objectId = o.ObjectId
                     let object = RCMap.pick objectId objects // to increase the ref count
-                    let origDefinition = (RCMap.pick objectId sql_modules).definition.Trim()
+                    let origDefinition = (RCMap.pick objectId sql_modules).Definition.Trim()
                     {
                         object = object
                         name = o.Name
 
                         parameters = match RCMap.tryPick objectId parameters with Some ps -> ps | None -> [||]
                         columns = match RCMap.tryPick objectId columns with Some cs -> cs | None -> [||]
-                        orig_definition = origDefinition
+                        OrigDefinition = origDefinition
                         definition = 
                             SqlParser.SqlDefinitions.updateProcedureDefinition 
                                 $"[{object.Schema.Name}].[{object.Name}]" 

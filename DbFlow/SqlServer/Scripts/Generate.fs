@@ -17,7 +17,7 @@ type SchemaScriptPart =
     | XmlSchemaCollectionDefinition
 
 
-let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes isTableType (columnInlineDefaults : Map<int, DEFAULT_CONSTRAINT>) (column : COLUMN) =
+let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes isTableType (columnInlineDefaults : Map<int, DefaultConstraint>) (column : COLUMN) =
     let columnDefStr =
         match column.computed_definition with
         | Some computed ->
@@ -260,7 +260,7 @@ let generateTableBody (w : System.IO.StreamWriter) (opt : Options) ds allTypes i
     let checkDefs =
         tableInlineChecks
         |> List.map 
-            (fun (inlineCheck : CHECK_CONSTRAINT) ->
+            (fun (inlineCheck : CheckConstraint) ->
                 if inlineCheck.IsSystemNamed
                 then 
                     let extraSpace = if opt.SchemazenCompatibility then " " else ""
@@ -277,7 +277,7 @@ let generateTableBody (w : System.IO.StreamWriter) (opt : Options) ds allTypes i
 
 
                 
-let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) ds allTypes isTableType parentName columns indexes checkConstraints (defaultConstraints : DEFAULT_CONSTRAINT array) =
+let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) ds allTypes isTableType parentName columns indexes checkConstraints (defaultConstraints : DefaultConstraint array) =
     let (tableInlineIndexes, standaloneIndexes) =
         indexes
         |> Array.fold 
@@ -358,7 +358,7 @@ let generateViewScript (w : System.IO.StreamWriter) (opt : Options) (view : VIEW
 
 
 let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options) 
-                            (schemaName : string, tableName : string, table_object_id : int, ccs : CHECK_CONSTRAINT array) =
+                            (schemaName : string, tableName : string, table_object_id : int, ccs : CheckConstraint array) =
     let object_ids =
         ccs
         |> Array.fold 
@@ -382,7 +382,7 @@ let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options)
             []
     ObjectDefinitions {| contains_objects = object_ids; depends_on = [table_object_id] |}
 
-let generateDefaultConstraintsScript (w : System.IO.StreamWriter) (opt : Options) (table : TABLE, dcs : DEFAULT_CONSTRAINT array) =
+let generateDefaultConstraintsScript (w : System.IO.StreamWriter) (opt : Options) (table : TABLE, dcs : DefaultConstraint array) =
     let object_ids =
         dcs 
         |> Array.sortBy (fun dc -> dc.Object.ObjectId)
@@ -433,7 +433,7 @@ let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (tabl
 let generateTriggerScript (w : System.IO.StreamWriter) (opt : Options) (trigger : TRIGGER) =
     [
         "SET QUOTED_IDENTIFIER ON "; "GO"; "SET ANSI_NULLS ON "; "GO"
-        if opt.SchemazenCompatibility then trigger.orig_definition else trigger.definition
+        if opt.SchemazenCompatibility then trigger.OrigDefinition else trigger.definition
         "GO"; "SET QUOTED_IDENTIFIER OFF "; "GO"; "SET ANSI_NULLS OFF "; "GO"; ""; 
         $"ENABLE TRIGGER [{trigger.object.Schema.Name}].[{trigger.object.Name}] ON [{trigger.parent.Schema.Name}].[{trigger.parent.Name}]"
         "GO"; ""; "GO"
@@ -449,16 +449,16 @@ let generateTriggerScript (w : System.IO.StreamWriter) (opt : Options) (trigger 
 let generateProcedureScript (w : System.IO.StreamWriter) (opt : Options) (p : PROCEDURE) =
     [
         "SET QUOTED_IDENTIFIER ON "; "GO"; "SET ANSI_NULLS ON "; "GO"
-        if opt.SchemazenCompatibility then p.orig_definition else p.definition
+        if opt.SchemazenCompatibility then p.OrigDefinition else p.definition
         "GO"; "SET QUOTED_IDENTIFIER OFF "; "GO"; "SET ANSI_NULLS OFF "; "GO"; ""; "GO"
     ]
     |> List.iter w.WriteLine
     ObjectDefinitions {| contains_objects = [p.object.ObjectId]; depends_on = [] |}
 
-let generateSynonymScript (w : System.IO.StreamWriter) (opt : Options) (synonym : SYNONYM) =
-    w.WriteLine $"CREATE SYNONYM [{synonym.object.Schema.Name}].[{synonym.object.Name}] FOR {synonym.base_object_name}"
+let generateSynonymScript (w : System.IO.StreamWriter) (opt : Options) (synonym : Synonym) =
+    w.WriteLine $"CREATE SYNONYM [{synonym.Object.Schema.Name}].[{synonym.Object.Name}] FOR {synonym.BaseObjectName}"
     w.WriteLine "GO"
-    ObjectDefinitions {| contains_objects = [synonym.object.ObjectId]; depends_on = [] |}
+    ObjectDefinitions {| contains_objects = [synonym.Object.ObjectId]; depends_on = [] |}
 
 
 let generateXmlSchemaCollectionScript (w : System.IO.StreamWriter) (opt : Options) (s : XmlSchemaCollection) =
@@ -622,7 +622,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
     |> dataForFolder "procedures" (fun p -> objectFilename p.object.Schema.Name p.name) generateProcedureScript
 
     db.Synonyms
-    |> dataForFolder "synonyms" (fun s -> objectFilename s.object.Schema.Name s.object.Name) generateSynonymScript
+    |> dataForFolder "synonyms" (fun s -> objectFilename s.Object.Schema.Name s.Object.Name) generateSynonymScript
 
     db.XmlSchemaCollections
     |> dataForFolder "xmlschemacollections" (fun s -> objectFilename s.Schema.Name s.Name) generateXmlSchemaCollectionScript

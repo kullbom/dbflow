@@ -116,7 +116,7 @@ type DatabaseSchema = {
     XmlSchemaCollections : XmlSchemaCollection list
 
     Triggers : DATABASE_TRIGGER list
-    Synonyms : SYNONYM list
+    Synonyms : Synonym list
     Sequences : SEQUENCE list
     
     Properties : DatabaseProperties
@@ -137,7 +137,7 @@ module DatabaseSchema =
         let objects = OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
         let types = Datatype.readAll schemas objects ms_descs connection
 
-        let sql_modules = SQL_MODULE.readAll connection
+        let sql_modules = SqlModule.readAll connection
         
         let (columns, columnsByObject) = COLUMN.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
         let triggersByParent = TRIGGER.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
@@ -162,20 +162,20 @@ module DatabaseSchema =
         let types = Datatype.readAll schemas objects ms_descs connection
 
         let sequences = SEQUENCE.readAll objects types connection
-        let synonyms = SYNONYM.readAll objects connection
-        let sql_modules = SQL_MODULE.readAll connection
+        let synonyms = Synonym.readAll objects connection
+        let sql_modules = SqlModule.readAll connection
         let xml_schema_collections = XmlSchemaCollection.readAll schemas ms_descs connection
         
         let (columns, columnsByObject) = COLUMN.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
         let triggersByParent = TRIGGER.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
         
         // A bit strange that keyConstraints isn't used...?!
-        let keyConstraints = KEY_CONSTRAINT.readAll objects ms_descs connection
+        let keyConstraints = KeyConstraint.readAll objects ms_descs connection
         let checkConstraintsByParent = 
-            CHECK_CONSTRAINT.readAll objects columns ms_descs
+            CheckConstraint.readAll objects columns ms_descs
             |> Logger.logTime logger "CHECK_CONSTRAINT" connection
         let defaultConstraintsByParent = 
-            DEFAULT_CONSTRAINT.readAll objects columns ms_descs 
+            DefaultConstraint.readAll objects columns ms_descs 
             |> Logger.logTime logger "DEFAULT_CONSTRAINT" connection
         
 

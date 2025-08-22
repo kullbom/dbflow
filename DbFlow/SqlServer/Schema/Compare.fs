@@ -20,14 +20,14 @@ type SortOrder = SortOrder
             else x.name
         static member orderBy (x : TRIGGER) = SortOrder.orderBy x.object, x.trigger_name 
         static member orderBy (x : PARAMETER) = SortOrder.orderBy x.object, x.name, x.parameter_id 
-        static member orderBy (x : DEFAULT_CONSTRAINT) = x.Column.column_name
-        static member orderBy (x : SYNONYM) = SortOrder.orderBy x.object
+        static member orderBy (x : DefaultConstraint) = x.Column.column_name
+        static member orderBy (x : Synonym) = SortOrder.orderBy x.Object
         static member orderBy (x : Datatype) = x.name
         static member orderBy (x : TableType) = x.Name
         static member orderBy (x : PROCEDURE) = x.name 
         static member orderBy (x : XmlSchemaCollection) = SortOrder.orderBy x.Schema, x.Name 
         static member orderBy (x : DATABASE_TRIGGER) = x.trigger_name
-        static member orderBy (x : CHECK_CONSTRAINT) = match x.column with Some c -> c.column_name | None -> x.definition
+        static member orderBy (x : CheckConstraint) = match x.column with Some c -> c.column_name | None -> x.definition
         static member orderBy (x : FOREIGN_KEY_COLUMN) = SortOrder.orderBy x.parent_column
         static member orderBy (x : INDEX_COLUMN) = SortOrder.orderBy x.column
         static member orderBy (x : SEQUENCE) = SortOrder.orderBy x.object
@@ -42,14 +42,14 @@ type Sequence = Sequence
         static member elementId (x : FOREIGN_KEY) = x.name
         static member elementId (x : TRIGGER) = x.trigger_name
         static member elementId (x : PARAMETER) = x.name
-        static member elementId (x : DEFAULT_CONSTRAINT) = "DF???" + x.Column.column_name
-        static member elementId (x : SYNONYM) = x.object.Name
+        static member elementId (x : DefaultConstraint) = "DF???" + x.Column.column_name
+        static member elementId (x : Synonym) = x.Object.Name
         static member elementId (x : Datatype) = x.name
         static member elementId (x : TableType) = x.Name
         static member elementId (x : PROCEDURE) = x.name 
         static member elementId (x : XmlSchemaCollection) = x.Name 
         static member elementId (x : DATABASE_TRIGGER) = x.trigger_name
-        static member elementId (x : CHECK_CONSTRAINT) = x.object.Name
+        static member elementId (x : CheckConstraint) = x.object.Name
         static member elementId (x : FOREIGN_KEY_COLUMN) = $"{x.parent_column.column_name} -> {x.referenced_column.column_name}"
         static member elementId (x : INDEX_COLUMN) = x.column.column_name
         static member elementId (x : OBJECT) = x.Name
@@ -120,13 +120,13 @@ module Compare =
         | false, n0, false, n1 when n0 = n1 -> diff
         | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path x0 x1 :: diff
 
-    let check_constraint_name (x0 : CHECK_CONSTRAINT, x1 : CHECK_CONSTRAINT) path diff =
+    let check_constraint_name (x0 : CheckConstraint, x1 : CheckConstraint) path diff =
         match x0.IsSystemNamed, x0.object.Name, x1.IsSystemNamed, x1.object.Name with
         | true, _, true, _ -> diff
         | false, n0, false, n1 when n0 = n1 -> diff
         | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path n0 n1 :: diff
        
-    let default_constraint_name (x0 : DEFAULT_CONSTRAINT, x1 : DEFAULT_CONSTRAINT) path diff =
+    let default_constraint_name (x0 : DefaultConstraint, x1 : DefaultConstraint) path diff =
         match x0.IsSystemNamed, x0.Object.Name, x1.IsSystemNamed, x1.Object.Name with
         | true, _, true, _ -> diff
         | false, n0, false, n1 when n0 = n1 -> diff
@@ -174,7 +174,7 @@ module Generator =
                 sDefNoneT<Schema> "SchemaId"
                 sDefNoneT<OBJECT> "ObjectId"
                 sDefNoneT<OBJECT> "ParentObjectId"
-                sDefNoneT<CHECK_CONSTRAINT> "parent_column_id"
+                sDefNoneT<CheckConstraint> "parent_column_id"
                 sDefNoneT<FOREIGN_KEY> "key_index_id"
                 sDefNoneT<COLUMN> "column_id"
                 sDefNoneT<INDEX> "index_id"
@@ -196,11 +196,11 @@ module Generator =
                 sDefNoneT<FOREIGN_KEY> "object"
                 sDefNoneT<FOREIGN_KEY> "IsSystemNamed"
 
-                sDefT<CHECK_CONSTRAINT> "object" (fun _ -> $"|> Compare.check_constraint_name (x0, x1) path")
-                sDefNoneT<CHECK_CONSTRAINT> "IsSystemNamed"
+                sDefT<CheckConstraint> "object" (fun _ -> $"|> Compare.check_constraint_name (x0, x1) path")
+                sDefNoneT<CheckConstraint> "IsSystemNamed"
 
-                sDefT<DEFAULT_CONSTRAINT> "Object" (fun _ -> $"|> Compare.default_constraint_name (x0, x1) path")
-                sDefNoneT<DEFAULT_CONSTRAINT> "IsSystemNamed"
+                sDefT<DefaultConstraint> "Object" (fun _ -> $"|> Compare.default_constraint_name (x0, x1) path")
+                sDefNoneT<DefaultConstraint> "IsSystemNamed"
 
                 sDefT<SEQUENCE> "sequence_definition" (fun pname -> $"|> Compare.sequence_definition (x0.{pname}, x1.{pname}) (\"{pname}\" :: path)")
    
@@ -216,9 +216,8 @@ module Generator =
             [
                 sDefNone "CreateDate"
                 sDefNone "ModifyDate"
-                sDefNone "all_objects"
-                sDefNone "origDefinition"
-                
+                sDefNone "OrigDefinition"
+
                 // TODO: This should be part of the generated scripts
                 sDefNone "MSDescription"
                 sDefNone "ms_description"

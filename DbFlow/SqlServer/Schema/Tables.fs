@@ -17,8 +17,8 @@ type TableType = {
     ForeignKeys : FOREIGN_KEY array
     ReferencedForeignKeys : FOREIGN_KEY array
 
-    CheckConstraints : CHECK_CONSTRAINT array
-    DefaultConstraints : DEFAULT_CONSTRAINT array
+    CheckConstraints : CheckConstraint array
+    DefaultConstraints : DefaultConstraint array
 
     MSDescription : string option
 }
@@ -66,8 +66,8 @@ type TABLE = {
     ForeignKeys : FOREIGN_KEY array
     ReferencedForeignKeys : FOREIGN_KEY array
 
-    CheckConstraints : CHECK_CONSTRAINT array
-    DefaultConstraints : DEFAULT_CONSTRAINT array
+    CheckConstraints : CheckConstraint array
+    DefaultConstraints : DefaultConstraint array
 
     MSDescription : string option
 }
@@ -118,7 +118,7 @@ type VIEW = {
 }
 
 module VIEW = 
-    let readAll schemas objects columns indexes triggers (sql_modules : RCMap<int, SQL_MODULE>) ms_descriptions connection =
+    let readAll schemas objects columns indexes triggers (sql_modules : RCMap<int, SqlModule>) ms_descriptions connection =
         DbTr.reader
             "SELECT v.name view_name, v.object_id, v.schema_id
              FROM sys.views v"
@@ -130,7 +130,7 @@ module VIEW =
                     Name = readString "view_name" r
                     Object = RCMap.pick objectId objects
                     
-                    Definition = (RCMap.pick objectId sql_modules).definition.Trim()
+                    Definition = (RCMap.pick objectId sql_modules).Definition.Trim()
 
                     Columns = RCMap.tryPick objectId columns |> Option.escape [||]
                     Indexes = RCMap.tryPick objectId indexes |> Option.escape [||]

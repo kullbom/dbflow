@@ -5,7 +5,7 @@ open DbFlow.Readers
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-default-constraints-transact-sql?view=sql-server-ver17
 
-type DEFAULT_CONSTRAINT = {
+type DefaultConstraint = {
     Object : OBJECT
     Parent : OBJECT
     Column : COLUMN
@@ -17,7 +17,7 @@ type DEFAULT_CONSTRAINT = {
     MSDescription : string option
 }
 
-module DEFAULT_CONSTRAINT =
+module DefaultConstraint =
     let readAll' objects columns ms_descriptions connection =
         DbTr.reader 
             "SELECT dc.object_id, dc.parent_object_id, dc.parent_column_id, dc.definition,dc.is_system_named 
@@ -54,7 +54,7 @@ module DEFAULT_CONSTRAINT =
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-key-constraints-transact-sql?view=sql-server-ver17
 
-type KEY_CONSTRAINT = {
+type KeyConstraint = {
     Object : OBJECT
     
     IsSystemNamed : bool
@@ -63,7 +63,7 @@ type KEY_CONSTRAINT = {
     MSDescription : string option
 }
 
-module KEY_CONSTRAINT =
+module KeyConstraint =
     let readAll objects ms_descriptions connection =
         DbTr.reader
             "SELECT kc.object_id, kc.unique_index_id, kc.is_system_named FROM sys.key_constraints kc" 
@@ -88,7 +88,7 @@ module KEY_CONSTRAINT =
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-check-constraints-transact-sql?view=sql-server-ver17
 
-type CHECK_CONSTRAINT = {
+type CheckConstraint = {
     object : OBJECT
     parent : OBJECT
     parent_column_id : int
@@ -106,7 +106,7 @@ type CHECK_CONSTRAINT = {
     ms_description : string option
 }
 
-module CHECK_CONSTRAINT =
+module CheckConstraint =
     let readAll' objects columns ms_descriptions connection =
         DbTr.reader 
             "SELECT 

@@ -19,7 +19,7 @@ type TRIGGER = {
     object : OBJECT
     parent : OBJECT
     trigger_name : string
-    orig_definition : string
+    OrigDefinition : string
     definition : string
     is_disabled : bool
     is_instead_of_trigger : bool
@@ -28,7 +28,7 @@ type TRIGGER = {
 }
 
 module TRIGGER =
-    let readAllDatabaseTriggers objects (sql_modules : RCMap<int, SQL_MODULE>) ms_descriptions connection =
+    let readAllDatabaseTriggers objects (sql_modules : RCMap<int, SqlModule>) ms_descriptions connection =
         DbTr.reader 
             "SELECT
                  tr.object_id, tr.name, tr.is_disabled, tr.is_instead_of_trigger 
@@ -41,7 +41,7 @@ module TRIGGER =
                 {
                         //object = RCMap.pick object_id objects 
                         trigger_name = name
-                        definition = (RCMap.pick object_id sql_modules).definition.Trim()
+                        definition = (RCMap.pick object_id sql_modules).Definition.Trim()
                         is_disabled = readBool "is_disabled" r
                         is_instead_of_trigger = readBool "is_instead_of_trigger" r
 
@@ -50,7 +50,7 @@ module TRIGGER =
             []
         |> DbTr.commit_ connection
         
-    let readAll' (objects : RCMap<int, OBJECT>) (sql_modules : RCMap<int, SQL_MODULE>) ms_descriptions connection =
+    let readAll' (objects : RCMap<int, OBJECT>) (sql_modules : RCMap<int, SqlModule>) ms_descriptions connection =
         DbTr.reader 
             "SELECT
                  tr.object_id, tr.parent_id, tr.name, tr.is_disabled, tr.is_instead_of_trigger 
@@ -63,7 +63,7 @@ module TRIGGER =
                 let object = RCMap.pick object_id objects
                 let parent = RCMap.pick parent_id objects
                 let name = readString "name" r
-                let trigger_definition = (RCMap.pick object_id sql_modules).definition.Trim()
+                let trigger_definition = (RCMap.pick object_id sql_modules).Definition.Trim()
                 let updated_trigger_definition = 
                     SqlParser.SqlDefinitions.updateTriggerDefinition 
                         $"[{object.Schema.Name}].[{name}]" $"[{parent.Schema.Name}].[{parent.Name}]"
@@ -72,7 +72,7 @@ module TRIGGER =
                         object = object
                         parent = parent
                         trigger_name = name
-                        orig_definition = trigger_definition
+                        OrigDefinition = trigger_definition
                         definition = updated_trigger_definition
                         is_disabled = readBool "is_disabled" r
                         is_instead_of_trigger = readBool "is_instead_of_trigger" r

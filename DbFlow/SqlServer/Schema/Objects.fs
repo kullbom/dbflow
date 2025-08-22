@@ -237,19 +237,19 @@ module XmlSchemaCollection =
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-sql-modules-transact-sql?view=sql-server-ver17
 
-type SQL_MODULE = {
-    object_id : int
-    definition : string
+type SqlModule = {
+    ObjectId : int
+    Definition : string
 }
 
-module SQL_MODULE =
+module SqlModule =
     let readAll connection =
         DbTr.reader 
             "SELECT object_id, definition FROM sys.sql_modules" 
             []
             (fun m r ->
-                let object_id = readInt32 "object_id" r
-                Map.add object_id { object_id = object_id; definition = readString "definition" r} m)
+                let objectId = readInt32 "object_id" r
+                Map.add objectId { ObjectId = objectId; Definition = readString "definition" r} m)
             Map.empty
         |> DbTr.commit_ connection
         |> RCMap.ofMap
@@ -257,21 +257,21 @@ module SQL_MODULE =
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-synonyms-transact-sql?view=sql-server-ver17
 
-type SYNONYM = {
-    object : OBJECT
+type Synonym = {
+    Object : OBJECT
 
     // Fully quoted name of the object to which the user of this synonym is redirected.
-    base_object_name : string
+    BaseObjectName : string
 }
 
-module SYNONYM =
+module Synonym =
     let readAll objects connection =
         DbTr.reader 
             "SELECT object_id, base_object_name FROM sys.synonyms" 
             []
             (fun m r ->
                 let object_id = readInt32 "object_id" r
-                Map.add object_id { object = RCMap.pick object_id objects; base_object_name = readString "base_object_name" r } m)
+                Map.add object_id { Object = RCMap.pick object_id objects; BaseObjectName = readString "base_object_name" r } m)
             Map.empty
         |> DbTr.commit_ connection
         |> RCMap.ofMap
