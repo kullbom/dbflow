@@ -18,7 +18,7 @@ type SortOrder = SortOrder
                 let refsColumns = x.columns |> Array.joinBy "," (fun c -> c.referenced_column.column_name)
                 $"[{x.parent.Schema.Name}].[{x.parent.Name}]({parentColumns})>[{x.referenced.Schema.Name}].[{x.referenced.Name}]({refsColumns})"
             else x.name
-        static member orderBy (x : TRIGGER) = SortOrder.orderBy x.object, x.trigger_name 
+        static member orderBy (x : Trigger) = SortOrder.orderBy x.Object, x.Name 
         static member orderBy (x : PARAMETER) = SortOrder.orderBy x.object, x.name, x.parameter_id 
         static member orderBy (x : DefaultConstraint) = x.Column.column_name
         static member orderBy (x : Synonym) = SortOrder.orderBy x.Object
@@ -26,13 +26,13 @@ type SortOrder = SortOrder
         static member orderBy (x : TableType) = x.Name
         static member orderBy (x : Procedure) = x.Name 
         static member orderBy (x : XmlSchemaCollection) = SortOrder.orderBy x.Schema, x.Name 
-        static member orderBy (x : DATABASE_TRIGGER) = x.trigger_name
+        static member orderBy (x : DatabaseTrigger) = x.Name
         static member orderBy (x : CheckConstraint) = match x.column with Some c -> c.column_name | None -> x.definition
         static member orderBy (x : FOREIGN_KEY_COLUMN) = SortOrder.orderBy x.parent_column
         static member orderBy (x : INDEX_COLUMN) = SortOrder.orderBy x.column
-        static member orderBy (x : SEQUENCE) = SortOrder.orderBy x.object
+        static member orderBy (x : Sequence) = SortOrder.orderBy x.Object
 
-type Sequence = Sequence
+type ElementId = ElementId
     with 
         static member elementId (x : TABLE) = x.Name
         static member elementId (x : Schema) = x.Name 
@@ -40,7 +40,7 @@ type Sequence = Sequence
         static member elementId (x : INDEX) = match x.name with Some n -> n | None -> "???"
         static member elementId (x : COLUMN) = x.column_name
         static member elementId (x : FOREIGN_KEY) = x.name
-        static member elementId (x : TRIGGER) = x.trigger_name
+        static member elementId (x : Trigger) = x.Name
         static member elementId (x : PARAMETER) = x.name
         static member elementId (x : DefaultConstraint) = "DF???" + x.Column.column_name
         static member elementId (x : Synonym) = x.Object.Name
@@ -48,12 +48,12 @@ type Sequence = Sequence
         static member elementId (x : TableType) = x.Name
         static member elementId (x : Procedure) = x.Name 
         static member elementId (x : XmlSchemaCollection) = x.Name 
-        static member elementId (x : DATABASE_TRIGGER) = x.trigger_name
+        static member elementId (x : DatabaseTrigger) = x.Name
         static member elementId (x : CheckConstraint) = x.object.Name
         static member elementId (x : FOREIGN_KEY_COLUMN) = $"{x.parent_column.column_name} -> {x.referenced_column.column_name}"
         static member elementId (x : INDEX_COLUMN) = x.column.column_name
         static member elementId (x : OBJECT) = x.Name
-        static member elementId (x : SEQUENCE) = x.object.Name
+        static member elementId (x : Sequence) = x.Object.Name
 
 type Diff = { Message : string; Path : string; Data0 : obj; Data1 : obj }
     with static member create message path data0 data1 = 
@@ -96,7 +96,7 @@ module Compare =
 
     // A few manual implementations
 
-    let object_name (x0 : OBJECT, x1 : OBJECT) path diffs =
+    let objectName (x0 : OBJECT, x1 : OBJECT) path diffs =
         match x0.ObjectType, x1.ObjectType with
         | ObjectType.ForeignKeyConstraint, ObjectType.ForeignKeyConstraint 
         | ObjectType.TypeTable, ObjectType.TypeTable ->
@@ -106,7 +106,7 @@ module Compare =
     
     //let sys_datatype (x0 : SYS_DATATYPE, x1 : SYS_DATATYPE, path, diff) = equalCollector (x0, x1) path diff
 
-    let index_name (x0 : INDEX, x1 : INDEX) path diff =
+    let indexName (x0 : INDEX, x1 : INDEX) path diff =
         match x0.IsSystemNamed, x0.name, x1.IsSystemNamed, x1.name with
         | true, _, true, _ -> diff
         | false, Some n0, false, Some n1 when n0 = n1 -> diff
@@ -114,32 +114,32 @@ module Compare =
         | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path x0 x1 :: diff
         
 
-    let foreign_key_name (x0 : FOREIGN_KEY, x1 : FOREIGN_KEY) path diff =
+    let foreignKeyName (x0 : FOREIGN_KEY, x1 : FOREIGN_KEY) path diff =
         match x0.IsSystemNamed, x0.name, x1.IsSystemNamed, x1.name with
         | true, _, true, _ -> diff
         | false, n0, false, n1 when n0 = n1 -> diff
         | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path x0 x1 :: diff
 
-    let check_constraint_name (x0 : CheckConstraint, x1 : CheckConstraint) path diff =
+    let checkConstraintName (x0 : CheckConstraint, x1 : CheckConstraint) path diff =
         match x0.IsSystemNamed, x0.object.Name, x1.IsSystemNamed, x1.object.Name with
         | true, _, true, _ -> diff
         | false, n0, false, n1 when n0 = n1 -> diff
         | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path n0 n1 :: diff
        
-    let default_constraint_name (x0 : DefaultConstraint, x1 : DefaultConstraint) path diff =
+    let defaultConstraintName (x0 : DefaultConstraint, x1 : DefaultConstraint) path diff =
         match x0.IsSystemNamed, x0.Object.Name, x1.IsSystemNamed, x1.Object.Name with
         | true, _, true, _ -> diff
         | false, n0, false, n1 when n0 = n1 -> diff
         | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path x0 x1 :: diff
 
     
-    let sequence_definition (x0 : SEQUENCE_DEFINITION, x1 : SEQUENCE_DEFINITION) path diff =
+    let sequenceDefinition (x0 : SequenceDefinition, x1 : SequenceDefinition) path diff =
         diff
-        |> equalCollector (x0.increment, x1.increment) ("increment" :: path)
-        |> collectOption x0.minimum_value x1.minimum_value equalCollector ("minimum_value" :: path)
-        |> collectOption x0.maximum_value x1.maximum_value equalCollector ("maximum_value" :: path)
+        |> equalCollector (x0.Increment, x1.Increment) ("increment" :: path)
+        |> collectOption x0.MinimumValue x1.MinimumValue equalCollector ("minimum_value" :: path)
+        |> collectOption x0.MaximumValue x1.MaximumValue equalCollector ("maximum_value" :: path)
 
-    let identity_definition (x0 : IDENTITY_DEFINITION, x1 : IDENTITY_DEFINITION) path diff =
+    let identityDefinition (x0 : IDENTITY_DEFINITION, x1 : IDENTITY_DEFINITION) path diff =
         equalCollector (x0.increment_value, x1.increment_value) path diff
         
 
@@ -184,27 +184,27 @@ module Generator =
                 sDefT<FOREIGN_KEY> "delete_referential_action" equalCollector
                 sDefT<FOREIGN_KEY> "update_referential_action" equalCollector
 
-                sDefT<OBJECT> "Name" (fun _ -> $"|> Compare.object_name (x0, x1) path") 
+                sDefT<OBJECT> "Name" (fun _ -> $"|> Compare.objectName (x0, x1) path") 
                 sDefT<OBJECT> "ObjectType" equalCollector
                 
-                sDefT<INDEX> "name" (fun _ -> $"|> Compare.index_name (x0, x1) path")
+                sDefT<INDEX> "name" (fun _ -> $"|> Compare.indexName (x0, x1) path")
                 sDefNoneT<INDEX> "object"
                 sDefNoneT<INDEX> "IsSystemNamed"
                 sDefT<INDEX> "index_type" equalCollector
                 
-                sDefT<FOREIGN_KEY> "name" (fun _ -> $"|> Compare.foreign_key_name (x0, x1) path")
+                sDefT<FOREIGN_KEY> "name" (fun _ -> $"|> Compare.foreignKeyName (x0, x1) path")
                 sDefNoneT<FOREIGN_KEY> "object"
                 sDefNoneT<FOREIGN_KEY> "IsSystemNamed"
 
-                sDefT<CheckConstraint> "object" (fun _ -> $"|> Compare.check_constraint_name (x0, x1) path")
+                sDefT<CheckConstraint> "object" (fun _ -> $"|> Compare.checkConstraintName (x0, x1) path")
                 sDefNoneT<CheckConstraint> "IsSystemNamed"
 
-                sDefT<DefaultConstraint> "Object" (fun _ -> $"|> Compare.default_constraint_name (x0, x1) path")
+                sDefT<DefaultConstraint> "Object" (fun _ -> $"|> Compare.defaultConstraintName (x0, x1) path")
                 sDefNoneT<DefaultConstraint> "IsSystemNamed"
 
-                sDefT<SEQUENCE> "sequence_definition" (fun pname -> $"|> Compare.sequence_definition (x0.{pname}, x1.{pname}) (\"{pname}\" :: path)")
+                sDefT<Sequence> "SequenceDefinition" (fun pname -> $"|> Compare.sequenceDefinition (x0.{pname}, x1.{pname}) (\"{pname}\" :: path)")
    
-                sDefT<COLUMN> "identity_definition" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.identity_definition (\"{pname}\" :: path)")
+                sDefT<COLUMN> "identity_definition" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.identityDefinition (\"{pname}\" :: path)")
                 sDefT<Datatype> "SystemDatatype" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.equalCollector (\"{pname}\" :: path)")
                 
             ] |> Map.ofList
@@ -293,7 +293,7 @@ type CompareGen = CompareGenCase
             [ 
                 "Object"
                 "REFERENTIAL_ACTION"; "ObjectType"; "SystemDatatype"; "INDEX_TYPE"; 
-                "IDENTITY_DEFINITION"; "SEQUENCE_DEFINITION"
+                "IDENTITY_DEFINITION"; "SequenceDefinition"
             ]
             |> Set.ofList
 
@@ -316,8 +316,8 @@ type CompareGen = CompareGenCase
                                 match pt with
                                 | PropType.Gen -> $"|> CompareGen.Collect (x0.{pname}, x1.{pname}) (\"{pname}\" :: path)"
                                 | PropType.Option -> $"|> Compare.collectOption x0.{pname} x1.{pname} CompareGen.Collect (\"{pname}\" :: path)"
-                                | PropType.List -> $"|> Compare.collectList x0.{pname} x1.{pname} SortOrder.orderBy Sequence.elementId CompareGen.Collect (\"{pname}\" :: path)"
-                                | PropType.Array -> $"|> Compare.collectArray x0.{pname} x1.{pname} SortOrder.orderBy Sequence.elementId CompareGen.Collect (\"{pname}\" :: path)"
+                                | PropType.List -> $"|> Compare.collectList x0.{pname} x1.{pname} SortOrder.orderBy ElementId.elementId CompareGen.Collect (\"{pname}\" :: path)"
+                                | PropType.Array -> $"|> Compare.collectArray x0.{pname} x1.{pname} SortOrder.orderBy ElementId.elementId CompareGen.Collect (\"{pname}\" :: path)"
                                 | PropType.Special special -> special
                                 |> function "" -> None | s -> Some s 
                             )

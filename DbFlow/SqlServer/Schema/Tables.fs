@@ -61,7 +61,7 @@ type TABLE = {
     
     Columns : COLUMN array
     Indexes : INDEX array
-    Triggers : TRIGGER array
+    Triggers : Trigger array
 
     ForeignKeys : FOREIGN_KEY array
     ReferencedForeignKeys : FOREIGN_KEY array
@@ -112,7 +112,7 @@ type VIEW = {
 
     Columns : COLUMN array
     Indexes : INDEX array
-    Triggers : TRIGGER array
+    Triggers : Trigger array
 
     MSDescription : string option
 }

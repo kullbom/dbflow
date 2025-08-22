@@ -115,9 +115,9 @@ type DatabaseSchema = {
 
     XmlSchemaCollections : XmlSchemaCollection list
 
-    Triggers : DATABASE_TRIGGER list
+    Triggers : DatabaseTrigger list
     Synonyms : Synonym list
-    Sequences : SEQUENCE list
+    Sequences : Sequence list
     
     Properties : DatabaseProperties
 
@@ -140,7 +140,7 @@ module DatabaseSchema =
         let sql_modules = SqlModule.readAll connection
         
         let (columns, columnsByObject) = COLUMN.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
-        let triggersByParent = TRIGGER.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
+        let triggersByParent = Trigger.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
         
         let indexesColumnsByIndex = INDEX_COLUMN.readAll objects columns |> Logger.logTime logger "INDEX_COLUMN" connection
         let indexesByParent = INDEX.readAll objects indexesColumnsByIndex ms_descs |> Logger.logTime logger "INDEX" connection
@@ -161,13 +161,13 @@ module DatabaseSchema =
         let objects = OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
         let types = Datatype.readAll schemas objects ms_descs connection
 
-        let sequences = SEQUENCE.readAll objects types connection
+        let sequences = Sequence.readAll objects types connection
         let synonyms = Synonym.readAll objects connection
         let sql_modules = SqlModule.readAll connection
         let xml_schema_collections = XmlSchemaCollection.readAll schemas ms_descs connection
         
         let (columns, columnsByObject) = COLUMN.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
-        let triggersByParent = TRIGGER.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
+        let triggersByParent = Trigger.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
         
         // A bit strange that keyConstraints isn't used...?!
         let keyConstraints = KeyConstraint.readAll objects ms_descs connection
@@ -207,7 +207,7 @@ module DatabaseSchema =
             |> Logger.logTime logger "VIEW" connection
         
         let db_msDesc = RCMap.tryPick (XPropertyClass.Database, 0, 0) ms_descs
-        let db_triggers = TRIGGER.readAllDatabaseTriggers objects sql_modules ms_descs connection
+        let db_triggers = Trigger.readAllDatabaseTriggers objects sql_modules ms_descs connection
 
         let checkUnused (id : string) exclude pm =
             match RCMap.unused exclude pm with

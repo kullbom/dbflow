@@ -13,7 +13,7 @@ type SchemaScriptPart =
     | DatabaseDefinition
     | SchemaDefinition
     | UserDefinedTypeDefinition
-    | ObjectDefinitions of {| contains_objects : int list; depends_on : int list |}
+    | ObjectDefinitions of {| Contains : int list; DependsOn : int list |}
     | XmlSchemaCollectionDefinition
 
 
@@ -330,11 +330,11 @@ let generateTableScript allTypes ds (w : System.IO.StreamWriter) (opt : Options)
     let tableName = $"[{t.Schema.Name}].[{t.Name}]"
     w.WriteLine $"CREATE TABLE {tableName} ("
     
-    let object_ids =
+    let objectIds =
         generateTableScript' w opt ds allTypes false tableName 
             t.Columns t.Indexes t.CheckConstraints t.DefaultConstraints
     
-    ObjectDefinitions {| contains_objects = t.Object.ObjectId :: object_ids; depends_on = [] |}
+    ObjectDefinitions {| Contains = t.Object.ObjectId :: objectIds; DependsOn = [] |}
 
 let generateTableTypeScript allTypes ds (w : System.IO.StreamWriter) (opt : Options) (t : TableType) =
     let tName = $"[{t.Schema.Name}].[{t.Name}]"
@@ -343,7 +343,7 @@ let generateTableTypeScript allTypes ds (w : System.IO.StreamWriter) (opt : Opti
     let object_ids =
         generateTableScript' w opt ds allTypes true tName 
             t.Columns t.Indexes t.CheckConstraints t.DefaultConstraints
-    ObjectDefinitions {| contains_objects = t.Object.ObjectId :: object_ids; depends_on = [] |}
+    ObjectDefinitions {| Contains = t.Object.ObjectId :: object_ids; DependsOn = [] |}
 
 
 let generateViewScript (w : System.IO.StreamWriter) (opt : Options) (view : VIEW)=
@@ -354,7 +354,7 @@ let generateViewScript (w : System.IO.StreamWriter) (opt : Options) (view : VIEW
     ]
     |> List.iter w.WriteLine
 
-    ObjectDefinitions {| contains_objects = [view.Object.ObjectId]; depends_on = [] |}
+    ObjectDefinitions {| Contains = [view.Object.ObjectId]; DependsOn = [] |}
 
 
 let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options) 
@@ -380,7 +380,7 @@ let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options)
                 "GO" |> w.WriteLine
                 cc.object.ObjectId :: acc)
             []
-    ObjectDefinitions {| contains_objects = object_ids; depends_on = [table_object_id] |}
+    ObjectDefinitions {| Contains = object_ids; DependsOn = [table_object_id] |}
 
 let generateDefaultConstraintsScript (w : System.IO.StreamWriter) (opt : Options) (table : TABLE, dcs : DefaultConstraint array) =
     let object_ids =
@@ -400,7 +400,7 @@ let generateDefaultConstraintsScript (w : System.IO.StreamWriter) (opt : Options
                 
                 dc.Object.ObjectId :: acc)
             []
-    ObjectDefinitions {| contains_objects = object_ids; depends_on = [table.Object.ObjectId] |}
+    ObjectDefinitions {| Contains = object_ids; DependsOn = [table.Object.ObjectId] |}
 
 let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (table : TABLE, fks : FOREIGN_KEY array) =
     let (object_ids, depends_on) =
@@ -428,23 +428,19 @@ let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (tabl
                 fk.object.ObjectId :: object_ids,
                 fk.parent.ObjectId :: fk.referenced.ObjectId :: depends_on)
             ([], [])
-    ObjectDefinitions {| contains_objects = object_ids; depends_on = depends_on |}
+    ObjectDefinitions {| Contains = object_ids; DependsOn = depends_on |}
 
-let generateTriggerScript (w : System.IO.StreamWriter) (opt : Options) (trigger : TRIGGER) =
+let generateTriggerScript (w : System.IO.StreamWriter) (opt : Options) (trigger : Trigger) =
     [
         "SET QUOTED_IDENTIFIER ON "; "GO"; "SET ANSI_NULLS ON "; "GO"
-        if opt.SchemazenCompatibility then trigger.OrigDefinition else trigger.definition
+        if opt.SchemazenCompatibility then trigger.OrigDefinition else trigger.Definition
         "GO"; "SET QUOTED_IDENTIFIER OFF "; "GO"; "SET ANSI_NULLS OFF "; "GO"; ""; 
-        $"ENABLE TRIGGER [{trigger.object.Schema.Name}].[{trigger.object.Name}] ON [{trigger.parent.Schema.Name}].[{trigger.parent.Name}]"
+        $"ENABLE TRIGGER [{trigger.Object.Schema.Name}].[{trigger.Object.Name}] ON [{trigger.Parent.Schema.Name}].[{trigger.Parent.Name}]"
         "GO"; ""; "GO"
     ]
     |> List.iter w.WriteLine
 
-    ObjectDefinitions 
-        {| 
-            contains_objects = [trigger.object.ObjectId]
-            depends_on = [trigger.parent.ObjectId]
-        |}
+    ObjectDefinitions {| Contains = [trigger.Object.ObjectId]; DependsOn = [trigger.Parent.ObjectId] |}
 
 let generateProcedureScript (w : System.IO.StreamWriter) (opt : Options) (p : Procedure) =
     [
@@ -453,12 +449,12 @@ let generateProcedureScript (w : System.IO.StreamWriter) (opt : Options) (p : Pr
         "GO"; "SET QUOTED_IDENTIFIER OFF "; "GO"; "SET ANSI_NULLS OFF "; "GO"; ""; "GO"
     ]
     |> List.iter w.WriteLine
-    ObjectDefinitions {| contains_objects = [p.Object.ObjectId]; depends_on = [] |}
+    ObjectDefinitions {| Contains = [p.Object.ObjectId]; DependsOn = [] |}
 
 let generateSynonymScript (w : System.IO.StreamWriter) (opt : Options) (synonym : Synonym) =
     w.WriteLine $"CREATE SYNONYM [{synonym.Object.Schema.Name}].[{synonym.Object.Name}] FOR {synonym.BaseObjectName}"
     w.WriteLine "GO"
-    ObjectDefinitions {| contains_objects = [synonym.Object.ObjectId]; depends_on = [] |}
+    ObjectDefinitions {| Contains = [synonym.Object.ObjectId]; DependsOn = [] |}
 
 
 let generateXmlSchemaCollectionScript (w : System.IO.StreamWriter) (opt : Options) (s : XmlSchemaCollection) =
@@ -482,18 +478,18 @@ CREATE SEQUENCE [schema_name . ] sequence_name
     [ ; ]  
 *)
 
-let generateSequenceScript (w : System.IO.StreamWriter) (opt : Options) (s : SEQUENCE) =
-    let name = $"[{s.object.Schema.Name}].[{s.object.Name}]"
-    let typeStr = Datatype.typeStr opt.SchemazenCompatibility false s.data_type
-    let startWith = match s.sequence_definition.start_value with Some v -> $" START WITH {v}" | None -> ""
-    let incrementBy = $" INCREMENT BY {s.sequence_definition.increment}"
-    let minValue = match s.sequence_definition.minimum_value with Some v -> $" MINVALUE {v}" | None -> " NO MINVALUE"
-    let maxValue = match s.sequence_definition.maximum_value with Some v -> $" MAXVALUE {v}" | None -> " NO MAXVALUE"
-    let cycle = if s.is_cycling then " CYCLE" else " NO CYCLE"
-    let cache = match s.cache_size with Some s -> $" CACHE {s}" | None -> if s.is_cached then "" else " NO CACHE"
+let generateSequenceScript (w : System.IO.StreamWriter) (opt : Options) (s : Sequence) =
+    let name = $"[{s.Object.Schema.Name}].[{s.Object.Name}]"
+    let typeStr = Datatype.typeStr opt.SchemazenCompatibility false s.Datatype
+    let startWith = match s.SequenceDefinition.StartValue with Some v -> $" START WITH {v}" | None -> ""
+    let incrementBy = $" INCREMENT BY {s.SequenceDefinition.Increment}"
+    let minValue = match s.SequenceDefinition.MinimumValue with Some v -> $" MINVALUE {v}" | None -> " NO MINVALUE"
+    let maxValue = match s.SequenceDefinition.MaximumValue with Some v -> $" MAXVALUE {v}" | None -> " NO MAXVALUE"
+    let cycle = if s.IsCycling then " CYCLE" else " NO CYCLE"
+    let cache = match s.CacheSize with Some s -> $" CACHE {s}" | None -> if s.IsCached then "" else " NO CACHE"
     w.WriteLine $"CREATE SEQUENCE {name} AS {typeStr}{startWith}{incrementBy}{minValue}{maxValue}{cycle}{cache}"
 
-    ObjectDefinitions {| contains_objects = [s.object.ObjectId]; depends_on = [] |}
+    ObjectDefinitions {| Contains = [s.Object.ObjectId]; DependsOn = [] |}
 
 (*
 CREATE TYPE [ schema_name. ] type_name
@@ -534,7 +530,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
                         | DatabaseDefinition -> true, -1, [],[]
                         | SchemaDefinition -> false, 1, [],[]
                         | UserDefinedTypeDefinition -> false, 2,  [],[]
-                        | ObjectDefinitions x -> false, 3, x.contains_objects, x.depends_on
+                        | ObjectDefinitions x -> false, 3, x.Contains, x.DependsOn
                         | XmlSchemaCollectionDefinition -> false, 4, [], []
                         
                     isDatabaseDefinition,
@@ -592,8 +588,8 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
             w.WriteLine "GO"
             ObjectDefinitions 
                 {| 
-                    contains_objects = match index.object with Some o -> [o.ObjectId] | None -> []; 
-                    depends_on = [view.Object.ObjectId] 
+                    Contains = match index.object with Some o -> [o.ObjectId] | None -> []; 
+                    DependsOn = [view.Object.ObjectId] 
                 |})
     
     db.Procedures |> List.filter  (fun p -> p.Object.ObjectType <> ObjectType.SqlStoredProcedure)
@@ -613,7 +609,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
 
     db.Tables 
     |> List.collect (fun t -> t.Triggers |> Array.toList)
-    |> dataForFolder "triggers" (fun tr -> objectFilename tr.object.Schema.Name tr.trigger_name) generateTriggerScript
+    |> dataForFolder "triggers" (fun tr -> objectFilename tr.Object.Schema.Name tr.Name) generateTriggerScript
 
     db.Tables |> List.choose (fun t -> match t.ForeignKeys with [||] -> None | fks -> Some (t, fks))
     |> dataForFolder "foreign_keys" (fun (t, _) -> objectFilename t.Schema.Name t.Name) generateForeignKeysScript
@@ -630,5 +626,5 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
     if not (opt.SchemazenCompatibility)
     then 
         db.Sequences
-        |> dataForFolder "sequences" (fun s -> objectFilename s.object.Schema.Name s.object.Name) generateSequenceScript    
+        |> dataForFolder "sequences" (fun s -> objectFilename s.Object.Schema.Name s.Object.Name) generateSequenceScript    
 

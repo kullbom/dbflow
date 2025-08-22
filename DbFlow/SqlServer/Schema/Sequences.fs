@@ -3,31 +3,31 @@
 open DbFlow
 open DbFlow.Readers
 
-type SEQUENCE_DEFINITION = {
-    start_value : obj option //	0	98	sql_variant
-    increment : obj //	0	98	sql_variant
-    minimum_value : obj option  //	0	98	sql_variant
-    maximum_value : obj option //	0	98	sql_variant
+type SequenceDefinition = {
+    StartValue : obj option //	0	98	sql_variant
+    Increment : obj //	0	98	sql_variant
+    MinimumValue : obj option  //	0	98	sql_variant
+    MaximumValue : obj option //	0	98	sql_variant
 
-    current_value : obj //	0	98	sql_variant
+    CurrentValue : obj //	0	98	sql_variant
 }
 
-type SEQUENCE = {
-    object : OBJECT
+type Sequence = {
+    Object : OBJECT
     
-    sequence_definition : SEQUENCE_DEFINITION
-    is_cycling : bool //	1	104	bit
-    is_cached : bool  //	1	104	bit
-    cache_size : int option //	1	56	int
+    SequenceDefinition : SequenceDefinition
+    IsCycling : bool //	1	104	bit
+    IsCached : bool  //	1	104	bit
+    CacheSize : int option //	1	56	int
     
-    data_type : Datatype
+    Datatype : Datatype
 
-    is_exhausted : bool //	0	104	bit
+    IsExhausted : bool //	0	104	bit
     // Applies to SQL Server 2017 and later.
     //last_used_value : string option //	1	98	sql_variant
 } 
 
-module SEQUENCE =
+module Sequence =
     let readAll objects types connection =
         DbTr.reader 
             "SELECT 
@@ -85,24 +85,24 @@ module SEQUENCE =
                 let object_id = readInt32 "object_id" r
                 Map.add object_id 
                     { 
-                        object = RCMap.pick object_id objects 
+                        Object = RCMap.pick object_id objects 
                     
-                        sequence_definition = {
-                            start_value = if readBool "start_value_explicit" r then readObject "start_value" r |> Some else None
-                            increment = readObject "increment" r
-                            minimum_value = if readBool "minimum_value_explicit" r then readObject "minimum_value" r |> Some else None
-                            maximum_value = if readBool "maximum_value_explicit" r then readObject "maximum_value" r |> Some else None
+                        SequenceDefinition = {
+                            StartValue = if readBool "start_value_explicit" r then readObject "start_value" r |> Some else None
+                            Increment = readObject "increment" r
+                            MinimumValue = if readBool "minimum_value_explicit" r then readObject "minimum_value" r |> Some else None
+                            MaximumValue = if readBool "maximum_value_explicit" r then readObject "maximum_value" r |> Some else None
                         
-                            current_value = readObject "current_value" r
+                            CurrentValue = readObject "current_value" r
                         }
 
-                        is_cycling = readBool "is_cycling" r
-                        is_cached = readBool "is_cached" r
-                        cache_size = nullable "cache_size" readInt32 r
+                        IsCycling = readBool "is_cycling" r
+                        IsCached = readBool "is_cached" r
+                        CacheSize = nullable "cache_size" readInt32 r
                         
-                        data_type = Datatype.readType types None r
+                        Datatype = Datatype.readType types None r
                         
-                        is_exhausted = readBool "is_exhausted" r
+                        IsExhausted = readBool "is_exhausted" r
                         //last_used_value = nullable "last_used_value" readString r
                     } 
                     m)

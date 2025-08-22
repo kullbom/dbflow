@@ -5,29 +5,29 @@ open DbFlow.Readers
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-triggers-transact-sql?view=sql-server-ver17
 
-type DATABASE_TRIGGER = {
+type DatabaseTrigger = {
     //object : OBJECT
-    trigger_name : string
-    definition : string
-    is_disabled : bool
-    is_instead_of_trigger : bool
+    Name : string
+    Definition : string
+    IsDisabled : bool
+    IsInsteadOfTrigger : bool
 
-    ms_description : string option
+    MSDescription : string option
 }
 
-type TRIGGER = {
-    object : OBJECT
-    parent : OBJECT
-    trigger_name : string
+type Trigger = {
+    Object : OBJECT
+    Parent : OBJECT
+    Name : string
     OrigDefinition : string
-    definition : string
-    is_disabled : bool
-    is_instead_of_trigger : bool
+    Definition : string
+    IsDisabled : bool
+    IsInsteadOfTrigger : bool
 
-    ms_description : string option
+    MSDescription : string option
 }
 
-module TRIGGER =
+module Trigger =
     let readAllDatabaseTriggers objects (sql_modules : RCMap<int, SqlModule>) ms_descriptions connection =
         DbTr.reader 
             "SELECT
@@ -40,12 +40,12 @@ module TRIGGER =
                 let name = readString "name" r
                 {
                         //object = RCMap.pick object_id objects 
-                        trigger_name = name
-                        definition = (RCMap.pick object_id sql_modules).Definition.Trim()
-                        is_disabled = readBool "is_disabled" r
-                        is_instead_of_trigger = readBool "is_instead_of_trigger" r
+                        Name = name
+                        Definition = (RCMap.pick object_id sql_modules).Definition.Trim()
+                        IsDisabled = readBool "is_disabled" r
+                        IsInsteadOfTrigger = readBool "is_instead_of_trigger" r
 
-                        ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
+                        MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -69,15 +69,15 @@ module TRIGGER =
                         $"[{object.Schema.Name}].[{name}]" $"[{parent.Schema.Name}].[{parent.Name}]"
                         trigger_definition
                 {
-                        object = object
-                        parent = parent
-                        trigger_name = name
+                        Object = object
+                        Parent = parent
+                        Name = name
                         OrigDefinition = trigger_definition
-                        definition = updated_trigger_definition
-                        is_disabled = readBool "is_disabled" r
-                        is_instead_of_trigger = readBool "is_instead_of_trigger" r
+                        Definition = updated_trigger_definition
+                        IsDisabled = readBool "is_disabled" r
+                        IsInsteadOfTrigger = readBool "is_instead_of_trigger" r
 
-                        ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
+                        MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -86,7 +86,7 @@ module TRIGGER =
     let readAll objects sql_modules ms_descriptions connection =
         let triggers' = readAll' objects sql_modules ms_descriptions connection
         triggers' 
-        |> List.groupBy (fun tr -> tr.parent.ObjectId)
+        |> List.groupBy (fun tr -> tr.Parent.ObjectId)
         |> List.fold 
             (fun m (object_id, trs) -> 
                 Map.add object_id (trs |> List.toArray) m)
