@@ -20,7 +20,7 @@ type SEQUENCE = {
     is_cached : bool  //	1	104	bit
     cache_size : int option //	1	56	int
     
-    data_type : DATATYPE
+    data_type : Datatype
 
     is_exhausted : bool //	0	104	bit
     // Applies to SQL Server 2017 and later.
@@ -100,7 +100,7 @@ module SEQUENCE =
                         is_cached = readBool "is_cached" r
                         cache_size = nullable "cache_size" readInt32 r
                         
-                        data_type = DATATYPE.readType types None r
+                        data_type = Datatype.readType types None r
                         
                         is_exhausted = readBool "is_exhausted" r
                         //last_used_value = nullable "last_used_value" readString r

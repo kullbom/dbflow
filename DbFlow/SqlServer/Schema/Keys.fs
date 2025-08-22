@@ -63,7 +63,7 @@ type FOREIGN_KEY = {
     referenced : OBJECT
     key_index_id : int
     is_disabled : bool
-    is_system_named : bool
+    IsSystemNamed : bool
 
     delete_referential_action : REFERENTIAL_ACTION
     update_referential_action : REFERENTIAL_ACTION
@@ -98,7 +98,7 @@ module FOREIGN_KEY =
                     referenced = RCMap.pick (readInt32 "referenced_object_id" r) objects
                     key_index_id = readInt32 "key_index_id" r
                     is_disabled = readBool "is_disabled" r
-                    is_system_named = readBool "is_system_named" r
+                    IsSystemNamed = readBool "is_system_named" r
 
                     delete_referential_action = toREFERENTIAL_ACTION (readByte "delete_referential_action" r)
                     update_referential_action = toREFERENTIAL_ACTION (readByte "update_referential_action" r)

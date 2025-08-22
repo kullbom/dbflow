@@ -6,15 +6,15 @@ open DbFlow.Readers
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-default-constraints-transact-sql?view=sql-server-ver17
 
 type DEFAULT_CONSTRAINT = {
-    object : OBJECT
-    parent : OBJECT
-    column : COLUMN
+    Object : OBJECT
+    Parent : OBJECT
+    Column : COLUMN
 
-    is_system_named : bool
+    IsSystemNamed : bool
     
-    definition : string
+    Definition : string
 
-    ms_description : string option
+    MSDescription : string option
 }
 
 module DEFAULT_CONSTRAINT =
@@ -28,15 +28,15 @@ module DEFAULT_CONSTRAINT =
                 let parent_object_id = readInt32 "parent_object_id" r
                 let parent_column_id = readInt32 "parent_column_id" r
                 {
-                    object = RCMap.pick object_id objects
-                    parent = RCMap.pick parent_object_id objects
-                    column = RCMap.pick (parent_object_id, parent_column_id) columns
+                    Object = RCMap.pick object_id objects
+                    Parent = RCMap.pick parent_object_id objects
+                    Column = RCMap.pick (parent_object_id, parent_column_id) columns
 
-                    is_system_named = readBool "is_system_named" r
+                    IsSystemNamed = readBool "is_system_named" r
                     
-                    definition = readString "definition" r
+                    Definition = readString "definition" r
 
-                    ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
+                    MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -44,7 +44,7 @@ module DEFAULT_CONSTRAINT =
     let readAll objects columns ms_descriptions connection =
         let defaultConstraints' = readAll' objects columns ms_descriptions connection
         defaultConstraints'
-        |> List.groupBy (fun cc -> cc.parent.ObjectId)
+        |> List.groupBy (fun cc -> cc.Parent.ObjectId)
         |> List.fold 
             (fun m (object_id, trs) -> 
                 Map.add object_id (trs |> List.toArray) m)
@@ -55,12 +55,12 @@ module DEFAULT_CONSTRAINT =
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-key-constraints-transact-sql?view=sql-server-ver17
 
 type KEY_CONSTRAINT = {
-    object : OBJECT
+    Object : OBJECT
     
-    is_system_named : bool
-    unique_index_id : int
+    IsSystemNamed : bool
+    UniqueIndexId : int
     
-    ms_description : string option
+    MSDescription : string option
 }
 
 module KEY_CONSTRAINT =
@@ -73,12 +73,12 @@ module KEY_CONSTRAINT =
                 Map.add
                     object_id
                     {
-                        object = RCMap.pick object_id objects
+                        Object = RCMap.pick object_id objects
 
-                        is_system_named = readBool "is_system_named" r
-                        unique_index_id = readInt32 "unique_index_id" r
+                        IsSystemNamed = readBool "is_system_named" r
+                        UniqueIndexId = readInt32 "unique_index_id" r
                         
-                        ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
+                        MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
                     }
                     m)
             Map.empty
@@ -101,7 +101,7 @@ type CHECK_CONSTRAINT = {
     definition : string
 
     uses_database_collation : bool
-    is_system_named : bool
+    IsSystemNamed : bool
 
     ms_description : string option
 }
@@ -132,7 +132,7 @@ module CHECK_CONSTRAINT =
                         definition = readString "definition" r
 
                         uses_database_collation = readBool "uses_database_collation" r
-                        is_system_named = readBool "is_system_named" r
+                        IsSystemNamed = readBool "is_system_named" r
 
                         ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
                 } :: acc)

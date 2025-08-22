@@ -19,7 +19,7 @@ type PARAMETER = {
     name : string
     parameter_id : int
 
-    data_type : DATATYPE
+    data_type : Datatype
 
     // is_output
     // is_cursor_ref
@@ -53,7 +53,7 @@ module PARAMETER =
                     name = readString "name" r
                     parameter_id = parameter_id
 
-                    data_type = DATATYPE.readType types None r
+                    data_type = Datatype.readType types None r
 
                     ms_description = RCMap.tryPick (XPropertyClass.Parameter, object_id, parameter_id) ms_descriptions
                 } :: acc)

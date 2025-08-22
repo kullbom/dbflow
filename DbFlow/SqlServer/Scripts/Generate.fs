@@ -54,7 +54,7 @@ let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes 
                     | None -> ""
             let checkStr = 
                 match Map.tryFind column.column_id columnInlineDefaults with
-                | Some dc -> $"\r\n       DEFAULT {dc.definition}"
+                | Some dc -> $"\r\n       DEFAULT {dc.Definition}"
                 | None -> ""
             let rowGuidStr =
                 if column.is_rowguidcol
@@ -64,9 +64,9 @@ let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes 
                 if opt.SchemazenCompatibility 
                     && (column.data_type.is_user_defined || column.data_type.name = "sysname")
                 then 
-                    DATATYPE.typeStr opt.SchemazenCompatibility false 
+                    Datatype.typeStr opt.SchemazenCompatibility false 
                         { (Map.find (int column.data_type.system_type_id) allTypes) with parameter = column.data_type.parameter }
-                else DATATYPE.typeStr opt.SchemazenCompatibility false column.data_type
+                else Datatype.typeStr opt.SchemazenCompatibility false column.data_type
             $"{typeStr}{collateStr}{maskedStr} {nullStr}{identityStr}{checkStr}{rowGuidStr}"
     $"[{column.column_name}] {columnDefStr}"
 
@@ -165,7 +165,7 @@ let primaryKeyStr (opt : Options) isTableType (pk : INDEX) =
         else $"CONSTRAINT [{pkName}] PRIMARY KEY {clusteredStr} ({pkColumnsStr})"
     else    
         let withSettings = indexWithSettings false pk
-        if isTableType || pk.is_system_named
+        if isTableType || pk.IsSystemNamed
         then $"PRIMARY KEY {clusteredStr} ({pkColumnsStr}){withSettings}"
         else $"CONSTRAINT [{pkName}] PRIMARY KEY {clusteredStr} ({pkColumnsStr}){withSettings}"
         
@@ -178,7 +178,7 @@ let uniqueKeyStr (opt : Options) (i : INDEX) =
         | INDEX_TYPE.NONCLUSTERED -> "NONCLUSTERED"
         | iType -> failwithf "Unhandled index type %A of primary key %s" iType iName
     let indexColumnsStr = indexColumnsStr i.columns
-    if (not i.is_system_named) || opt.SchemazenCompatibility
+    if (not i.IsSystemNamed) || opt.SchemazenCompatibility
     then $"CONSTRAINT [{iName}] UNIQUE {clusteredStr} ({indexColumnsStr})"
     else $"UNIQUE {clusteredStr} ({indexColumnsStr})"
 
@@ -251,7 +251,7 @@ let generateTableBody (w : System.IO.StreamWriter) (opt : Options) ds allTypes i
         tableInlineIndexes
         |> List.map 
             (fun (inlineIndex : INDEX) ->
-                match inlineIndex.is_system_named, inlineIndex.is_primary_key, inlineIndex.is_unique_constraint with 
+                match inlineIndex.IsSystemNamed, inlineIndex.is_primary_key, inlineIndex.is_unique_constraint with 
                 | _, true, false -> $"   ,{primaryKeyStr opt isTableType inlineIndex}"
                 | _, false, true -> $"   ,{uniqueKeyStr opt inlineIndex}"
                 | _ -> failwithf "Unknown inline index %A" inlineIndex)
@@ -261,7 +261,7 @@ let generateTableBody (w : System.IO.StreamWriter) (opt : Options) ds allTypes i
         tableInlineChecks
         |> List.map 
             (fun (inlineCheck : CHECK_CONSTRAINT) ->
-                if inlineCheck.is_system_named
+                if inlineCheck.IsSystemNamed
                 then 
                     let extraSpace = if opt.SchemazenCompatibility then " " else ""
                     $"   ,CHECK {extraSpace}{inlineCheck.definition}"
@@ -301,7 +301,7 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) ds allType
         |> Array.fold
             (fun tableInlineDefaults' dc ->
                  if isTableType
-                 then Map.add dc.column.column_id dc tableInlineDefaults'
+                 then Map.add dc.Column.column_id dc tableInlineDefaults'
                  else tableInlineDefaults')
             Map.empty
 
@@ -323,7 +323,7 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) ds allType
     []
     |> (fun acc -> columns |> Array.fold (fun acc' c -> c.object.ObjectId :: acc') acc)
     |> (fun acc -> indexes |> Array.fold (fun acc' i -> match i.object with Some o -> o.ObjectId :: acc' | None -> acc') acc)
-    |> (fun acc -> columnInlineDefaults |> Map.fold (fun acc' _ dc -> dc.object.ObjectId :: acc') acc)
+    |> (fun acc -> columnInlineDefaults |> Map.fold (fun acc' _ dc -> dc.Object.ObjectId :: acc') acc)
     
 
 let generateTableScript allTypes ds (w : System.IO.StreamWriter) (opt : Options) (t : TABLE) =
@@ -366,11 +366,11 @@ let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options)
                 let tableFullname = $"[{schemaName}].[{tableName}]"
                 if opt.SchemazenCompatibility
                 then 
-                    if cc.is_system_named
+                    if cc.IsSystemNamed
                     then w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK  {cc.definition}"
                     else w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CONSTRAINT [{cc.object.Name}] CHECK  {cc.definition}"
                 else
-                    if cc.is_system_named
+                    if cc.IsSystemNamed
                     then w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK {cc.definition}"
                     else 
                         let trustClause = if cc.is_not_trusted then "NOCHECK" else "CHECK" 
@@ -385,20 +385,20 @@ let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options)
 let generateDefaultConstraintsScript (w : System.IO.StreamWriter) (opt : Options) (table : TABLE, dcs : DEFAULT_CONSTRAINT array) =
     let object_ids =
         dcs 
-        |> Array.sortBy (fun dc -> dc.object.ObjectId)
+        |> Array.sortBy (fun dc -> dc.Object.ObjectId)
         |> Array.fold
             (fun acc dc ->
                 let tableName = $"[{table.Schema.Name}].[{table.Name}]"
-                if dc.is_system_named
+                if dc.IsSystemNamed
                 then 
                     if opt.SchemazenCompatibility
-                    then $"ALTER TABLE {tableName} ADD  DEFAULT {dc.definition} FOR [{dc.column.column_name}]"
-                    else $"ALTER TABLE {tableName} ADD DEFAULT {dc.definition} FOR [{dc.column.column_name}]"
-                else $"ALTER TABLE {tableName} ADD CONSTRAINT [{dc.object.Name}] DEFAULT {dc.definition} FOR [{dc.column.column_name}]"
+                    then $"ALTER TABLE {tableName} ADD  DEFAULT {dc.Definition} FOR [{dc.Column.column_name}]"
+                    else $"ALTER TABLE {tableName} ADD DEFAULT {dc.Definition} FOR [{dc.Column.column_name}]"
+                else $"ALTER TABLE {tableName} ADD CONSTRAINT [{dc.Object.Name}] DEFAULT {dc.Definition} FOR [{dc.Column.column_name}]"
                 |> w.WriteLine
                 "GO" |> w.WriteLine
                 
-                dc.object.ObjectId :: acc)
+                dc.Object.ObjectId :: acc)
             []
     ObjectDefinitions {| contains_objects = object_ids; depends_on = [table.Object.ObjectId] |}
 
@@ -409,7 +409,7 @@ let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (tabl
             (fun (object_ids, depends_on) fk ->
                 let columnsStr = fk.columns |> Array.joinBy ", " (fun c -> $"[{c.parent_column.column_name}]")
                 let refColumnsStr = fk.columns |> Array.joinBy ", " (fun c -> $"[{c.referenced_column.column_name}]")
-                let name = if fk.is_system_named then "" else $"CONSTRAINT [{fk.name}]"
+                let name = if fk.IsSystemNamed then "" else $"CONSTRAINT [{fk.name}]"
                 w.WriteLine $"ALTER TABLE [{table.Schema.Name}].[{table.Name}] WITH CHECK ADD {name}"
                 w.WriteLine $"   FOREIGN KEY({columnsStr}) REFERENCES [{fk.referenced.Schema.Name}].[{fk.referenced.Name}] ({refColumnsStr})"
                 match fk.update_referential_action with
@@ -484,7 +484,7 @@ CREATE SEQUENCE [schema_name . ] sequence_name
 
 let generateSequenceScript (w : System.IO.StreamWriter) (opt : Options) (s : SEQUENCE) =
     let name = $"[{s.object.Schema.Name}].[{s.object.Name}]"
-    let typeStr = DATATYPE.typeStr opt.SchemazenCompatibility false s.data_type
+    let typeStr = Datatype.typeStr opt.SchemazenCompatibility false s.data_type
     let startWith = match s.sequence_definition.start_value with Some v -> $" START WITH {v}" | None -> ""
     let incrementBy = $" INCREMENT BY {s.sequence_definition.increment}"
     let minValue = match s.sequence_definition.minimum_value with Some v -> $" MINVALUE {v}" | None -> " NO MINVALUE"
@@ -508,10 +508,10 @@ CREATE TYPE [ schema_name. ] type_name
 } [ ; ]
 *)
 
-let generateUserDefinedTypeScript (types : Map<int, DATATYPE>) (w : System.IO.StreamWriter) (opt : Options) (t : DATATYPE) =
+let generateUserDefinedTypeScript (types : Map<int, Datatype>) (w : System.IO.StreamWriter) (opt : Options) (t : Datatype) =
     let tDef =
         let base_type = types |> Map.find (int t.system_type_id)
-        DATATYPE.typeStr' opt.SchemazenCompatibility true base_type.name base_type.sys_datatype t.parameter
+        Datatype.typeStr' opt.SchemazenCompatibility true base_type.name base_type.sys_datatype t.parameter
     let nullStr = if t.parameter.is_nullable then "NULL" else "NOT NULL"
     w.WriteLine $"CREATE TYPE [{t.schema.Name}].[{t.name}] FROM {tDef} {nullStr}"
     w.WriteLine "GO"
@@ -602,7 +602,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
     db.Tables 
     |> List.choose 
         (fun t -> 
-            match t.CheckConstraints |> Array.filter (fun cc -> not cc.is_system_named) with 
+            match t.CheckConstraints |> Array.filter (fun cc -> not cc.IsSystemNamed) with 
             | [||] -> None 
             | ccs -> Some (t.Schema.Name, t.Name, t.Object.ObjectId, ccs))
     |> dataForFolder "check_constraints" (fun (sn, tn, _, _) -> objectFilename sn tn) generateCheckConstraintsScript

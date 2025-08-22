@@ -33,7 +33,7 @@ type Schema = {
     MSDescription : string option 
 }
 
-module SCHEMA =
+module Schema =
     let isSystemSchema =
         let sysSchemas = ["dbo"; "guest"; "sys"; "INFORMATION_SCHEMA"] |> Set.ofList
         fun name id -> id >= 16384 || Set.contains name sysSchemas

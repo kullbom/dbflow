@@ -108,7 +108,7 @@ type DatabaseSchema = {
     Tables : TABLE list
     Views : VIEW list
 
-    Types : DATATYPE list
+    Types : Datatype list
     TableTypes : TableType list
 
     Procedures : PROCEDURE list
@@ -133,9 +133,9 @@ module DatabaseSchema =
         let ms_descs = RCMap.ofMap Map.empty
         let dependencies = Dependency.readAll |> Logger.logTime logger "Dependencies" connection
         
-        let schemas = SCHEMA.readAll ms_descs connection
+        let schemas = Schema.readAll ms_descs connection
         let objects = OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
-        let types = DATATYPE.readAll schemas objects ms_descs connection
+        let types = Datatype.readAll schemas objects ms_descs connection
 
         let sql_modules = SQL_MODULE.readAll connection
         
@@ -157,9 +157,9 @@ module DatabaseSchema =
         
         let dbProperties = DatabaseProperties.readAll connection
 
-        let schemas = SCHEMA.readAll ms_descs connection
+        let schemas = Schema.readAll ms_descs connection
         let objects = OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
-        let types = DATATYPE.readAll schemas objects ms_descs connection
+        let types = Datatype.readAll schemas objects ms_descs connection
 
         let sequences = SEQUENCE.readAll objects types connection
         let synonyms = SYNONYM.readAll objects connection

@@ -68,7 +68,7 @@ type CompareGen = CompareGenCase
                        |> Compare.collectOption x0.masking_function x1.masking_function CompareGen.Collect ("masking_function" :: path)
                        |> CompareGen.Collect (x0.is_rowguidcol, x1.is_rowguidcol) ("is_rowguidcol" :: path)
 
-        static member Collect (x0 : DATATYPE, x1 : DATATYPE) =
+        static member Collect (x0 : Datatype, x1 : Datatype) =
                     fun path diffs ->
                        diffs
                        |> CompareGen.Collect (x0.name, x1.name) ("name" :: path)
@@ -81,7 +81,7 @@ type CompareGen = CompareGenCase
 
         static member Collect (x0 : System.Byte, x1 : System.Byte) = Compare.equalCollector (x0, x1)
 
-        static member Collect (x0 : DATATYPE_PARAMETER, x1 : DATATYPE_PARAMETER) =
+        static member Collect (x0 : DatatypeParameter, x1 : DatatypeParameter) =
                     fun path diffs ->
                        diffs
                        |> CompareGen.Collect (x0.max_length, x1.max_length) ("max_length" :: path)
@@ -92,7 +92,7 @@ type CompareGen = CompareGenCase
 
         static member Collect (x0 : System.Int16, x1 : System.Int16) = Compare.equalCollector (x0, x1)
 
-        static member Collect (x0 : TABLE_DATATYPE, x1 : TABLE_DATATYPE) =
+        static member Collect (x0 : TableDatatype, x1 : TableDatatype) =
                     fun path diffs ->
                        diffs
                        |> CompareGen.Collect (x0.object, x1.object) ("object" :: path)
@@ -167,6 +167,7 @@ type CompareGen = CompareGenCase
         static member Collect (x0 : CHECK_CONSTRAINT, x1 : CHECK_CONSTRAINT) =
                     fun path diffs ->
                        diffs
+                       |> Compare.check_constraint_name (x0, x1) path
                        |> CompareGen.Collect (x0.parent, x1.parent) ("parent" :: path)
                        |> Compare.collectOption x0.column x1.column CompareGen.Collect ("column" :: path)
                        |> CompareGen.Collect (x0.is_disabled, x1.is_disabled) ("is_disabled" :: path)
@@ -178,9 +179,10 @@ type CompareGen = CompareGenCase
         static member Collect (x0 : DEFAULT_CONSTRAINT, x1 : DEFAULT_CONSTRAINT) =
                     fun path diffs ->
                        diffs
-                       |> CompareGen.Collect (x0.parent, x1.parent) ("parent" :: path)
-                       |> CompareGen.Collect (x0.column, x1.column) ("column" :: path)
-                       |> CompareGen.Collect (x0.definition, x1.definition) ("definition" :: path)
+                       |> Compare.default_constraint_name (x0, x1) path
+                       |> CompareGen.Collect (x0.Parent, x1.Parent) ("Parent" :: path)
+                       |> CompareGen.Collect (x0.Column, x1.Column) ("Column" :: path)
+                       |> CompareGen.Collect (x0.Definition, x1.Definition) ("Definition" :: path)
 
         static member Collect (x0 : VIEW, x1 : VIEW) =
                     fun path diffs ->

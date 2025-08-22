@@ -7,7 +7,7 @@ open DbFlow.Readers
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-table-types-transact-sql?view=sql-server-ver17
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-columns-transact-sql?view=sql-server-ver17
 
-type SYS_DATATYPE = 
+type SysDatatype = 
     // Exact numerics
     | TINYINT | SMALLINT | INT | BIGINT | BIT | DECIMAL | NUMERIC | MONEY | SMALLMONEY
     // Approximate numerics
@@ -27,7 +27,7 @@ type SYS_DATATYPE =
     | SYSNAME // sysname(varchar(128)) 
     | TIMESTAMP // ???
 
-type DATATYPE_PARAMETER = {
+type DatatypeParameter = {
     max_length : int16
     precision : byte
     scale : byte
@@ -35,27 +35,27 @@ type DATATYPE_PARAMETER = {
     is_nullable : bool
 }
 
-type TABLE_DATATYPE = {
+type TableDatatype = {
     object : OBJECT
 }
 
-type DATATYPE = {
+type Datatype = {
     name : string
     schema : Schema
 
     system_type_id : byte
     user_type_id : int // ID
 
-    parameter : DATATYPE_PARAMETER
+    parameter : DatatypeParameter
     
     is_user_defined : bool
 
-    sys_datatype : SYS_DATATYPE option
-    table_datatype : TABLE_DATATYPE option
+    sys_datatype : SysDatatype option
+    table_datatype : TableDatatype option
 }
 
-module DATATYPE =
-    let typeStr' schemazenCompatibility is_user_defined_type (dtName : string) (sys_datatype : SYS_DATATYPE option) (p : DATATYPE_PARAMETER)=
+module Datatype =
+    let typeStr' schemazenCompatibility is_user_defined_type (dtName : string) (sys_datatype : SysDatatype option) (p : DatatypeParameter)=
         let formatTypeName (tName : string) = if schemazenCompatibility then tName.ToLowerInvariant () else tName.ToUpperInvariant () 
         let plain tName =
             $"[{formatTypeName tName}]"
@@ -71,74 +71,74 @@ module DATATYPE =
         let withPrecisionScale tName precision scale =
             $"[{formatTypeName tName}]({precision},{scale})"
         match sys_datatype with
-        | Some(SYS_DATATYPE.DATETIME2) -> 
+        | Some(SysDatatype.DATETIME2) -> 
             if schemazenCompatibility then plain dtName else withPrecision dtName p.scale
-        | Some(SYS_DATATYPE.DATETIMEOFFSET) -> 
+        | Some(SysDatatype.DATETIMEOFFSET) -> 
             if schemazenCompatibility then plain dtName else withPrecision dtName p.scale
 
-        | Some(SYS_DATATYPE.CHAR) -> withSize dtName p.max_length 1s
-        | Some(SYS_DATATYPE.VARCHAR) -> withSize dtName p.max_length 1s
-        | Some(SYS_DATATYPE.NCHAR) -> withSize dtName p.max_length 2s
-        | Some(SYS_DATATYPE.NVARCHAR) -> withSize dtName p.max_length 2s
-        | Some(SYS_DATATYPE.BINARY) -> withSize dtName p.max_length 1s
-        | Some(SYS_DATATYPE.VARBINARY) -> withSize dtName p.max_length 1s
+        | Some(SysDatatype.CHAR) -> withSize dtName p.max_length 1s
+        | Some(SysDatatype.VARCHAR) -> withSize dtName p.max_length 1s
+        | Some(SysDatatype.NCHAR) -> withSize dtName p.max_length 2s
+        | Some(SysDatatype.NVARCHAR) -> withSize dtName p.max_length 2s
+        | Some(SysDatatype.BINARY) -> withSize dtName p.max_length 1s
+        | Some(SysDatatype.VARBINARY) -> withSize dtName p.max_length 1s
 
-        | Some(SYS_DATATYPE.DECIMAL) -> withPrecisionScale dtName p.precision p.scale
-        | Some(SYS_DATATYPE.NUMERIC) -> withPrecisionScale dtName p.precision p.scale
+        | Some(SysDatatype.DECIMAL) -> withPrecisionScale dtName p.precision p.scale
+        | Some(SysDatatype.NUMERIC) -> withPrecisionScale dtName p.precision p.scale
 
         | _ -> plain dtName
 
-    let typeStr schemazenCompatibility is_user_defined_type (dt : DATATYPE) =
+    let typeStr schemazenCompatibility is_user_defined_type (dt : Datatype) =
         typeStr' schemazenCompatibility is_user_defined_type dt.name dt.sys_datatype dt.parameter
 
     let createSystemDataType sys_type_name =
         match sys_type_name with 
-        | "tinyint" -> SYS_DATATYPE.TINYINT
-        | "smallint" -> SYS_DATATYPE.SMALLINT
-        | "int" -> SYS_DATATYPE.INT
-        | "bigint" -> SYS_DATATYPE.BIGINT
-        | "bit" -> SYS_DATATYPE.BIT
-        | "decimal" -> SYS_DATATYPE.DECIMAL
-        | "numeric" -> SYS_DATATYPE.NUMERIC
-        | "money" -> SYS_DATATYPE.MONEY
-        | "smallmoney" -> SYS_DATATYPE.SMALLMONEY
+        | "tinyint"    -> SysDatatype.TINYINT
+        | "smallint"   -> SysDatatype.SMALLINT
+        | "int"        -> SysDatatype.INT
+        | "bigint"     -> SysDatatype.BIGINT
+        | "bit"        -> SysDatatype.BIT
+        | "decimal"    -> SysDatatype.DECIMAL
+        | "numeric"    -> SysDatatype.NUMERIC
+        | "money"      -> SysDatatype.MONEY
+        | "smallmoney" -> SysDatatype.SMALLMONEY
         
-        | "float" -> SYS_DATATYPE.FLOAT
-        | "real"-> SYS_DATATYPE.REAL
+        | "float" -> SysDatatype.FLOAT
+        | "real"-> SysDatatype.REAL
                 
-        | "date" -> SYS_DATATYPE.DATE
-        | "time" -> SYS_DATATYPE.TIME 
-        | "datetime2" -> SYS_DATATYPE.DATETIME2  
-        | "datetimeoffset" -> SYS_DATATYPE.DATETIMEOFFSET  
-        | "datetime" -> SYS_DATATYPE.DATETIME
-        | "smalldatetime" -> SYS_DATATYPE.SMALLDATETIME
+        | "date" -> SysDatatype.DATE
+        | "time" -> SysDatatype.TIME 
+        | "datetime2" -> SysDatatype.DATETIME2  
+        | "datetimeoffset" -> SysDatatype.DATETIMEOFFSET  
+        | "datetime" -> SysDatatype.DATETIME
+        | "smalldatetime" -> SysDatatype.SMALLDATETIME
 
-        | "char" -> SYS_DATATYPE.CHAR
-        | "varchar" -> SYS_DATATYPE.VARCHAR 
-        | "text" -> SYS_DATATYPE.TEXT
+        | "char" -> SysDatatype.CHAR
+        | "varchar" -> SysDatatype.VARCHAR 
+        | "text" -> SysDatatype.TEXT
         
-        | "nchar" -> SYS_DATATYPE.NCHAR
-        | "nvarchar" -> SYS_DATATYPE.NVARCHAR
-        | "ntext" -> SYS_DATATYPE.NTEXT
+        | "nchar" -> SysDatatype.NCHAR
+        | "nvarchar" -> SysDatatype.NVARCHAR
+        | "ntext" -> SysDatatype.NTEXT
 
-        | "binary" -> SYS_DATATYPE.BINARY
-        | "varbinary" -> SYS_DATATYPE.VARBINARY
-        | "image" -> SYS_DATATYPE.IMAGE
+        | "binary" -> SysDatatype.BINARY
+        | "varbinary" -> SysDatatype.VARBINARY
+        | "image" -> SysDatatype.IMAGE
 
-        | "cursor" -> SYS_DATATYPE.CURSOR
-        | "geography" -> SYS_DATATYPE.GEOGRAPHY
-        | "geometry" -> SYS_DATATYPE.GEOMETRY
-        | "hierarchyid" -> SYS_DATATYPE.HIERARCHYID
-        | "json" -> SYS_DATATYPE.JSON
-        | "vector" -> SYS_DATATYPE.VECTOR
-        | "rowversion" -> SYS_DATATYPE.ROWVERSION
-        | "sql_variant" -> SYS_DATATYPE.SQL_VARIANT
-        | "table" -> SYS_DATATYPE.TABLE
-        | "uniqueidentifier" -> SYS_DATATYPE.UNIQUEIDENTIFIER
-        | "xml" -> SYS_DATATYPE.XML
+        | "cursor" -> SysDatatype.CURSOR
+        | "geography" -> SysDatatype.GEOGRAPHY
+        | "geometry" -> SysDatatype.GEOMETRY
+        | "hierarchyid" -> SysDatatype.HIERARCHYID
+        | "json"   -> SysDatatype.JSON
+        | "vector" -> SysDatatype.VECTOR
+        | "rowversion"  -> SysDatatype.ROWVERSION
+        | "sql_variant" -> SysDatatype.SQL_VARIANT
+        | "table"     -> SysDatatype.TABLE
+        | "uniqueidentifier" -> SysDatatype.UNIQUEIDENTIFIER
+        | "xml"       -> SysDatatype.XML
 
-        | "sysname" -> SYS_DATATYPE.SYSNAME
-        | "timestamp" -> SYS_DATATYPE.TIMESTAMP
+        | "sysname"   -> SysDatatype.SYSNAME
+        | "timestamp" -> SysDatatype.TIMESTAMP
 
         | sys_type_name -> failwithf "Unknown system type '%s'" sys_type_name
    
@@ -244,7 +244,7 @@ type COLUMN = {
     object : OBJECT
     column_id : int           
     
-    data_type : DATATYPE
+    data_type : Datatype
     
     is_ansi_padded : bool    
     computed_definition : COMPUTED_DEFINITION option
@@ -287,7 +287,7 @@ module COLUMN =
                             
                         column_id = column_id
                         
-                        data_type = DATATYPE.readType types (nullable "collation_name" readString r) r
+                        data_type = Datatype.readType types (nullable "collation_name" readString r) r
                         
                         is_ansi_padded = readBool "is_ansi_padded" r
                         computed_definition = 

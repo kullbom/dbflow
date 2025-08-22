@@ -55,7 +55,7 @@ module Rule =
                     Helpers.foldAllColumns exclude db
                         (fun acc c -> 
                             match c.data_type.sys_datatype with
-                            | Some Schema.SYS_DATATYPE.DATETIME ->
+                            | Some Schema.SysDatatype.DATETIME ->
                                 $"{c.object.Schema.Name}.{c.object.Name}.{c.column_name}" :: acc
                             | _ -> acc)
                         []
@@ -75,9 +75,9 @@ module Rule =
                     Helpers.foldAllColumns exclude db
                         (fun acc c -> 
                             match c.data_type.sys_datatype with
-                            | Some Schema.SYS_DATATYPE.DATETIME when not (c.column_name.ToUpperInvariant().EndsWith "UTC") ->
+                            | Some Schema.SysDatatype.DATETIME when not (c.column_name.ToUpperInvariant().EndsWith "UTC") ->
                                 $"{c.object.Schema.Name}.{c.object.Name}.{c.column_name}" :: acc
-                            | Some Schema.SYS_DATATYPE.DATETIME2 when not (c.column_name.ToUpperInvariant().EndsWith "UTC") -> 
+                            | Some Schema.SysDatatype.DATETIME2 when not (c.column_name.ToUpperInvariant().EndsWith "UTC") -> 
                                 $"{c.object.Schema.Name}.{c.object.Name}.{c.column_name}" :: acc
                             | _ -> acc)
                         []

@@ -110,7 +110,7 @@ type INDEX = {
     data_space_id : int
     ignore_dup_key : bool
     is_primary_key : bool
-    is_system_named : bool // not part of sys.indexes
+    IsSystemNamed : bool // not part of sys.indexes
     is_unique_constraint : bool
     fill_factor : byte
     is_padded : bool
@@ -169,7 +169,7 @@ module INDEX =
                     data_space_id = readInt32 "data_space_id" r
                     ignore_dup_key = readBool "ignore_dup_key" r
                     is_primary_key = readBool "is_primary_key" r
-                    is_system_named = readBool "is_system_named" r
+                    IsSystemNamed = readBool "is_system_named" r
                     is_unique_constraint = readBool "is_unique_constraint" r
                     fill_factor = readByte "fill_factor" r
                     is_padded = readBool "is_padded" r
