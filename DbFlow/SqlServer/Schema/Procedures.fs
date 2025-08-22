@@ -70,32 +70,32 @@ module PARAMETER =
             Map.empty
         |> RCMap.ofMap
         
-type PROCEDURE = {
-    object : OBJECT
-    name : string
+type Procedure = {
+    Object : OBJECT
+    Name : string
 
-    parameters : PARAMETER array
-    columns : COLUMN array // Should only exist for SQL_TABLE_VALUED_FUNCTION
+    Parameters : PARAMETER array
+    Columns : COLUMN array // Should only exist for SQL_TABLE_VALUED_FUNCTION
     
     OrigDefinition : string
-    definition : string
+    Definition : string
 
-    indexes : INDEX array
+    Indexes : INDEX array
 
-    ms_description : string option
+    MSDescription : string option
 } 
 
-module PROCEDURE =
+module Procedure =
     let readAll (objects : RCMap<_,OBJECT>) parameters columns indexes (sql_modules : RCMap<int, SqlModule>) ms_descriptions _connection =
         objects
         |> RCMap.fold 
             (fun acc _ _ o ->
                 let procedureDefiningToken =
                     match o.ObjectType with
-                    | ObjectType.SQL_SCALAR_FUNCTION 
-                    | ObjectType.SQL_INLINE_TABLE_VALUED_FUNCTION
-                    | ObjectType.SQL_TABLE_VALUED_FUNCTION  -> Some "FUNCTION"
-                    | ObjectType.SQL_STORED_PROCEDURE -> Some "PROCEDURE"
+                    | ObjectType.SqlScalarFunction 
+                    | ObjectType.SqlInlineTableValuedFunction
+                    | ObjectType.SqlTableValuedFunction  -> Some "FUNCTION"
+                    | ObjectType.SqlStoredProcedure -> Some "PROCEDURE"
                     | _ -> None
                 match procedureDefiningToken with
                 | Some definingToken ->
@@ -103,20 +103,20 @@ module PROCEDURE =
                     let object = RCMap.pick objectId objects // to increase the ref count
                     let origDefinition = (RCMap.pick objectId sql_modules).Definition.Trim()
                     {
-                        object = object
-                        name = o.Name
+                        Object = object
+                        Name = o.Name
 
-                        parameters = match RCMap.tryPick objectId parameters with Some ps -> ps | None -> [||]
-                        columns = match RCMap.tryPick objectId columns with Some cs -> cs | None -> [||]
+                        Parameters = match RCMap.tryPick objectId parameters with Some ps -> ps | None -> [||]
+                        Columns = match RCMap.tryPick objectId columns with Some cs -> cs | None -> [||]
                         OrigDefinition = origDefinition
-                        definition = 
+                        Definition = 
                             SqlParser.SqlDefinitions.updateProcedureDefinition 
                                 $"[{object.Schema.Name}].[{object.Name}]" 
                                 definingToken origDefinition
 
-                        indexes = match RCMap.tryPick objectId indexes with Some is -> is | None -> [||]
+                        Indexes = match RCMap.tryPick objectId indexes with Some is -> is | None -> [||]
 
-                        ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, objectId, 0) ms_descriptions
+                        MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, objectId, 0) ms_descriptions
                     } :: acc
                 | None -> acc)
             []

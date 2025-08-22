@@ -42,7 +42,7 @@ module Helpers =
             db.Tables |> List.fold (fun acc' t -> if excludeObject t.Object then acc' else t.Columns |> foldColumns f acc') seed
         let acc = db.Views |> List.fold (fun acc' v -> if excludeObject v.Object then acc' else v.Columns |> foldColumns f acc') acc
         let acc = db.TableTypes |> List.fold (fun acc' tt -> if excludeObject tt.Object then acc' else tt.Columns |> foldColumns f acc') acc
-        let acc = db.Procedures |> List.fold (fun acc' p -> if excludeObject p.object then acc' else p.columns |> foldColumns f acc') acc
+        let acc = db.Procedures |> List.fold (fun acc' p -> if excludeObject p.Object then acc' else p.Columns |> foldColumns f acc') acc
         acc
 
 module Rule =
@@ -54,8 +54,8 @@ module Rule =
                 (fun db ->
                     Helpers.foldAllColumns exclude db
                         (fun acc c -> 
-                            match c.data_type.sys_datatype with
-                            | Some Schema.SysDatatype.DATETIME ->
+                            match c.data_type.SystemDatatype with
+                            | Some Schema.SystemDatatype.DATETIME ->
                                 $"{c.object.Schema.Name}.{c.object.Name}.{c.column_name}" :: acc
                             | _ -> acc)
                         []
@@ -74,10 +74,10 @@ module Rule =
                 (fun db ->
                     Helpers.foldAllColumns exclude db
                         (fun acc c -> 
-                            match c.data_type.sys_datatype with
-                            | Some Schema.SysDatatype.DATETIME when not (c.column_name.ToUpperInvariant().EndsWith "UTC") ->
+                            match c.data_type.SystemDatatype with
+                            | Some Schema.SystemDatatype.DATETIME when not (c.column_name.ToUpperInvariant().EndsWith "UTC") ->
                                 $"{c.object.Schema.Name}.{c.object.Name}.{c.column_name}" :: acc
-                            | Some Schema.SysDatatype.DATETIME2 when not (c.column_name.ToUpperInvariant().EndsWith "UTC") -> 
+                            | Some Schema.SystemDatatype.DATETIME2 when not (c.column_name.ToUpperInvariant().EndsWith "UTC") -> 
                                 $"{c.object.Schema.Name}.{c.object.Name}.{c.column_name}" :: acc
                             | _ -> acc)
                         []

@@ -29,8 +29,8 @@ module INDEX_COLUMN =
                 let column_id = readInt32 "column_id" r
                 let object : OBJECT = RCMap.pick object_id objects
                 match object.ObjectType with
-                | ObjectType.INTERNAL_TABLE 
-                | ObjectType.SYSTEM_TABLE
+                | ObjectType.InternalTable 
+                | ObjectType.SystemTable
                     -> acc
                 | _ ->
                     let column = RCMap.pick (object_id, column_id) columns

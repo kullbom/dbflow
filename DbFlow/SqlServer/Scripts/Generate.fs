@@ -24,7 +24,7 @@ let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes 
             let persistStr = 
                 if computed.is_persisted 
                 then 
-                    if opt.SchemazenCompatibility || column.data_type.parameter.is_nullable 
+                    if opt.SchemazenCompatibility || column.data_type.Parameter.is_nullable 
                     then " PERSISTED" 
                     else " PERSISTED NOT NULL"
                 else ""
@@ -34,10 +34,10 @@ let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes 
                 if opt.SchemazenCompatibility
                 then ""
                 else
-                    match column.data_type.parameter.collation_name with
+                    match column.data_type.Parameter.collation_name with
                     | Some c when c <> dbProps.collation_name -> $" COLLATE {c}"
                     | _ -> ""
-            let nullStr = if column.data_type.parameter.is_nullable then "NULL" else "NOT NULL"
+            let nullStr = if column.data_type.Parameter.is_nullable then "NULL" else "NOT NULL"
             let maskedStr =
                 if opt.SchemazenCompatibility
                 then ""
@@ -62,10 +62,10 @@ let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes 
                 else ""
             let typeStr = 
                 if opt.SchemazenCompatibility 
-                    && (column.data_type.is_user_defined || column.data_type.name = "sysname")
+                    && (column.data_type.IsUserDefined || column.data_type.Name = "sysname")
                 then 
                     Datatype.typeStr opt.SchemazenCompatibility false 
-                        { (Map.find (int column.data_type.system_type_id) allTypes) with parameter = column.data_type.parameter }
+                        { (Map.find (int column.data_type.SystemTypeId) allTypes) with Parameter = column.data_type.Parameter }
                 else Datatype.typeStr opt.SchemazenCompatibility false column.data_type
             $"{typeStr}{collateStr}{maskedStr} {nullStr}{identityStr}{checkStr}{rowGuidStr}"
     $"[{column.column_name}] {columnDefStr}"
@@ -446,14 +446,14 @@ let generateTriggerScript (w : System.IO.StreamWriter) (opt : Options) (trigger 
             depends_on = [trigger.parent.ObjectId]
         |}
 
-let generateProcedureScript (w : System.IO.StreamWriter) (opt : Options) (p : PROCEDURE) =
+let generateProcedureScript (w : System.IO.StreamWriter) (opt : Options) (p : Procedure) =
     [
         "SET QUOTED_IDENTIFIER ON "; "GO"; "SET ANSI_NULLS ON "; "GO"
-        if opt.SchemazenCompatibility then p.OrigDefinition else p.definition
+        if opt.SchemazenCompatibility then p.OrigDefinition else p.Definition
         "GO"; "SET QUOTED_IDENTIFIER OFF "; "GO"; "SET ANSI_NULLS OFF "; "GO"; ""; "GO"
     ]
     |> List.iter w.WriteLine
-    ObjectDefinitions {| contains_objects = [p.object.ObjectId]; depends_on = [] |}
+    ObjectDefinitions {| contains_objects = [p.Object.ObjectId]; depends_on = [] |}
 
 let generateSynonymScript (w : System.IO.StreamWriter) (opt : Options) (synonym : Synonym) =
     w.WriteLine $"CREATE SYNONYM [{synonym.Object.Schema.Name}].[{synonym.Object.Name}] FOR {synonym.BaseObjectName}"
@@ -510,10 +510,10 @@ CREATE TYPE [ schema_name. ] type_name
 
 let generateUserDefinedTypeScript (types : Map<int, Datatype>) (w : System.IO.StreamWriter) (opt : Options) (t : Datatype) =
     let tDef =
-        let base_type = types |> Map.find (int t.system_type_id)
-        Datatype.typeStr' opt.SchemazenCompatibility true base_type.name base_type.sys_datatype t.parameter
-    let nullStr = if t.parameter.is_nullable then "NULL" else "NOT NULL"
-    w.WriteLine $"CREATE TYPE [{t.schema.Name}].[{t.name}] FROM {tDef} {nullStr}"
+        let baseType = types |> Map.find (int t.SystemTypeId)
+        Datatype.typeStr' opt.SchemazenCompatibility true baseType.Name baseType.SystemDatatype t.Parameter
+    let nullStr = if t.Parameter.is_nullable then "NULL" else "NOT NULL"
+    w.WriteLine $"CREATE TYPE [{t.Schema.Name}].[{t.Name}] FROM {tDef} {nullStr}"
     w.WriteLine "GO"
     UserDefinedTypeDefinition
 
@@ -529,7 +529,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
                     let scriptObjects =
                         use w = new System.IO.StreamWriter(ms)
                         f w opt x
-                    let (isDatabaseDefinition, priority, contains_objects, depends_on) =
+                    let (isDatabaseDefinition, priority, containsObjects, dependsOn) =
                         match scriptObjects with
                         | DatabaseDefinition -> true, -1, [],[]
                         | SchemaDefinition -> false, 1, [],[]
@@ -539,8 +539,8 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
                         
                     isDatabaseDefinition,
                     {
-                        Contains = Set.ofList contains_objects
-                        DependsOn = Set.ofList depends_on
+                        Contains = Set.ofList containsObjects
+                        DependsOn = Set.ofList dependsOn
                         Priority = priority
                         
                         Content  = { 
@@ -553,7 +553,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
     
     let allTypes = 
         db.Types
-        |> List.map (fun t -> t.user_type_id, t)
+        |> List.map (fun t -> t.UserTypeId, t)
         |> Map.ofList
     
     [db.Properties]
@@ -563,8 +563,8 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
     |> dataForFolder "schemas" (fun s -> $"{s.Name}.sql") generateSchemaScript
 
     db.Types
-    |> List.filter (fun t -> t.is_user_defined && t.table_datatype.IsNone)
-    |> dataForFolder "user_defined_types" (fun t -> objectFilename t.schema.Name t.name) (generateUserDefinedTypeScript allTypes)
+    |> List.filter (fun t -> t.IsUserDefined && t.TableDatatype.IsNone)
+    |> dataForFolder "user_defined_types" (fun t -> objectFilename t.Schema.Name t.Name) (generateUserDefinedTypeScript allTypes)
 
     db.TableTypes
     |> dataForFolder "table_types" (fun t -> $"TYPE_{t.Name}.sql") 
@@ -596,8 +596,8 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
                     depends_on = [view.Object.ObjectId] 
                 |})
     
-    db.Procedures |> List.filter  (fun p -> p.object.ObjectType <> ObjectType.SQL_STORED_PROCEDURE)
-    |> dataForFolder "functions" (fun p -> objectFilename p.object.Schema.Name p.name) generateProcedureScript
+    db.Procedures |> List.filter  (fun p -> p.Object.ObjectType <> ObjectType.SqlStoredProcedure)
+    |> dataForFolder "functions" (fun p -> objectFilename p.Object.Schema.Name p.Name) generateProcedureScript
 
     db.Tables 
     |> List.choose 
@@ -618,8 +618,8 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
     db.Tables |> List.choose (fun t -> match t.ForeignKeys with [||] -> None | fks -> Some (t, fks))
     |> dataForFolder "foreign_keys" (fun (t, _) -> objectFilename t.Schema.Name t.Name) generateForeignKeysScript
 
-    db.Procedures |> List.filter  (fun p -> p.object.ObjectType = ObjectType.SQL_STORED_PROCEDURE)
-    |> dataForFolder "procedures" (fun p -> objectFilename p.object.Schema.Name p.name) generateProcedureScript
+    db.Procedures |> List.filter  (fun p -> p.Object.ObjectType = ObjectType.SqlStoredProcedure)
+    |> dataForFolder "procedures" (fun p -> objectFilename p.Object.Schema.Name p.Name) generateProcedureScript
 
     db.Synonyms
     |> dataForFolder "synonyms" (fun s -> objectFilename s.Object.Schema.Name s.Object.Name) generateSynonymScript

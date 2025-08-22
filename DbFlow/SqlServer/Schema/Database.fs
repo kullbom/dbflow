@@ -111,7 +111,7 @@ type DatabaseSchema = {
     Types : Datatype list
     TableTypes : TableType list
 
-    Procedures : PROCEDURE list
+    Procedures : Procedure list
 
     XmlSchemaCollections : XmlSchemaCollection list
 
@@ -194,7 +194,7 @@ module DatabaseSchema =
             
 
         let parametersByObject = PARAMETER.readAll objects types ms_descs connection
-        let procedures = PROCEDURE.readAll objects parametersByObject columnsByObject indexesByParent sql_modules ms_descs connection
+        let procedures = Procedure.readAll objects parametersByObject columnsByObject indexesByParent sql_modules ms_descs connection
 
         let tables = 
             TABLE.readAll 
@@ -219,7 +219,7 @@ module DatabaseSchema =
         then
             ms_descs |> checkUnused "ms_descriptions" (fun _ -> false)
             columnsByObject |> checkUnused "columns" (fun _ -> false)
-            objects |> checkUnused "objects" (fun c -> c.ObjectType = ObjectType.SERVICE_QUEUE)
+            objects |> checkUnused "objects" (fun c -> c.ObjectType = ObjectType.ServiceQueue)
             triggersByParent |> checkUnused "triggers" (fun _ -> false)
             parametersByObject |> checkUnused "parameters" (fun _ -> false)
             checkConstraintsByParent |> checkUnused "check_constraints" (fun _ -> false)
@@ -231,8 +231,8 @@ module DatabaseSchema =
             |> checkUnused "indexes" 
                 (fun i -> 
                     match i[0].parent.ObjectType with 
-                    | ObjectType.INTERNAL_TABLE 
-                    | ObjectType.SYSTEM_TABLE -> true 
+                    | ObjectType.InternalTable 
+                    | ObjectType.SystemTable -> true 
                     | _ -> false)
 
         {

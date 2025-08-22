@@ -22,9 +22,9 @@ type SortOrder = SortOrder
         static member orderBy (x : PARAMETER) = SortOrder.orderBy x.object, x.name, x.parameter_id 
         static member orderBy (x : DefaultConstraint) = x.Column.column_name
         static member orderBy (x : Synonym) = SortOrder.orderBy x.Object
-        static member orderBy (x : Datatype) = x.name
+        static member orderBy (x : Datatype) = x.Name
         static member orderBy (x : TableType) = x.Name
-        static member orderBy (x : PROCEDURE) = x.name 
+        static member orderBy (x : Procedure) = x.Name 
         static member orderBy (x : XmlSchemaCollection) = SortOrder.orderBy x.Schema, x.Name 
         static member orderBy (x : DATABASE_TRIGGER) = x.trigger_name
         static member orderBy (x : CheckConstraint) = match x.column with Some c -> c.column_name | None -> x.definition
@@ -44,9 +44,9 @@ type Sequence = Sequence
         static member elementId (x : PARAMETER) = x.name
         static member elementId (x : DefaultConstraint) = "DF???" + x.Column.column_name
         static member elementId (x : Synonym) = x.Object.Name
-        static member elementId (x : Datatype) = x.name
+        static member elementId (x : Datatype) = x.Name
         static member elementId (x : TableType) = x.Name
-        static member elementId (x : PROCEDURE) = x.name 
+        static member elementId (x : Procedure) = x.Name 
         static member elementId (x : XmlSchemaCollection) = x.Name 
         static member elementId (x : DATABASE_TRIGGER) = x.trigger_name
         static member elementId (x : CheckConstraint) = x.object.Name
@@ -98,8 +98,8 @@ module Compare =
 
     let object_name (x0 : OBJECT, x1 : OBJECT) path diffs =
         match x0.ObjectType, x1.ObjectType with
-        | ObjectType.FOREIGN_KEY_CONSTRAINT, ObjectType.FOREIGN_KEY_CONSTRAINT 
-        | ObjectType.TYPE_TABLE, ObjectType.TYPE_TABLE ->
+        | ObjectType.ForeignKeyConstraint, ObjectType.ForeignKeyConstraint 
+        | ObjectType.TypeTable, ObjectType.TypeTable ->
             // Ignore these since they can be system named 
             diffs
         | _ -> equalCollector (x0.Name, x1.Name) ("name" :: path) diffs
@@ -179,7 +179,7 @@ module Generator =
                 sDefNoneT<COLUMN> "column_id"
                 sDefNoneT<INDEX> "index_id"
                 sDefNoneT<INDEX_COLUMN> "index_id"
-                sDefNoneT<Datatype> "user_type_id"
+                sDefNoneT<Datatype> "UserTypeId"
                 
                 sDefT<FOREIGN_KEY> "delete_referential_action" equalCollector
                 sDefT<FOREIGN_KEY> "update_referential_action" equalCollector
@@ -205,7 +205,7 @@ module Generator =
                 sDefT<SEQUENCE> "sequence_definition" (fun pname -> $"|> Compare.sequence_definition (x0.{pname}, x1.{pname}) (\"{pname}\" :: path)")
    
                 sDefT<COLUMN> "identity_definition" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.identity_definition (\"{pname}\" :: path)")
-                sDefT<Datatype> "sys_datatype" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.equalCollector (\"{pname}\" :: path)")
+                sDefT<Datatype> "SystemDatatype" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.equalCollector (\"{pname}\" :: path)")
                 
             ] |> Map.ofList
 
@@ -292,7 +292,7 @@ type CompareGen = CompareGenCase
         let skipObjects =
             [ 
                 "Object"
-                "REFERENTIAL_ACTION"; "ObjectType"; "SysDatatype"; "INDEX_TYPE"; 
+                "REFERENTIAL_ACTION"; "ObjectType"; "SystemDatatype"; "INDEX_TYPE"; 
                 "IDENTITY_DEFINITION"; "SEQUENCE_DEFINITION"
             ]
             |> Set.ofList

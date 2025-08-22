@@ -67,36 +67,36 @@ module Schema =
 
 [<RequireQualifiedAccess>]
 type ObjectType =
-    | AGGREGATE_FUNCTION  // AF = Aggregate function (CLR)
-    | CHECK_CONSTRAINT    // C = Check constraint
-    | DEFAULT_CONSTRAINT  // D = Default (constraint or stand-alone)
-    | FOREIGN_KEY_CONSTRAINT // F = Foreign key constraint
-    | SQL_SCALAR_FUNCTION // FN = SQL scalar function
-    | CLR_SCALAR_FUNCTION // FS = Assembly (CLR) scalar-function
-    | CLR_TABLE_VALUED_FUNCTION // FT = Assembly (CLR) table-valued function
+    | AggregateFunction  // AF = Aggregate function (CLR)
+    | CheckConstraint    // C = Check constraint
+    | DefaultConstraint  // D = Default (constraint or stand-alone)
+    | ForeignKeyConstraint // F = Foreign key constraint
+    | SqlScalarFunction // FN = SQL scalar function
+    | ClrScalarFunction // FS = Assembly (CLR) scalar-function
+    | ClrTableValuedFunction // FT = Assembly (CLR) table-valued function
     
-    | SQL_INLINE_TABLE_VALUED_FUNCTION // IF = SQL inline table-valued function (TVF)
-    | INTERNAL_TABLE // IT = Internal table
-    | SQL_STORED_PROCEDURE // P = SQL stored procedure
-    | CLR_STORED_PROCEDURE // PC = Assembly (CLR) stored-procedure
-    | PLAN_GUIDE // PG = Plan guide
-    | PRIMARY_KEY_CONSTRAINT // PK = Primary key constraint
-    | RULE // R = Rule (old-style, stand-alone)
-    | REPLICATION_FILTER_PROCEDURE // RF = Replication-filter-procedure
-    | SYSTEM_TABLE // S = System base table
-    | SYNONYM // SN = Synonym
-    | SEQUENCE_OBJECT // SO = Sequence object
-    | USER_TABLE // U = Table (user-defined)
-    | VIEW // V = View
+    | SqlInlineTableValuedFunction // IF = SQL inline table-valued function (TVF)
+    | InternalTable // IT = Internal table
+    | SqlStoredProcedure // P = SQL stored procedure
+    | ClrStoredProcedure // PC = Assembly (CLR) stored-procedure
+    | PlanGuide // PG = Plan guide
+    | PrimaryKeyConstraint // PK = Primary key constraint
+    | Rule // R = Rule (old-style, stand-alone)
+    | ReplicationFilterProcedure // RF = Replication-filter-procedure
+    | SystemTable // S = System base table
+    | Synonym // SN = Synonym
+    | SequenceObject // SO = Sequence object
+    | UserTable // U = Table (user-defined)
+    | View // V = View
 
     // Applies to: SQL Server 2012 (11.x) and later versions
-    | SERVICE_QUEUE // SQ = Service queue
-    | CLR_TRIGGER // TA = Assembly (CLR) DML trigger
-    | SQL_TABLE_VALUED_FUNCTION // TF = SQL table-valued-function (TVF)
-    | SQL_TRIGGER // TR = SQL DML trigger
-    | TYPE_TABLE // TT = Table type
-    | UNIQUE_CONSTRAINT // UQ = unique constraint
-    | EXTENDED_STORED_PROCEDURE // X = Extended stored procedure
+    | ServiceQueue // SQ = Service queue
+    | ClrTrigger // TA = Assembly (CLR) DML trigger
+    | SqlTableValuedFunction // TF = SQL table-valued-function (TVF)
+    | SqlTrigger // TR = SQL DML trigger
+    | TypeTable // TT = Table type
+    | UniqueConstraint // UQ = unique constraint
+    | ExtendedStoredProcedure // X = Extended stored procedure
     
     // Applies to: SQL Server 2014 (12.x) and later versions, Azure SQL Database, Azure Synapse Analytics, Analytics Platform System (PDW)
     // ST = Statistics tree
@@ -107,40 +107,40 @@ type ObjectType =
     // NOT YET SUPPORTED!
 
     // Applies to: SQL Server 2017 (14.x) and later versions, Azure SQL Database, Azure Synapse Analytics, Analytics Platform System (PDW)
-    | EDGE_CONSTRAINT // EC = Edge constraint
+    | EdgeConstraint // EC = Edge constraint
     
 
 module ObjectType =
     let mappingTable' =
         [
-            "AF", ObjectType.AGGREGATE_FUNCTION 
-            "C ", ObjectType.CHECK_CONSTRAINT
-            "D ", ObjectType.DEFAULT_CONSTRAINT
-            "F ", ObjectType.FOREIGN_KEY_CONSTRAINT
-            "FN", ObjectType.SQL_SCALAR_FUNCTION
-            "FS", ObjectType.CLR_SCALAR_FUNCTION
-            "FT", ObjectType.CLR_TABLE_VALUED_FUNCTION
-            "IF", ObjectType.SQL_INLINE_TABLE_VALUED_FUNCTION
-            "IT", ObjectType.INTERNAL_TABLE
-            "P ", ObjectType.SQL_STORED_PROCEDURE
-            "PC", ObjectType.CLR_STORED_PROCEDURE
-            "PG", ObjectType.PLAN_GUIDE
-            "PK", ObjectType.PRIMARY_KEY_CONSTRAINT
-            "R ", ObjectType.RULE
-            "RF", ObjectType.REPLICATION_FILTER_PROCEDURE
-            "S ", ObjectType.SYSTEM_TABLE
-            "SN", ObjectType.SYNONYM
-            "SO", ObjectType.SEQUENCE_OBJECT
-            "U ", ObjectType.USER_TABLE
-            "V ", ObjectType.VIEW
-            "SQ", ObjectType.SERVICE_QUEUE
-            "TA", ObjectType.CLR_TRIGGER
-            "TF", ObjectType.SQL_TABLE_VALUED_FUNCTION
-            "TR", ObjectType.SQL_TRIGGER
-            "TT", ObjectType.TYPE_TABLE
-            "UQ", ObjectType.UNIQUE_CONSTRAINT
-            "X ", ObjectType.EXTENDED_STORED_PROCEDURE
-            "EC", ObjectType.EDGE_CONSTRAINT
+            "AF", ObjectType.AggregateFunction 
+            "C ", ObjectType.CheckConstraint
+            "D ", ObjectType.DefaultConstraint
+            "F ", ObjectType.ForeignKeyConstraint
+            "FN", ObjectType.SqlScalarFunction
+            "FS", ObjectType.ClrScalarFunction
+            "FT", ObjectType.ClrTableValuedFunction
+            "IF", ObjectType.SqlInlineTableValuedFunction
+            "IT", ObjectType.InternalTable
+            "P ", ObjectType.SqlStoredProcedure
+            "PC", ObjectType.ClrStoredProcedure
+            "PG", ObjectType.PlanGuide
+            "PK", ObjectType.PrimaryKeyConstraint
+            "R ", ObjectType.Rule
+            "RF", ObjectType.ReplicationFilterProcedure
+            "S ", ObjectType.SystemTable
+            "SN", ObjectType.Synonym
+            "SO", ObjectType.SequenceObject
+            "U ", ObjectType.UserTable
+            "V ", ObjectType.View
+            "SQ", ObjectType.ServiceQueue
+            "TA", ObjectType.ClrTrigger
+            "TF", ObjectType.SqlTableValuedFunction
+            "TR", ObjectType.SqlTrigger
+            "TT", ObjectType.TypeTable
+            "UQ", ObjectType.UniqueConstraint
+            "X ", ObjectType.ExtendedStoredProcedure
+            "EC", ObjectType.EdgeConstraint
         ]
 
     let findType =

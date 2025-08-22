@@ -7,7 +7,7 @@ open DbFlow.Readers
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-table-types-transact-sql?view=sql-server-ver17
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-columns-transact-sql?view=sql-server-ver17
 
-type SysDatatype = 
+type SystemDatatype = 
     // Exact numerics
     | TINYINT | SMALLINT | INT | BIGINT | BIT | DECIMAL | NUMERIC | MONEY | SMALLMONEY
     // Approximate numerics
@@ -40,22 +40,22 @@ type TableDatatype = {
 }
 
 type Datatype = {
-    name : string
-    schema : Schema
+    Name : string
+    Schema : Schema
 
-    system_type_id : byte
-    user_type_id : int // ID
+    SystemTypeId : byte
+    UserTypeId : int // ID
 
-    parameter : DatatypeParameter
+    Parameter : DatatypeParameter
     
-    is_user_defined : bool
+    IsUserDefined : bool
 
-    sys_datatype : SysDatatype option
-    table_datatype : TableDatatype option
+    SystemDatatype : SystemDatatype option
+    TableDatatype : TableDatatype option
 }
 
 module Datatype =
-    let typeStr' schemazenCompatibility is_user_defined_type (dtName : string) (sys_datatype : SysDatatype option) (p : DatatypeParameter)=
+    let typeStr' schemazenCompatibility is_user_defined_type (dtName : string) (sys_datatype : SystemDatatype option) (p : DatatypeParameter)=
         let formatTypeName (tName : string) = if schemazenCompatibility then tName.ToLowerInvariant () else tName.ToUpperInvariant () 
         let plain tName =
             $"[{formatTypeName tName}]"
@@ -71,74 +71,74 @@ module Datatype =
         let withPrecisionScale tName precision scale =
             $"[{formatTypeName tName}]({precision},{scale})"
         match sys_datatype with
-        | Some(SysDatatype.DATETIME2) -> 
+        | Some(SystemDatatype.DATETIME2) -> 
             if schemazenCompatibility then plain dtName else withPrecision dtName p.scale
-        | Some(SysDatatype.DATETIMEOFFSET) -> 
+        | Some(SystemDatatype.DATETIMEOFFSET) -> 
             if schemazenCompatibility then plain dtName else withPrecision dtName p.scale
 
-        | Some(SysDatatype.CHAR) -> withSize dtName p.max_length 1s
-        | Some(SysDatatype.VARCHAR) -> withSize dtName p.max_length 1s
-        | Some(SysDatatype.NCHAR) -> withSize dtName p.max_length 2s
-        | Some(SysDatatype.NVARCHAR) -> withSize dtName p.max_length 2s
-        | Some(SysDatatype.BINARY) -> withSize dtName p.max_length 1s
-        | Some(SysDatatype.VARBINARY) -> withSize dtName p.max_length 1s
+        | Some(SystemDatatype.CHAR) -> withSize dtName p.max_length 1s
+        | Some(SystemDatatype.VARCHAR) -> withSize dtName p.max_length 1s
+        | Some(SystemDatatype.NCHAR) -> withSize dtName p.max_length 2s
+        | Some(SystemDatatype.NVARCHAR) -> withSize dtName p.max_length 2s
+        | Some(SystemDatatype.BINARY) -> withSize dtName p.max_length 1s
+        | Some(SystemDatatype.VARBINARY) -> withSize dtName p.max_length 1s
 
-        | Some(SysDatatype.DECIMAL) -> withPrecisionScale dtName p.precision p.scale
-        | Some(SysDatatype.NUMERIC) -> withPrecisionScale dtName p.precision p.scale
+        | Some(SystemDatatype.DECIMAL) -> withPrecisionScale dtName p.precision p.scale
+        | Some(SystemDatatype.NUMERIC) -> withPrecisionScale dtName p.precision p.scale
 
         | _ -> plain dtName
 
     let typeStr schemazenCompatibility is_user_defined_type (dt : Datatype) =
-        typeStr' schemazenCompatibility is_user_defined_type dt.name dt.sys_datatype dt.parameter
+        typeStr' schemazenCompatibility is_user_defined_type dt.Name dt.SystemDatatype dt.Parameter
 
     let createSystemDataType sys_type_name =
         match sys_type_name with 
-        | "tinyint"    -> SysDatatype.TINYINT
-        | "smallint"   -> SysDatatype.SMALLINT
-        | "int"        -> SysDatatype.INT
-        | "bigint"     -> SysDatatype.BIGINT
-        | "bit"        -> SysDatatype.BIT
-        | "decimal"    -> SysDatatype.DECIMAL
-        | "numeric"    -> SysDatatype.NUMERIC
-        | "money"      -> SysDatatype.MONEY
-        | "smallmoney" -> SysDatatype.SMALLMONEY
-        
-        | "float" -> SysDatatype.FLOAT
-        | "real"-> SysDatatype.REAL
-                
-        | "date" -> SysDatatype.DATE
-        | "time" -> SysDatatype.TIME 
-        | "datetime2" -> SysDatatype.DATETIME2  
-        | "datetimeoffset" -> SysDatatype.DATETIMEOFFSET  
-        | "datetime" -> SysDatatype.DATETIME
-        | "smalldatetime" -> SysDatatype.SMALLDATETIME
+        | "tinyint"     -> SystemDatatype.TINYINT
+        | "smallint"    -> SystemDatatype.SMALLINT
+        | "int"         -> SystemDatatype.INT
+        | "bigint"      -> SystemDatatype.BIGINT
+        | "bit"         -> SystemDatatype.BIT
+        | "decimal"     -> SystemDatatype.DECIMAL
+        | "numeric"     -> SystemDatatype.NUMERIC
+        | "money"       -> SystemDatatype.MONEY
+        | "smallmoney"  -> SystemDatatype.SMALLMONEY
+                        
+        | "float"       -> SystemDatatype.FLOAT
+        | "real"        -> SystemDatatype.REAL
+                        
+        | "date"        -> SystemDatatype.DATE
+        | "time"        -> SystemDatatype.TIME 
+        | "datetime2"   -> SystemDatatype.DATETIME2  
+        | "datetimeoffset" -> SystemDatatype.DATETIMEOFFSET  
+        | "datetime"    -> SystemDatatype.DATETIME
+        | "smalldatetime" -> SystemDatatype.SMALLDATETIME
 
-        | "char" -> SysDatatype.CHAR
-        | "varchar" -> SysDatatype.VARCHAR 
-        | "text" -> SysDatatype.TEXT
-        
-        | "nchar" -> SysDatatype.NCHAR
-        | "nvarchar" -> SysDatatype.NVARCHAR
-        | "ntext" -> SysDatatype.NTEXT
+        | "char"        -> SystemDatatype.CHAR
+        | "varchar"     -> SystemDatatype.VARCHAR 
+        | "text"        -> SystemDatatype.TEXT
+                        
+        | "nchar"       -> SystemDatatype.NCHAR
+        | "nvarchar"    -> SystemDatatype.NVARCHAR
+        | "ntext"       -> SystemDatatype.NTEXT
+                        
+        | "binary"      -> SystemDatatype.BINARY
+        | "varbinary"   -> SystemDatatype.VARBINARY
+        | "image"       -> SystemDatatype.IMAGE
 
-        | "binary" -> SysDatatype.BINARY
-        | "varbinary" -> SysDatatype.VARBINARY
-        | "image" -> SysDatatype.IMAGE
-
-        | "cursor" -> SysDatatype.CURSOR
-        | "geography" -> SysDatatype.GEOGRAPHY
-        | "geometry" -> SysDatatype.GEOMETRY
-        | "hierarchyid" -> SysDatatype.HIERARCHYID
-        | "json"   -> SysDatatype.JSON
-        | "vector" -> SysDatatype.VECTOR
-        | "rowversion"  -> SysDatatype.ROWVERSION
-        | "sql_variant" -> SysDatatype.SQL_VARIANT
-        | "table"     -> SysDatatype.TABLE
-        | "uniqueidentifier" -> SysDatatype.UNIQUEIDENTIFIER
-        | "xml"       -> SysDatatype.XML
-
-        | "sysname"   -> SysDatatype.SYSNAME
-        | "timestamp" -> SysDatatype.TIMESTAMP
+        | "cursor"      -> SystemDatatype.CURSOR
+        | "geography"   -> SystemDatatype.GEOGRAPHY
+        | "geometry"    -> SystemDatatype.GEOMETRY
+        | "hierarchyid" -> SystemDatatype.HIERARCHYID
+        | "json"        -> SystemDatatype.JSON
+        | "vector"      -> SystemDatatype.VECTOR
+        | "rowversion"  -> SystemDatatype.ROWVERSION
+        | "sql_variant" -> SystemDatatype.SQL_VARIANT
+        | "table"       -> SystemDatatype.TABLE
+        | "uniqueidentifier" -> SystemDatatype.UNIQUEIDENTIFIER
+        | "xml"         -> SystemDatatype.XML
+                        
+        | "sysname"     -> SystemDatatype.SYSNAME
+        | "timestamp"   -> SystemDatatype.TIMESTAMP
 
         | sys_type_name -> failwithf "Unknown system type '%s'" sys_type_name
    
@@ -148,9 +148,9 @@ module Datatype =
             "SELECT name, user_type_id FROM sys.types WHERE is_user_defined = 0"
             []
             (fun m r ->
-                let user_type_id = readInt32 "user_type_id" r
+                let userTypeId = readInt32 "user_type_id" r
                 let name = readString "name" r
-                Map.add user_type_id (createSystemDataType name) m)
+                Map.add userTypeId (createSystemDataType name) m)
             Map.empty
         |> DbTr.commit_ connection
 
@@ -179,23 +179,23 @@ module Datatype =
              LEFT OUTER JOIN sys.table_types tt ON t.user_type_id = tt.user_type_id"
             []
             (fun m r ->
-                let schema_id = readInt32 "schema_id" r
-                let user_type_id = readInt32 "user_type_id" r
+                let schemaId = readInt32 "schema_id" r
+                let userTypeId = readInt32 "user_type_id" r
                 let system_type_id = readByte "system_type_id" r
-                let is_user_defined = readBool "is_user_defined" r
-                let is_table_type = readBool "is_table_type" r
+                let isUserDefined = readBool "is_user_defined" r
+                let isTableType = readBool "is_table_type" r
                 let name = readString "name" r
  
                 Map.add
-                    user_type_id
+                    userTypeId
                     {
-                        name = name
-                        schema = RCMap.pick schema_id schemas
+                        Name = name
+                        Schema = RCMap.pick schemaId schemas
 
-                        system_type_id = system_type_id
-                        user_type_id = user_type_id
+                        SystemTypeId = system_type_id
+                        UserTypeId = userTypeId
 
-                        parameter = 
+                        Parameter = 
                             { 
                                 max_length = readInt16 "max_length" r
                                 precision = readByte "precision" r
@@ -204,14 +204,14 @@ module Datatype =
                                 is_nullable = readBool "is_nullable" r
                             }
                         
-                        is_user_defined = is_user_defined
+                        IsUserDefined = isUserDefined
 
-                        sys_datatype = 
-                            if is_table_type
+                        SystemDatatype = 
+                            if isTableType
                             then None
-                            else Map.tryFind user_type_id systemTypes
-                        table_datatype = 
-                            if is_table_type
+                            else Map.tryFind userTypeId systemTypes
+                        TableDatatype = 
+                            if isTableType
                             then 
                                 let object_id = readInt32 "type_table_object_id" r
                                 {
@@ -227,7 +227,7 @@ module Datatype =
     let readType types collation r =
         let user_type_id = readInt32 "user_type_id" r
         { Map.find user_type_id types with
-            parameter = {
+            Parameter = {
                 max_length = readInt16 "max_length" r
                 precision = readByte "precision" r
                 scale = readByte "scale" r
@@ -277,8 +277,8 @@ module COLUMN =
                 let column_id = readInt32 "column_id" r
                 let object : OBJECT = RCMap.pick object_id objects
                 match object.ObjectType with
-                | ObjectType.INTERNAL_TABLE 
-                | ObjectType.SYSTEM_TABLE
+                | ObjectType.InternalTable 
+                | ObjectType.SystemTable
                     -> acc
                 | _ ->
                     {
