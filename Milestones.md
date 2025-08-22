@@ -6,7 +6,7 @@
 [ ] Add C# example 
     [x] as a test-project 
     [ ] and to the readme.md
-[x] The test must remove database files (both data och log) on clean up. 
+[x] The test must remove database files (both data and log) on clean up. 
 [x] The meta data for views is wrong when underlying columns has been changed. Experiment with drop and recreate all views from the views (possibly updated) definition.
     [x] Since views can depend on each other the dependency resolver must be used.
     [x] Indexes on views must also be recreated
@@ -26,8 +26,13 @@
 [x] There is a problem with (comparison of) collation_name
 [x] Should have the possibility to create a LocalTempDatabase as a clone of a source in one step
 [x] There is a problem with (comparison of) is_not-trusted of check constraints
-[ ] Add test to illustrate problem with "is ansi padded" of columns
 [ ] There is a problem with (comparison of) "is ansi padded" of columns
+[ ] Add a case in test_db to illustrate problem with "is ansi padded" of columns
+[ ] There is a problem with XML indexes... see failing test AdventureWorks 2024-2022 - or search for "[XMLPATH_Person_Demographics]"
+[ ] Add a case in test_db to illustrate problem with XML indexes
+[ ] Error handling in commit
+[ ] Add support for disabled triggers
+    
 
 ## Make the repo public
 
@@ -35,30 +40,28 @@
 [ ] Generate to temp directory and rename when finished
 [ ] Go through the schema model and clean it up... 
     [ ] Specifically think through the model of types
+[ ] Investigate key constraints (read but not used today)
 [ ] Add interface to find i specific table, view etc. from schema+name or similar
 [ ] Consider adding concepts 
     [ ] "key" (a tuple of columns?)
-    [ ] "value" (a concrete sql value of a specifc type?)
-[ ] "LocalTempDatabase" does not match its module (...and make the module private?)
+    [ ] "value" (a concrete sql value of a specific type?)
+[x] "LocalTempDatabase" does not match its module (...and make the module private?)
 
 ## Version 1.0.0
 
 [x] Ensure that the db user has suitable privileges before readSchema ( IS_ROLEMEMBER ('db_ddladmin'))
 [ ] Tester som visar på problem/buggar (eller lösning på problemet):
-    [ ] CHECK_CONSTRAINT väl hårdkodad vad gäller "CHECK" etc. 
-        [ ] Täck ordentligt med tester
-        [ ] Lägg också till tester för andra saker som kan vara disabled...
-    [ ] Test för disabled triggers
+    [x] CHECK_CONSTRAINT väl hårdkodad vad gäller "CHECK" etc. 
+        [x] Täck ordentligt med tester
     [ ] Test för triggers, procedures och views man bytt namn på...
-    [ ] Test for anonymous (system named) unique keys
     [x] BUG: Named defaults blir fel - se [DF_TestTable01_ColWithNamedDefault]
-    [ ] XML index fungar inte bra ... se AW - sök på "[XMLPATH_Person_Demographics]"
     [x] Index "FILLFACTOR" är inte med i de genererade scripten - och blir därför fel i kloner.
 [ ] Dokumentera alla kända problem i någon slags readme - eller som issues i github...? Eller så får fallerande test räcka...
 [ ] DbUp-kompatibel (kan använda dbo.SchemaVersion - om konfad så) 
 [x] Någon form av db compare (syfte: hitta buggar)
 [x] Test med hjälp av detta som jämför db från originalscripten med db från genererade script/clone
 [ ] Testerna klarar inte att köras parallellt - pga delade mappar?
+[ ] Support for copying data
 
 ## Därpå följande version?
 

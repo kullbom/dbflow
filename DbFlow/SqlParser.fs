@@ -166,8 +166,8 @@ module SqlDefinitions =
 
     open CodeSearch
 (* Example:
-CREATE TRIGGER trg_NrdbCaseToProcess
-ON portability.NrdbMessage  AFTER INSERT 
+CREATE TRIGGER tr_Brftgyhr
+ON dbo.Message  AFTER INSERT 
 AS BEGIN
 *)
     let updateTriggerDefinition name parentName definition =
@@ -193,8 +193,8 @@ AS BEGIN
         newDefinition
 
 (* Example
-CREATE PROCEDURE [dbo].[GetAllRoles]
-	@roleId int
+CREATE PROCEDURE [dbo].[GetAllFoobars]
+	@xyzId int
 AS
 BEGIN*)
     let updateProcedureDefinition procName definingToken definition =

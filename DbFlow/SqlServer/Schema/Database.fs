@@ -33,9 +33,7 @@ type DATABASE_SETTINGS = {
     is_parameterization_forced : bool
     is_date_correlation_on : bool
 }
-    (*
-    https://github.com/sethreno/schemazen/blob/6787ba30e555220c61186cb7b9cd3713cc9226d0/Library/Models/Database.cs#L1131
-    *)
+
 module DATABASE_SETTINGS = 
     let readAll connection =
         DbTr.reader
@@ -216,7 +214,7 @@ module DATABASE =
             | [] -> ()
             | unused -> failwith $"{id} not mapped for {unused}" 
 
-        // Check that objects are "picked" (referenced) by something
+        // Verify that all objects are "picked" (referenced) by something
         if not options.BypassReferenceChecksOnLoad
         then
             ms_descs |> checkUnused "ms_descriptions" (fun _ -> false)

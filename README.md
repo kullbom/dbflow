@@ -13,8 +13,8 @@ DbFlow supports
 
 Planned features:
 
-- Replace need for DbUp
-- Generate documentation from (primary) ms_description
+- Replace the need for DbUp
+- Generate documentation from ms_description
 - Support for PostgreSql 
 
 To clone a database:

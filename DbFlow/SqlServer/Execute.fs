@@ -14,7 +14,6 @@ module Internal =
                     "SET ANSI_NULLS ON" 
                     sqlBatch 
                     "SET QUOTED_IDENTIFIER OFF"
-                    "SET ANSI_NULLS OFF"
                 ])
         |> List.map  (fun s -> DbTr.nonQuery s [])
         |> DbTr.sequence_
