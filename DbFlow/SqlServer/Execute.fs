@@ -27,7 +27,7 @@ module Internal =
                 (fun view -> 
                     let drop_script = $"DROP VIEW [{view.schema.name}].[{view.view_name}]"
                     Dependent.create drop_script [view.object.object_id] [] 0)
-            |> Dependent.resolveOrder deps 
+            |> Dependent.resolveOrder (fun d -> d.Content) deps 
         // Create scripts
         let createScripts = 
             views 
@@ -49,7 +49,7 @@ module Internal =
                             (create_script :: scripts)
                     view_scripts)
                 []
-            |> Dependent.resolveOrder deps 
+            |> Dependent.resolveOrder (fun d -> d.Content) deps 
             
         // The drop scripts needs to be reverted since dependency works on the asumption that objects are created...
         dropScripts 
@@ -113,7 +113,7 @@ let clone logger (options : Options) (sourceDb : DATABASE) (targetConnection : S
         |> Logger.logTime logger "DbFlow - collect scripts" sourceDb
     
     let resolvedScripts =
-        Dependent.resolveOrder sourceDb.dependencies
+        Dependent.resolveOrder (fun d -> d.Content) sourceDb.dependencies
         |> Logger.logTime logger "DbFlow - resolve scripts dependencies" collectedScripts
 
     (fun () -> 

@@ -25,9 +25,10 @@ module Dependent =
     // - The same is true for procedures etc.
     
     // Ensures that a list of Scripts is in "definable order" so that referenced are defined first
-    let ensureExecutableOrder' (allScripts : Dependent<_,_> list) = 
+    let resolveOrder'' idKey (dependants : Dependent<_,_> list) = 
+        // TODO: updates names
         let objectScripts =
-            allScripts
+            dependants
             |> List.fold 
                 (fun m (s : Dependent<_,_>) ->
                     s.Contains
@@ -39,39 +40,40 @@ module Dependent =
                         m)
                 Map.empty
         
-        let rec resolve path visited resolvedList resolvedSet (scripts : Dependent<_,_> list) =
-            match scripts with
+        let rec resolve path visited resolvedList resolvedSet (dependants : Dependent<_,_> list) =
+            match dependants with
             | [] -> visited, resolvedList, resolvedSet
-            | script :: scripts' ->
-                if Set.contains script resolvedSet 
-                then resolve path visited resolvedList resolvedSet scripts'
+            | dependant :: dependants' ->
+                let id = idKey dependant
+                if Set.contains id resolvedSet 
+                then resolve path visited resolvedList resolvedSet dependants'
                 else
                     let path' = path // $"{script.directory_name}\{script.filename}" :: path
                     
-                    if Set.contains script visited 
+                    if Set.contains id visited 
                     then failwithf "circular: %A" path'
                     
                     let (visited', resolvedList', resolvedSet') = 
                         let depends_on = 
-                            script.DependsOn
+                            dependant.DependsOn
                             |> Set.fold (fun acc object_id -> match Map.tryFind object_id objectScripts with Some s -> s :: acc | None -> acc) []
                         let path'' = path' // "DEP" :: path'
-                        resolve path'' (Set.add script visited) resolvedList resolvedSet depends_on
-                    resolve path' visited' (script :: resolvedList') (Set.add script resolvedSet') scripts'
+                        resolve path'' (Set.add id visited) resolvedList resolvedSet depends_on
+                    resolve path' visited' (dependant :: resolvedList') (Set.add id resolvedSet') dependants'
         
-        let (_visited, resolvedList, _resolvedSet) = resolve [] Set.empty [] Set.empty allScripts
+        let (_visited, resolvedList, _resolvedSet) = resolve [] Set.empty [] Set.empty dependants
     
         resolvedList |> List.rev
     
-    let ensureExecutableOrder scripts =
-        scripts
+    let resolveOrder' idKey dependants =
+        dependants
         |> List.groupBy (fun s -> s.Priority)
-        |> List.map (fun (prio, ss) -> prio, ensureExecutableOrder' ss)
+        |> List.map (fun (prio, ss) -> prio, resolveOrder'' idKey ss)
         |> List.sortBy (fun (prio,_) -> prio)
         |> List.collect (fun (_prio, ss) -> ss)
     
-    let addDependencies dependencies (script : Dependent<_,_>) =
-        let contains = script.Contains
+    let addDependencies dependencies (dependant : Dependent<_,_>) =
+        let contains = dependant.Contains
         // Add dependencies
         let dependsOn' =
             contains
@@ -80,16 +82,16 @@ module Dependent =
                     match Map.tryFind o dependencies with
                     | Some os -> os |> List.fold (fun acc' o' -> Set.add o' acc') acc
                     | None -> acc)
-                script.DependsOn
+                dependant.DependsOn
         // Clean up - remove self from dependencies
         let dependsOn =
             contains
             |> Set.fold (fun s o -> Set.remove o s) dependsOn'
             
-        { script with DependsOn = dependsOn; Contains = contains }
+        { dependant with DependsOn = dependsOn; Contains = contains }
     
-    let resolveOrder dependencies (scripts : Dependent<_,_> list) =
-        scripts
-        |> List.map (addDependencies dependencies)
-        |> ensureExecutableOrder
+    let resolveOrder idKey additionalDependencies (dependants : Dependent<_,_> list) =
+        dependants
+        |> List.map (addDependencies additionalDependencies)
+        |> resolveOrder' idKey
     
