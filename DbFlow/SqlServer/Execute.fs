@@ -44,7 +44,7 @@ module Internal =
                                 | None -> acc
                                 | Some indexScript -> 
                                     let index_contains_objects =
-                                        match index.object with Some o -> [o.ObjectId] | None -> []
+                                        match index.Object with Some o -> [o.ObjectId] | None -> []
                                     Dependent.create indexScript index_contains_objects [view.Object.ObjectId] 0 :: acc)
                             (create_script :: scripts)
                     view_scripts)

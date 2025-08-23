@@ -5,18 +5,18 @@ open DbFlow.Readers
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-index-columns-transact-sql?view=sql-server-ver17
 
-type INDEX_COLUMN = {
-    object : OBJECT
-    index_id : int
-    index_column_id : int
-    column : Column
-    key_ordinal : byte option
-    partition_ordinal : byte option
-    is_descending_key : bool
-    is_included_column : bool
+type IndexColumn = {
+    Object : OBJECT
+    IndexId : int
+    IndexColumnId : int
+    Column : Column
+    KeyOrdinal : byte option
+    PartitionOrdinal : byte option
+    IsDescendingKey : bool
+    IsIncludedColumn : bool
 }
 
-module INDEX_COLUMN =
+module IndexColumn =
     let readAll' objects columns connection =
         DbTr.reader 
             "SELECT 
@@ -25,24 +25,24 @@ module INDEX_COLUMN =
              FROM sys.index_columns ic"
             []
             (fun acc r -> 
-                let object_id = readInt32 "object_id" r
-                let column_id = readInt32 "column_id" r
-                let object : OBJECT = RCMap.pick object_id objects
+                let objectId = readInt32 "object_id" r
+                let columnId = readInt32 "column_id" r
+                let object : OBJECT = RCMap.pick objectId objects
                 match object.ObjectType with
                 | ObjectType.InternalTable 
                 | ObjectType.SystemTable
                     -> acc
                 | _ ->
-                    let column = RCMap.pick (object_id, column_id) columns
+                    let column = RCMap.pick (objectId, columnId) columns
                     {
-                        object = object
-                        index_id = readInt32 "index_id" r
-                        index_column_id = readInt32 "index_column_id" r
-                        column = column
-                        key_ordinal = match readByte "key_ordinal" r with 0uy -> None | o -> Some o
-                        partition_ordinal = match readByte "partition_ordinal" r with 0uy -> None | o -> Some o
-                        is_descending_key = readBool "is_descending_key" r
-                        is_included_column = readBool "is_included_column" r
+                        Object = object
+                        IndexId = readInt32 "index_id" r
+                        IndexColumnId = readInt32 "index_column_id" r
+                        Column = column
+                        KeyOrdinal = match readByte "key_ordinal" r with 0uy -> None | o -> Some o
+                        PartitionOrdinal = match readByte "partition_ordinal" r with 0uy -> None | o -> Some o
+                        IsDescendingKey = readBool "is_descending_key" r
+                        IsIncludedColumn = readBool "is_included_column" r
                     } :: acc)
             []
         |> DbTr.commit_ connection
@@ -51,16 +51,16 @@ module INDEX_COLUMN =
         let indexColumns = readAll' objects columns connection
         let indexColumnsByIndex =
             indexColumns
-            |> List.groupBy (fun c -> c.object.ObjectId, c.index_id)
+            |> List.groupBy (fun c -> c.Object.ObjectId, c.IndexId)
             |> List.map 
                 (fun (key, cs) -> 
                     key, 
                     cs 
                     |> List.sortBy 
                         (fun c -> 
-                            match c.key_ordinal, c.is_included_column with
+                            match c.KeyOrdinal, c.IsIncludedColumn with
                             | Some ordinal, false -> 0, int ordinal
-                            | _ -> 1, c.index_column_id)
+                            | _ -> 1, c.IndexColumnId)
                     |> List.toArray)
             |> Map.ofList
             |> RCMap.ofMap
@@ -71,64 +71,64 @@ module INDEX_COLUMN =
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-indexes-transact-sql?view=sql-server-ver17
 
 [<RequireQualifiedAccess>]
-type INDEX_TYPE =
-    | HEAP
-    | CLUSTERED
-    | NONCLUSTERED
-    | XML
-    | SPATIAL
-    | CLUSTERED_COLUMNSTORE // Applies to: SQL Server 2014 (12.x) and later.
-    | NONCLUSTERED_COLUMNSTORE // Applies to: SQL Server 2012 (11.x) and later.
+type IndexType =
+    | Heap
+    | Clustered
+    | Nonclustered
+    | Xml
+    | Spatial
+    | ClusteredColumnstore // Applies to: SQL Server 2014 (12.x) and later.
+    | NonclusteredColumnstore // Applies to: SQL Server 2012 (11.x) and later.
     //  NONCLUSTERED HASH indexes are supported only on memory-optimized tables. The sys.hash_indexes view shows the current hash indexes 
     // and the hash properties. For more information, see sys.hash_indexes (Transact-SQL). 
-    | NONCLUSTERED_HASH // Applies to: SQL Server 2014 (12.x) and later.
-    | JSON // Applies to: SQL Server 2025 (17.x) Preview
+    | NonclusteredHash // Applies to: SQL Server 2014 (12.x) and later.
+    | Json // Applies to: SQL Server 2025 (17.x) Preview
 
-module INDEX_TYPE =
+module IndexType =
     let findIndexType index_type_code =
         match index_type_code with 
-        | 0uy -> INDEX_TYPE.HEAP
-        | 1uy -> INDEX_TYPE.CLUSTERED
-        | 2uy -> INDEX_TYPE.NONCLUSTERED
-        | 3uy -> INDEX_TYPE.XML
-        | 4uy -> INDEX_TYPE.SPATIAL
-        | 5uy -> INDEX_TYPE.CLUSTERED_COLUMNSTORE
-        | 6uy -> INDEX_TYPE.NONCLUSTERED_COLUMNSTORE
-        | 7uy -> INDEX_TYPE.NONCLUSTERED_HASH
-        | 9uy -> INDEX_TYPE.JSON
+        | 0uy -> IndexType.Heap
+        | 1uy -> IndexType.Clustered
+        | 2uy -> IndexType.Nonclustered
+        | 3uy -> IndexType.Xml
+        | 4uy -> IndexType.Spatial
+        | 5uy -> IndexType.ClusteredColumnstore
+        | 6uy -> IndexType.NonclusteredColumnstore
+        | 7uy -> IndexType.NonclusteredHash
+        | 9uy -> IndexType.Json
         | c -> failwithf "Unknwon index type: %i" c
 
 
-type INDEX = {
-    parent : OBJECT // The object to which this index belongs
-    object : OBJECT option
+type Index = {
+    Parent : OBJECT // The object to which this index belongs
+    Object : OBJECT option
 
-    name : string option
-    index_id : int
-    index_type : INDEX_TYPE
-    is_unique : bool
-    data_space_id : int
-    ignore_dup_key : bool
-    is_primary_key : bool
+    Name : string option
+    IndexId : int
+    IndexType : IndexType
+    IsUnique : bool
+    DataSpaceId : int
+    IgnoreDupKey : bool
+    IsPrimaryKey : bool
     IsSystemNamed : bool // not part of sys.indexes
-    is_unique_constraint : bool
-    fill_factor : byte
-    is_padded : bool
-    is_disabled : bool 
-    is_hypothetical : bool 
+    IsUniqueConstraint : bool
+    FillFactor : byte
+    IsPadded : bool
+    IsDisabled : bool 
+    IsHypothetical : bool 
     //is_ignored_in_optimization : bool // Introduced in 2017
-    allow_row_locks : bool
-    allow_page_locks : bool
-    filter : string option 
+    AllowRowLocks : bool
+    AllowPageLocks : bool
+    Filter : string option 
     //suppress_dup_key_messages : bool  // Introduced in 2017
     //auto_created : bool // Introduced in 2017
 
-    columns : INDEX_COLUMN array
+    Columns : IndexColumn array
 
-    ms_description : string option
+    MSDescription : string option
 }
 
-module INDEX =
+module Index =
     let readAll' objects indexColumnsByIndex ms_descriptions connection =
         DbTr.reader
             "SELECT 
@@ -159,35 +159,35 @@ module INDEX =
                     | Some id, None -> RCMap.tryPick (XPropertyClass.ObjectOrColumn, id, 0) ms_descriptions
                     | _ -> None 
                 {
-                    parent = parent
-                    object = object
+                    Parent = parent
+                    Object = object
                 
-                    name = nullable "name" readString r
-                    index_id = index_id
-                    index_type = INDEX_TYPE.findIndexType (readByte "index_type" r)
-                    is_unique = readBool "is_unique" r
-                    data_space_id = readInt32 "data_space_id" r
-                    ignore_dup_key = readBool "ignore_dup_key" r
-                    is_primary_key = readBool "is_primary_key" r
+                    Name = nullable "name" readString r
+                    IndexId = index_id
+                    IndexType = IndexType.findIndexType (readByte "index_type" r)
+                    IsUnique = readBool "is_unique" r
+                    DataSpaceId = readInt32 "data_space_id" r
+                    IgnoreDupKey = readBool "ignore_dup_key" r
+                    IsPrimaryKey = readBool "is_primary_key" r
                     IsSystemNamed = readBool "is_system_named" r
-                    is_unique_constraint = readBool "is_unique_constraint" r
-                    fill_factor = readByte "fill_factor" r
-                    is_padded = readBool "is_padded" r
-                    is_disabled = readBool "is_disabled" r 
-                    is_hypothetical = readBool "is_hypothetical" r
+                    IsUniqueConstraint = readBool "is_unique_constraint" r
+                    FillFactor = readByte "fill_factor" r
+                    IsPadded = readBool "is_padded" r
+                    IsDisabled = readBool "is_disabled" r 
+                    IsHypothetical = readBool "is_hypothetical" r
                     //is_ignored_in_optimization = readBool "is_ignored_in_optimization" r
-                    allow_row_locks = readBool "allow_row_locks" r
-                    allow_page_locks = readBool "allow_page_locks" r
-                    filter =
+                    AllowRowLocks = readBool "allow_row_locks" r
+                    AllowPageLocks = readBool "allow_page_locks" r
+                    Filter =
                         match readBool "has_filter" r with
                         | true -> readString "filter_definition" r |> Some
                         | false -> None
                     //suppress_dup_key_messages = readBool "suppress_dup_key_messages" r
                     //auto_created = readBool "auto_created" r
 
-                    columns = columns
+                    Columns = columns
 
-                    ms_description = ms_description
+                    MSDescription = ms_description
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -196,8 +196,8 @@ module INDEX =
         let indexes = readAll' objects indexColumnsByIndex ms_descriptions connection 
         let indexesByParent =
             indexes
-            |> List.groupBy (fun i -> i.parent.ObjectId)
-            |> List.map (fun (objectId, is) -> objectId, is |> List.sortBy (fun i -> i.index_id) |> List.toArray)
+            |> List.groupBy (fun i -> i.Parent.ObjectId)
+            |> List.map (fun (objectId, is) -> objectId, is |> List.sortBy (fun i -> i.IndexId) |> List.toArray)
             |> Map.ofList
             |> RCMap.ofMap
         indexesByParent

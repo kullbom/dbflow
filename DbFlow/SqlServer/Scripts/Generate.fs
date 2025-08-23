@@ -132,32 +132,32 @@ let commaSeparated (w : System.IO.StreamWriter) (indentionStr : string) xs (form
             let commaStr = if i = n - 1 then "" else ","
             w.WriteLine $"{indentionStr}{formatter x}{commaStr}")
 
-let indexColumnsStr (columns : INDEX_COLUMN array) =
+let indexColumnsStr (columns : IndexColumn array) =
     columns
     |> Array.joinBy 
         ", "
         (fun c -> 
-            let descStr = if c.is_descending_key then " DESC" else ""
-            $"[{c.column.Name}]{descStr}")
+            let descStr = if c.IsDescendingKey then " DESC" else ""
+            $"[{c.Column.Name}]{descStr}")
 
-let indexWithSettings parentIsView (index : INDEX) =
+let indexWithSettings parentIsView (index : Index) =
     [|
-        match index.fill_factor with 0uy -> "" | ff -> $"FILLFACTOR = {ff}"
-        if index.ignore_dup_key then "IGNORE_DUP_KEY = ON" else ""
+        match index.FillFactor with 0uy -> "" | ff -> $"FILLFACTOR = {ff}"
+        if index.IgnoreDupKey then "IGNORE_DUP_KEY = ON" else ""
     |]
     |> Array.filter (fun s -> s.Length > 0)
     |> Array.joinBy ", " id
     |> function "" -> "" | s -> $"\r\n    WITH( {s} )"
 
-let primaryKeyStr (opt : Options) isTableType (pk : INDEX) =
+let primaryKeyStr (opt : Options) isTableType (pk : Index) =
     let pkName = 
-        match pk.name with Some n -> n | None -> failwithf "Can not handle PK without name"
+        match pk.Name with Some n -> n | None -> failwithf "Can not handle PK without name"
     let clusteredStr = 
-        match pk.index_type with
-        | INDEX_TYPE.CLUSTERED -> "CLUSTERED"
-        | INDEX_TYPE.NONCLUSTERED -> "NONCLUSTERED"
+        match pk.IndexType with
+        | IndexType.Clustered -> "CLUSTERED"
+        | IndexType.Nonclustered -> "NONCLUSTERED"
         | iType -> failwithf "Unhandled index type %A of primary key %s" iType pkName
-    let pkColumnsStr = indexColumnsStr pk.columns 
+    let pkColumnsStr = indexColumnsStr pk.Columns 
     if opt.SchemazenCompatibility
     then 
         if isTableType 
@@ -169,22 +169,22 @@ let primaryKeyStr (opt : Options) isTableType (pk : INDEX) =
         then $"PRIMARY KEY {clusteredStr} ({pkColumnsStr}){withSettings}"
         else $"CONSTRAINT [{pkName}] PRIMARY KEY {clusteredStr} ({pkColumnsStr}){withSettings}"
         
-let uniqueKeyStr (opt : Options) (i : INDEX) =
+let uniqueKeyStr (opt : Options) (i : Index) =
     let iName = 
-        match i.name with Some n -> n | None -> failwithf "Can not handle UNIQUE CONSTRAINTS without name"
+        match i.Name with Some n -> n | None -> failwithf "Can not handle UNIQUE CONSTRAINTS without name"
     let clusteredStr = 
-        match i.index_type with
-        | INDEX_TYPE.CLUSTERED -> "CLUSTERED"
-        | INDEX_TYPE.NONCLUSTERED -> "NONCLUSTERED"
+        match i.IndexType with
+        | IndexType.Clustered -> "CLUSTERED"
+        | IndexType.Nonclustered -> "NONCLUSTERED"
         | iType -> failwithf "Unhandled index type %A of primary key %s" iType iName
-    let indexColumnsStr = indexColumnsStr i.columns
+    let indexColumnsStr = indexColumnsStr i.Columns
     if (not i.IsSystemNamed) || opt.SchemazenCompatibility
     then $"CONSTRAINT [{iName}] UNIQUE {clusteredStr} ({indexColumnsStr})"
     else $"UNIQUE {clusteredStr} ({indexColumnsStr})"
 
-let generateStandardIndexScript (opt : Options) (index : INDEX) (parentName : string) parentIsView (indexName : string) (indexTypeStr : string) =
+let generateStandardIndexScript (opt : Options) (index : Index) (parentName : string) parentIsView (indexName : string) (indexTypeStr : string) =
     let (includeColumns, keyColumns) =
-        separateBy (fun c -> c.is_included_column) index.columns
+        separateBy (fun c -> c.IsIncludedColumn) index.Columns
 
     let keyColumnsStr = indexColumnsStr keyColumns
     let includeStr = 
@@ -192,10 +192,10 @@ let generateStandardIndexScript (opt : Options) (index : INDEX) (parentName : st
         then ""
         else 
             includeColumns
-            |> Array.joinBy ", " (fun c -> $"[{c.column.Name}]") 
+            |> Array.joinBy ", " (fun c -> $"[{c.Column.Name}]") 
             |> fun s -> $" INCLUDE ({s})"
     let filterStr =
-        match index.filter with
+        match index.Filter with
         | None -> ""
         | Some filter -> $" WHERE {filter}"
     
@@ -207,9 +207,9 @@ let generateStandardIndexScript (opt : Options) (index : INDEX) (parentName : st
 
     $"CREATE {indexTypeStr} INDEX [{indexName}] ON {parentName} ({keyColumnsStr}){includeStr}{filterStr}{withSettings}"
 
-let generateXMLIndexScript (opt : Options) (index : INDEX) (parentName : string) parentIsView (indexName : string) =
+let generateXMLIndexScript (opt : Options) (index : Index) (parentName : string) parentIsView (indexName : string) =
     let (includeColumns, keyColumns) =
-        separateBy (fun c -> c.is_included_column) index.columns
+        separateBy (fun c -> c.IsIncludedColumn) index.Columns
 
     let keyColumnsStr = indexColumnsStr keyColumns
     
@@ -226,20 +226,20 @@ let objectFilename (schema_name :string) (object_name : string) =
     | _ -> $"{schema_name}.{object_name}.sql"
 
     
-let getIndexDefinitionStr (opt : Options) parentName parentIsView (index : INDEX) =
-    match index.name, index.is_unique, index.index_type with
-    | Some n, false, INDEX_TYPE.CLUSTERED -> 
+let getIndexDefinitionStr (opt : Options) parentName parentIsView (index : Index) =
+    match index.Name, index.IsUnique, index.IndexType with
+    | Some n, false, IndexType.Clustered -> 
         Some <| generateStandardIndexScript opt index parentName parentIsView n "CLUSTERED"
-    | Some n, false, INDEX_TYPE.NONCLUSTERED -> 
+    | Some n, false, IndexType.Nonclustered -> 
         Some <| generateStandardIndexScript opt index parentName parentIsView n "NONCLUSTERED" 
-    | Some n, true, INDEX_TYPE.CLUSTERED -> 
+    | Some n, true, IndexType.Clustered -> 
         Some <| generateStandardIndexScript opt index parentName parentIsView n "UNIQUE CLUSTERED"
-    | Some n, true, INDEX_TYPE.NONCLUSTERED -> 
+    | Some n, true, IndexType.Nonclustered -> 
         Some <| generateStandardIndexScript opt index parentName parentIsView n "UNIQUE NONCLUSTERED"
-    | Some n, false, INDEX_TYPE.XML ->
+    | Some n, false, IndexType.Xml ->
         Some <| generateXMLIndexScript opt index parentName parentIsView n  
     // Heap indexes without name is ignored
-    | None, false, INDEX_TYPE.HEAP -> None
+    | None, false, IndexType.Heap -> None
     | iType -> 
         failwithf "Unhandled index type %A" iType
 
@@ -250,8 +250,8 @@ let generateTableBody (w : System.IO.StreamWriter) (opt : Options) ds allTypes i
     let indexDefs =
         tableInlineIndexes
         |> List.map 
-            (fun (inlineIndex : INDEX) ->
-                match inlineIndex.IsSystemNamed, inlineIndex.is_primary_key, inlineIndex.is_unique_constraint with 
+            (fun (inlineIndex : Index) ->
+                match inlineIndex.IsSystemNamed, inlineIndex.IsPrimaryKey, inlineIndex.IsUniqueConstraint with 
                 | _, true, false -> $"   ,{primaryKeyStr opt isTableType inlineIndex}"
                 | _, false, true -> $"   ,{uniqueKeyStr opt inlineIndex}"
                 | _ -> failwithf "Unknown inline index %A" inlineIndex)
@@ -264,8 +264,8 @@ let generateTableBody (w : System.IO.StreamWriter) (opt : Options) ds allTypes i
                 if inlineCheck.IsSystemNamed
                 then 
                     let extraSpace = if opt.SchemazenCompatibility then " " else ""
-                    $"   ,CHECK {extraSpace}{inlineCheck.definition}"
-                else $"   ,CONSTRAINT [{inlineCheck.object.Name}] CHECK ({inlineCheck.definition})")
+                    $"   ,CHECK {extraSpace}{inlineCheck.Definition}"
+                else $"   ,CONSTRAINT [{inlineCheck.Object.Name}] CHECK ({inlineCheck.Definition})")
 
         
     match indexDefs, checkDefs with
@@ -282,7 +282,7 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) ds allType
         indexes
         |> Array.fold 
             (fun (tableInlineIndexes', standaloneIndexes') index ->
-                match index.is_primary_key || index.is_unique_constraint with
+                match index.IsPrimaryKey || index.IsUniqueConstraint with
                 | true -> index :: tableInlineIndexes', standaloneIndexes'
                 | false -> tableInlineIndexes', index :: standaloneIndexes')
             ([],[])
@@ -311,7 +311,7 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) ds allType
     w.WriteLine $")"
 
     w.WriteLine ""
-    for index in standaloneIndexes |> List.sortBy (fun i -> i.index_id) do
+    for index in standaloneIndexes |> List.sortBy (fun i -> i.IndexId) do
         let indexStr = getIndexDefinitionStr opt parentName false index
         match indexStr with
         | Some s -> w.WriteLine $"{s}"
@@ -322,11 +322,11 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) ds allType
 
     []
     |> (fun acc -> columns |> Array.fold (fun acc' c -> c.Object.ObjectId :: acc') acc)
-    |> (fun acc -> indexes |> Array.fold (fun acc' i -> match i.object with Some o -> o.ObjectId :: acc' | None -> acc') acc)
+    |> (fun acc -> indexes |> Array.fold (fun acc' i -> match i.Object with Some o -> o.ObjectId :: acc' | None -> acc') acc)
     |> (fun acc -> columnInlineDefaults |> Map.fold (fun acc' _ dc -> dc.Object.ObjectId :: acc') acc)
     
 
-let generateTableScript allTypes ds (w : System.IO.StreamWriter) (opt : Options) (t : TABLE) =
+let generateTableScript allTypes ds (w : System.IO.StreamWriter) (opt : Options) (t : Table) =
     let tableName = $"[{t.Schema.Name}].[{t.Name}]"
     w.WriteLine $"CREATE TABLE {tableName} ("
     
@@ -346,7 +346,7 @@ let generateTableTypeScript allTypes ds (w : System.IO.StreamWriter) (opt : Opti
     ObjectDefinitions {| Contains = t.Object.ObjectId :: object_ids; DependsOn = [] |}
 
 
-let generateViewScript (w : System.IO.StreamWriter) (opt : Options) (view : VIEW)=
+let generateViewScript (w : System.IO.StreamWriter) (opt : Options) (view : View)=
     [
         "SET QUOTED_IDENTIFIER ON "; "GO"; "SET ANSI_NULLS ON "; "GO"
         view.Definition
@@ -367,22 +367,22 @@ let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options)
                 if opt.SchemazenCompatibility
                 then 
                     if cc.IsSystemNamed
-                    then w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK  {cc.definition}"
-                    else w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CONSTRAINT [{cc.object.Name}] CHECK  {cc.definition}"
+                    then w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK  {cc.Definition}"
+                    else w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CONSTRAINT [{cc.Object.Name}] CHECK  {cc.Definition}"
                 else
                     if cc.IsSystemNamed
-                    then w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK {cc.definition}"
+                    then w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK {cc.Definition}"
                     else 
-                        let trustClause = if cc.is_not_trusted then "NOCHECK" else "CHECK" 
-                        w.WriteLine $"ALTER TABLE {tableFullname} WITH {trustClause} ADD CONSTRAINT [{cc.object.Name}] CHECK {cc.definition}"
-                        if cc.is_disabled
-                        then w.WriteLine $"ALTER TABLE {tableFullname} NOCHECK CONSTRAINT [{cc.object.Name}]"
+                        let trustClause = if cc.IsNotTrusted then "NOCHECK" else "CHECK" 
+                        w.WriteLine $"ALTER TABLE {tableFullname} WITH {trustClause} ADD CONSTRAINT [{cc.Object.Name}] CHECK {cc.Definition}"
+                        if cc.IsDisabled
+                        then w.WriteLine $"ALTER TABLE {tableFullname} NOCHECK CONSTRAINT [{cc.Object.Name}]"
                 "GO" |> w.WriteLine
-                cc.object.ObjectId :: acc)
+                cc.Object.ObjectId :: acc)
             []
     ObjectDefinitions {| Contains = object_ids; DependsOn = [table_object_id] |}
 
-let generateDefaultConstraintsScript (w : System.IO.StreamWriter) (opt : Options) (table : TABLE, dcs : DefaultConstraint array) =
+let generateDefaultConstraintsScript (w : System.IO.StreamWriter) (opt : Options) (table : Table, dcs : DefaultConstraint array) =
     let object_ids =
         dcs 
         |> Array.sortBy (fun dc -> dc.Object.ObjectId)
@@ -402,16 +402,16 @@ let generateDefaultConstraintsScript (w : System.IO.StreamWriter) (opt : Options
             []
     ObjectDefinitions {| Contains = object_ids; DependsOn = [table.Object.ObjectId] |}
 
-let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (table : TABLE, fks : FOREIGN_KEY array) =
+let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (table : Table, fks : ForeignKey array) =
     let (object_ids, depends_on) =
         fks
         |> Array.fold 
             (fun (object_ids, depends_on) fk ->
-                let columnsStr = fk.columns |> Array.joinBy ", " (fun c -> $"[{c.parent_column.Name}]")
-                let refColumnsStr = fk.columns |> Array.joinBy ", " (fun c -> $"[{c.referenced_column.Name}]")
-                let name = if fk.IsSystemNamed then "" else $"CONSTRAINT [{fk.name}]"
+                let columnsStr = fk.Columns |> Array.joinBy ", " (fun c -> $"[{c.ParentColumn.Name}]")
+                let refColumnsStr = fk.Columns |> Array.joinBy ", " (fun c -> $"[{c.ReferencedColumn.Name}]")
+                let name = if fk.IsSystemNamed then "" else $"CONSTRAINT [{fk.Name}]"
                 w.WriteLine $"ALTER TABLE [{table.Schema.Name}].[{table.Name}] WITH CHECK ADD {name}"
-                w.WriteLine $"   FOREIGN KEY({columnsStr}) REFERENCES [{fk.referenced.Schema.Name}].[{fk.referenced.Name}] ({refColumnsStr})"
+                w.WriteLine $"   FOREIGN KEY({columnsStr}) REFERENCES [{fk.Referenced.Schema.Name}].[{fk.Referenced.Name}] ({refColumnsStr})"
                 match fk.UpdateReferentialAction with
                 | ReferentialAction.NoAction -> () 
                 | ReferentialAction.Cascade -> w.WriteLine "   ON UPDATE CASCADE"
@@ -425,8 +425,8 @@ let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (tabl
                 w.WriteLine ""
                 w.WriteLine "GO"
 
-                fk.object.ObjectId :: object_ids,
-                fk.parent.ObjectId :: fk.referenced.ObjectId :: depends_on)
+                fk.Object.ObjectId :: object_ids,
+                fk.Parent.ObjectId :: fk.Referenced.ObjectId :: depends_on)
             ([], [])
     ObjectDefinitions {| Contains = object_ids; DependsOn = depends_on |}
 
@@ -578,7 +578,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
             v.Indexes 
             |> Array.choose 
                 (fun i -> 
-                    match i.name, getIndexDefinitionStr opt $"[{v.Schema.Name}].[{v.Name}]" true i with 
+                    match i.Name, getIndexDefinitionStr opt $"[{v.Schema.Name}].[{v.Name}]" true i with 
                     | Some n, Some def -> Some (n, v, i, def) 
                     | _ -> None) 
             |> Array.toList) 
@@ -588,7 +588,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
             w.WriteLine "GO"
             ObjectDefinitions 
                 {| 
-                    Contains = match index.object with Some o -> [o.ObjectId] | None -> []; 
+                    Contains = match index.Object with Some o -> [o.ObjectId] | None -> []; 
                     DependsOn = [view.Object.ObjectId] 
                 |})
     

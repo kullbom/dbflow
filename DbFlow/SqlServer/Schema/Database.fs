@@ -105,8 +105,8 @@ module DatabaseProperties =
 
 type DatabaseSchema = {
     Schemas : Schema list
-    Tables : TABLE list
-    Views : VIEW list
+    Tables : Table list
+    Views : View list
 
     Types : Datatype list
     TableTypes : TableType list
@@ -142,11 +142,11 @@ module DatabaseSchema =
         let (columns, columnsByObject) = Column.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
         let triggersByParent = Trigger.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
         
-        let indexesColumnsByIndex = INDEX_COLUMN.readAll objects columns |> Logger.logTime logger "INDEX_COLUMN" connection
-        let indexesByParent = INDEX.readAll objects indexesColumnsByIndex ms_descs |> Logger.logTime logger "INDEX" connection
+        let indexesColumnsByIndex = IndexColumn.readAll objects columns |> Logger.logTime logger "INDEX_COLUMN" connection
+        let indexesByParent = Index.readAll objects indexesColumnsByIndex ms_descs |> Logger.logTime logger "INDEX" connection
         
         let views = 
-            VIEW.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules ms_descs
+            View.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules ms_descs
             |> Logger.logTime logger "VIEW" connection
         
         views, dependencies
@@ -179,13 +179,13 @@ module DatabaseSchema =
             |> Logger.logTime logger "DEFAULT_CONSTRAINT" connection
         
 
-        let fkColsByConstraint = FOREIGN_KEY_COLUMN.readAll objects columns |> Logger.logTime logger "FOREIGN_KEY_COLUMN" connection 
+        let fkColsByConstraint = ForeignKeycolumn.readAll objects columns |> Logger.logTime logger "FOREIGN_KEY_COLUMN" connection 
         let (foreignKeysByParent, foreignKeysByReferenced)  = 
-            FOREIGN_KEY.readAll objects fkColsByConstraint ms_descs 
+            ForeignKey.readAll objects fkColsByConstraint ms_descs 
              |> Logger.logTime logger "FOREIGN_KEY" connection
         
-        let indexesColumnsByIndex = INDEX_COLUMN.readAll objects columns |> Logger.logTime logger "INDEX_COLUMN" connection
-        let indexesByParent = INDEX.readAll objects indexesColumnsByIndex ms_descs |> Logger.logTime logger "INDEX" connection
+        let indexesColumnsByIndex = IndexColumn.readAll objects columns |> Logger.logTime logger "INDEX_COLUMN" connection
+        let indexesByParent = Index.readAll objects indexesColumnsByIndex ms_descs |> Logger.logTime logger "INDEX" connection
         
         let tableTypes =
             TableType.readAll schemas objects ms_descs columnsByObject 
@@ -193,17 +193,17 @@ module DatabaseSchema =
             |> Logger.logTime logger "TABLE_TYPE" connection
             
 
-        let parametersByObject = PARAMETER.readAll objects types ms_descs connection
+        let parametersByObject = Parameter.readAll objects types ms_descs connection
         let procedures = Procedure.readAll objects parametersByObject columnsByObject indexesByParent sql_modules ms_descs connection
 
         let tables = 
-            TABLE.readAll 
+            Table.readAll 
                 schemas objects columnsByObject indexesByParent
                 triggersByParent foreignKeysByParent foreignKeysByReferenced 
                 checkConstraintsByParent defaultConstraintsByParent ms_descs 
             |> Logger.logTime logger "TABLE" connection
         let views = 
-            VIEW.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules ms_descs
+            View.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules ms_descs
             |> Logger.logTime logger "VIEW" connection
         
         let db_msDesc = RCMap.tryPick (XPropertyClass.Database, 0, 0) ms_descs
@@ -230,7 +230,7 @@ module DatabaseSchema =
             indexesByParent 
             |> checkUnused "indexes" 
                 (fun i -> 
-                    match i[0].parent.ObjectType with 
+                    match i[0].Parent.ObjectType with 
                     | ObjectType.InternalTable 
                     | ObjectType.SystemTable -> true 
                     | _ -> false)

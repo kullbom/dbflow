@@ -11,11 +11,11 @@ type TableType = {
     Object : OBJECT
   
     Columns : Column array
-    Indexes : INDEX array
+    Indexes : Index array
     //mutable triggers : TRIGGER array
     
-    ForeignKeys : FOREIGN_KEY array
-    ReferencedForeignKeys : FOREIGN_KEY array
+    ForeignKeys : ForeignKey array
+    ReferencedForeignKeys : ForeignKey array
 
     CheckConstraints : CheckConstraint array
     DefaultConstraints : DefaultConstraint array
@@ -54,17 +54,17 @@ module TableType =
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-tables-transact-sql?view=sql-server-ver17
 
-type TABLE = {
+type Table = {
     Schema : Schema
     Name : string
     Object : OBJECT
     
     Columns : Column array
-    Indexes : INDEX array
+    Indexes : Index array
     Triggers : Trigger array
 
-    ForeignKeys : FOREIGN_KEY array
-    ReferencedForeignKeys : FOREIGN_KEY array
+    ForeignKeys : ForeignKey array
+    ReferencedForeignKeys : ForeignKey array
 
     CheckConstraints : CheckConstraint array
     DefaultConstraints : DefaultConstraint array
@@ -72,7 +72,7 @@ type TABLE = {
     MSDescription : string option
 }
 
-module TABLE = 
+module Table = 
     let readAll schemas objects columns indexes triggers foreignKeys referencedForeignKeys checkConstraints defaultConstraints ms_descriptions connection =
         DbTr.reader 
             "SELECT t.name table_name, t.object_id, t.schema_id FROM sys.tables t" 
@@ -103,7 +103,7 @@ module TABLE =
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-views-transact-sql?view=sql-server-ver17
 
-type VIEW = {
+type View = {
     Schema : Schema
     Name : string
     Object : OBJECT
@@ -111,13 +111,13 @@ type VIEW = {
     Definition : string
 
     Columns : Column array
-    Indexes : INDEX array
+    Indexes : Index array
     Triggers : Trigger array
 
     MSDescription : string option
 }
 
-module VIEW = 
+module View = 
     let readAll schemas objects columns indexes triggers (sql_modules : RCMap<int, SqlModule>) ms_descriptions connection =
         DbTr.reader
             "SELECT v.name view_name, v.object_id, v.schema_id

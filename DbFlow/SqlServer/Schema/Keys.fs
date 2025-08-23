@@ -6,33 +6,33 @@ open DbFlow.Readers
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-foreign-key-columns-transact-sql?view=sql-server-ver17
 
-type FOREIGN_KEY_COLUMN = {
-    constraint_object : OBJECT
-    constraint_column_id : int 
+type ForeignKeycolumn = {
+    ConstraintObject : OBJECT
+    ConstraintColumnId : int 
 
-    parent_column : Column
-    referenced_column : Column
+    ParentColumn : Column
+    ReferencedColumn : Column
 }
 
-module FOREIGN_KEY_COLUMN =
+module ForeignKeycolumn =
     let readAll' objects columns connection =
         DbTr.reader 
             "SELECT constraint_object_id, constraint_column_id, parent_object_id, parent_column_id, referenced_object_id, referenced_column_id
              FROM sys.foreign_key_columns"
             []
             (fun acc r -> 
-                let constraint_object_id = readInt32 "constraint_object_id" r
-                let constraint_column_id = readInt32 "constraint_column_id" r
-                let parent_object_id = readInt32 "parent_object_id" r
-                let parent_column_id = readInt32 "parent_column_id" r
-                let referenced_object_id = readInt32 "referenced_object_id" r
-                let referenced_column_id = readInt32 "referenced_column_id" r
+                let constraintObjectId = readInt32 "constraint_object_id" r
+                let constraintColumnId = readInt32 "constraint_column_id" r
+                let parentObjectId = readInt32 "parent_object_id" r
+                let parentColumnId = readInt32 "parent_column_id" r
+                let referencedObjectId = readInt32 "referenced_object_id" r
+                let referencedColumnId = readInt32 "referenced_column_id" r
                 {
-                    constraint_object = RCMap.pick constraint_object_id objects
-                    constraint_column_id = constraint_column_id
+                    ConstraintObject = RCMap.pick constraintObjectId objects
+                    ConstraintColumnId = constraintColumnId
                     
-                    parent_column = RCMap.pick (parent_object_id, parent_column_id) columns
-                    referenced_column = RCMap.pick (referenced_object_id, referenced_column_id) columns
+                    ParentColumn = RCMap.pick (parentObjectId, parentColumnId) columns
+                    ReferencedColumn = RCMap.pick (referencedObjectId, referencedColumnId) columns
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -41,8 +41,8 @@ module FOREIGN_KEY_COLUMN =
         let fkColumns' = readAll' foreignKeys columns connection
         let fkColumnsByConstraint =
             fkColumns'
-            |> List.groupBy (fun c -> c.constraint_object.ObjectId)
-            |> List.map (fun (object_id, cs) -> object_id, cs |> List.sortBy (fun c -> c.constraint_column_id) |> List.toArray)
+            |> List.groupBy (fun c -> c.ConstraintObject.ObjectId)
+            |> List.map (fun (object_id, cs) -> object_id, cs |> List.sortBy (fun c -> c.ConstraintColumnId) |> List.toArray)
             |> Map.ofList
             |> RCMap.ofMap
         fkColumnsByConstraint
@@ -56,25 +56,25 @@ type ReferentialAction =
     | SetNull    // 2
     | SetDefault // 3
 
-type FOREIGN_KEY = {
-    name : string
-    object : OBJECT
-    parent : OBJECT
-    referenced : OBJECT
-    key_index_id : int
-    is_disabled : bool
+type ForeignKey = {
+    Name : string
+    Object : OBJECT
+    Parent : OBJECT
+    Referenced : OBJECT
+    KeyIndexId : int
+    IsDisabled : bool
     IsSystemNamed : bool
 
     DeleteReferentialAction : ReferentialAction
     UpdateReferentialAction : ReferentialAction
 
-    columns : FOREIGN_KEY_COLUMN array
+    Columns : ForeignKeycolumn array
 
-    ms_description : string option
+    MSDescription : string option
 }
 
-module FOREIGN_KEY =
-    let toREFERENTIAL_ACTION b =
+module ForeignKey =
+    let toReferentialAction b =
         match b with
         | 0uy -> ReferentialAction.NoAction
         | 1uy -> ReferentialAction.Cascade
@@ -92,20 +92,20 @@ module FOREIGN_KEY =
             (fun acc r -> 
                 let object_id = readInt32 "object_id" r
                 {
-                    name = readString "name" r
-                    object = RCMap.pick object_id objects
-                    parent = RCMap.pick (readInt32 "parent_object_id" r) objects
-                    referenced = RCMap.pick (readInt32 "referenced_object_id" r) objects
-                    key_index_id = readInt32 "key_index_id" r
-                    is_disabled = readBool "is_disabled" r
+                    Name = readString "name" r
+                    Object = RCMap.pick object_id objects
+                    Parent = RCMap.pick (readInt32 "parent_object_id" r) objects
+                    Referenced = RCMap.pick (readInt32 "referenced_object_id" r) objects
+                    KeyIndexId = readInt32 "key_index_id" r
+                    IsDisabled = readBool "is_disabled" r
                     IsSystemNamed = readBool "is_system_named" r
 
-                    DeleteReferentialAction = toREFERENTIAL_ACTION (readByte "delete_referential_action" r)
-                    UpdateReferentialAction = toREFERENTIAL_ACTION (readByte "update_referential_action" r)
+                    DeleteReferentialAction = toReferentialAction (readByte "delete_referential_action" r)
+                    UpdateReferentialAction = toReferentialAction (readByte "update_referential_action" r)
 
-                    columns = match RCMap.tryPick object_id fkColumns with Some cs -> cs | None -> [||]
+                    Columns = match RCMap.tryPick object_id fkColumns with Some cs -> cs | None -> [||]
 
-                    ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
+                    MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -115,14 +115,14 @@ module FOREIGN_KEY =
         let foreignKeys' = readAll' objects fkColumns ms_descriptions connection
         let foreignKeysByParent =
             foreignKeys'
-            |> List.groupBy (fun fk -> fk.parent.ObjectId)
-            |> List.map (fun (parent_id, fks) -> parent_id, fks |> List.sortBy (fun fk -> fk.key_index_id) |> List.toArray)
+            |> List.groupBy (fun fk -> fk.Parent.ObjectId)
+            |> List.map (fun (parent_id, fks) -> parent_id, fks |> List.sortBy (fun fk -> fk.KeyIndexId) |> List.toArray)
             |> Map.ofList
             |> RCMap.ofMap
         let foreignKeysByReferenced =
             foreignKeys'
-            |> List.groupBy (fun fk -> fk.referenced.ObjectId)
-            |> List.map (fun (referenced_id, fks) -> referenced_id, fks |> List.sortBy (fun fk -> fk.name) |> List.toArray)
+            |> List.groupBy (fun fk -> fk.Referenced.ObjectId)
+            |> List.map (fun (referenced_id, fks) -> referenced_id, fks |> List.sortBy (fun fk -> fk.Name) |> List.toArray)
             |> Map.ofList
             |> RCMap.ofMap
         foreignKeysByParent, foreignKeysByReferenced

@@ -89,21 +89,21 @@ module KeyConstraint =
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-check-constraints-transact-sql?view=sql-server-ver17
 
 type CheckConstraint = {
-    object : OBJECT
-    parent : OBJECT
-    parent_column_id : int
-    column : Column option
+    Object : OBJECT
+    Parent : OBJECT
+    ParentColumnId : int
+    Column : Column option
     
-    is_disabled : bool
-    is_not_for_replication : bool
-    is_not_trusted : bool
+    IsDisabled : bool
+    IsNotForReplication : bool
+    IsNotTrusted : bool
     
-    definition : string
+    Definition : string
 
-    uses_database_collation : bool
+    UsesDatabaseCollation : bool
     IsSystemNamed : bool
 
-    ms_description : string option
+    MSDescription : string option
 }
 
 module CheckConstraint =
@@ -114,27 +114,27 @@ module CheckConstraint =
              FROM sys.check_constraints cc"
             []
             (fun acc r -> 
-                let object_id = readInt32 "object_id" r
-                let parent_id = readInt32 "parent_object_id" r
-                let parent_column_id = readInt32 "parent_column_id" r
+                let objectId = readInt32 "object_id" r
+                let parentId = readInt32 "parent_object_id" r
+                let parentColumnId = readInt32 "parent_column_id" r
                 {
-                        object = RCMap.pick object_id objects
-                        parent = RCMap.pick parent_id objects
-                        parent_column_id = parent_column_id
-                        column = 
-                            match parent_column_id with
+                        Object = RCMap.pick objectId objects
+                        Parent = RCMap.pick parentId objects
+                        ParentColumnId = parentColumnId
+                        Column = 
+                            match parentColumnId with
                             | 0 -> None
-                            | column_id -> RCMap.pick (parent_id, column_id) columns |> Some
-                        is_disabled = readBool "is_disabled" r
-                        is_not_for_replication = readBool "is_not_for_replication" r
-                        is_not_trusted = readBool "is_not_trusted" r
+                            | _ -> RCMap.pick (parentId, parentColumnId) columns |> Some
+                        IsDisabled = readBool "is_disabled" r
+                        IsNotForReplication = readBool "is_not_for_replication" r
+                        IsNotTrusted = readBool "is_not_trusted" r
 
-                        definition = readString "definition" r
+                        Definition = readString "definition" r
 
-                        uses_database_collation = readBool "uses_database_collation" r
+                        UsesDatabaseCollation = readBool "uses_database_collation" r
                         IsSystemNamed = readBool "is_system_named" r
 
-                        ms_description = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
+                        MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, objectId, 0) ms_descriptions
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -143,7 +143,7 @@ module CheckConstraint =
     let readAll objects columns ms_descriptions connection =
         let checkConstraints' = readAll' objects columns ms_descriptions connection
         checkConstraints'
-        |> List.groupBy (fun cc -> cc.parent.ObjectId)
+        |> List.groupBy (fun cc -> cc.Parent.ObjectId)
         |> List.fold 
             (fun m (object_id, trs) -> 
                 Map.add object_id (trs |> List.toArray) m)
