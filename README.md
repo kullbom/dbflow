@@ -6,6 +6,7 @@ The current version of DbFlow can be used for
 
 - generate complete scripts for a database schema that can be used for improved version control	
 - clone an existing database to a local copy that can be used for unit testing or other
+- (Experimental) Copy data from one database to another (resolving and copying dependant data as well)
 
 ### DbFlow supports
 
