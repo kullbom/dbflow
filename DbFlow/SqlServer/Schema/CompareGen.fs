@@ -19,6 +19,7 @@ type CompareGen = CompareGenCase
                        |> Compare.collectList x0.Synonyms x1.Synonyms SortOrder.orderBy ElementId.elementId CompareGen.Collect ("Synonyms" :: path)
                        |> Compare.collectList x0.Sequences x1.Sequences SortOrder.orderBy ElementId.elementId CompareGen.Collect ("Sequences" :: path)
                        |> CompareGen.Collect (x0.Properties, x1.Properties) ("Properties" :: path)
+                       |> Compare.collectOption x0.MSDescription x1.MSDescription CompareGen.Collect ("MSDescription" :: path)
 
         static member Collect (x0 : Schema, x1 : Schema) =
                     fun path diffs ->
@@ -26,6 +27,7 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.Name, x1.Name) ("Name" :: path)
                        |> CompareGen.Collect (x0.PrincipalName, x1.PrincipalName) ("PrincipalName" :: path)
                        |> CompareGen.Collect (x0.IsSystemSchema, x1.IsSystemSchema) ("IsSystemSchema" :: path)
+                       |> Compare.collectOption x0.MSDescription x1.MSDescription CompareGen.Collect ("MSDescription" :: path)
 
         static member Collect (x0 : System.String, x1 : System.String) = Compare.equalCollector (x0, x1)
 
@@ -46,6 +48,7 @@ type CompareGen = CompareGenCase
                        |> Compare.collectArray x0.ReferencedForeignKeys x1.ReferencedForeignKeys SortOrder.orderBy ElementId.elementId CompareGen.Collect ("ReferencedForeignKeys" :: path)
                        |> Compare.collectArray x0.CheckConstraints x1.CheckConstraints SortOrder.orderBy ElementId.elementId CompareGen.Collect ("CheckConstraints" :: path)
                        |> Compare.collectArray x0.DefaultConstraints x1.DefaultConstraints SortOrder.orderBy ElementId.elementId CompareGen.Collect ("DefaultConstraints" :: path)
+                       |> Compare.collectOption x0.MSDescription x1.MSDescription CompareGen.Collect ("MSDescription" :: path)
 
         static member Collect (x0 : OBJECT, x1 : OBJECT) =
                     fun path diffs ->
@@ -62,11 +65,11 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.Name, x1.Name) ("Name" :: path)
                        |> CompareGen.Collect (x0.Object, x1.Object) ("Object" :: path)
                        |> CompareGen.Collect (x0.Datatype, x1.Datatype) ("Datatype" :: path)
-                       |> CompareGen.Collect (x0.IsAnsiPadded, x1.IsAnsiPadded) ("IsAnsiPadded" :: path)
                        |> Compare.collectOption x0.ComputedDefinition x1.ComputedDefinition CompareGen.Collect ("ComputedDefinition" :: path)
                        |> Compare.collectOption x0.IdentityDefinition x1.IdentityDefinition Compare.identityDefinition ("IdentityDefinition" :: path)
                        |> Compare.collectOption x0.MaskingFunction x1.MaskingFunction CompareGen.Collect ("MaskingFunction" :: path)
                        |> CompareGen.Collect (x0.IsRowguidcol, x1.IsRowguidcol) ("IsRowguidcol" :: path)
+                       |> Compare.collectOption x0.MSDescription x1.MSDescription CompareGen.Collect ("MSDescription" :: path)
 
         static member Collect (x0 : Datatype, x1 : Datatype) =
                     fun path diffs ->
@@ -75,9 +78,7 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.Schema, x1.Schema) ("Schema" :: path)
                        |> CompareGen.Collect (x0.SystemTypeId, x1.SystemTypeId) ("SystemTypeId" :: path)
                        |> CompareGen.Collect (x0.Parameter, x1.Parameter) ("Parameter" :: path)
-                       |> CompareGen.Collect (x0.IsUserDefined, x1.IsUserDefined) ("IsUserDefined" :: path)
-                       |> Compare.collectOption x0.SystemDatatype x1.SystemDatatype Compare.equalCollector ("SystemDatatype" :: path)
-                       |> Compare.collectOption x0.TableDatatype x1.TableDatatype CompareGen.Collect ("TableDatatype" :: path)
+                       |> Compare.datatypeSpec (x0.DatatypeSpec, x1.DatatypeSpec) CompareGen.Collect ("DatatypeSpec" :: path)
 
         static member Collect (x0 : System.Byte, x1 : System.Byte) = Compare.equalCollector (x0, x1)
 
@@ -91,11 +92,6 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.IsNullable, x1.IsNullable) ("IsNullable" :: path)
 
         static member Collect (x0 : System.Int16, x1 : System.Int16) = Compare.equalCollector (x0, x1)
-
-        static member Collect (x0 : TableDatatype, x1 : TableDatatype) =
-                    fun path diffs ->
-                       diffs
-                       |> CompareGen.Collect (x0.Object, x1.Object) ("Object" :: path)
 
         static member Collect (x0 : ComputedDefinition, x1 : ComputedDefinition) =
                     fun path diffs ->
@@ -122,6 +118,7 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.AllowPageLocks, x1.AllowPageLocks) ("AllowPageLocks" :: path)
                        |> Compare.collectOption x0.Filter x1.Filter CompareGen.Collect ("Filter" :: path)
                        |> Compare.collectArray x0.Columns x1.Columns SortOrder.orderBy ElementId.elementId CompareGen.Collect ("Columns" :: path)
+                       |> Compare.collectOption x0.MSDescription x1.MSDescription CompareGen.Collect ("MSDescription" :: path)
 
         static member Collect (x0 : IndexColumn, x1 : IndexColumn) =
                     fun path diffs ->
@@ -143,6 +140,7 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.Definition, x1.Definition) ("Definition" :: path)
                        |> CompareGen.Collect (x0.IsDisabled, x1.IsDisabled) ("IsDisabled" :: path)
                        |> CompareGen.Collect (x0.IsInsteadOfTrigger, x1.IsInsteadOfTrigger) ("IsInsteadOfTrigger" :: path)
+                       |> Compare.collectOption x0.MSDescription x1.MSDescription CompareGen.Collect ("MSDescription" :: path)
 
         static member Collect (x0 : ForeignKey, x1 : ForeignKey) =
                     fun path diffs ->
@@ -154,6 +152,7 @@ type CompareGen = CompareGenCase
                        |> Compare.equalCollector (x0.DeleteReferentialAction, x1.DeleteReferentialAction) ("DeleteReferentialAction" :: path)
                        |> Compare.equalCollector (x0.UpdateReferentialAction, x1.UpdateReferentialAction) ("UpdateReferentialAction" :: path)
                        |> Compare.collectArray x0.Columns x1.Columns SortOrder.orderBy ElementId.elementId CompareGen.Collect ("Columns" :: path)
+                       |> Compare.collectOption x0.MSDescription x1.MSDescription CompareGen.Collect ("MSDescription" :: path)
 
         static member Collect (x0 : ForeignKeycolumn, x1 : ForeignKeycolumn) =
                     fun path diffs ->
@@ -174,6 +173,7 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.IsNotTrusted, x1.IsNotTrusted) ("IsNotTrusted" :: path)
                        |> CompareGen.Collect (x0.Definition, x1.Definition) ("Definition" :: path)
                        |> CompareGen.Collect (x0.UsesDatabaseCollation, x1.UsesDatabaseCollation) ("UsesDatabaseCollation" :: path)
+                       |> Compare.collectOption x0.MSDescription x1.MSDescription CompareGen.Collect ("MSDescription" :: path)
 
         static member Collect (x0 : DefaultConstraint, x1 : DefaultConstraint) =
                     fun path diffs ->
@@ -182,6 +182,7 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.Parent, x1.Parent) ("Parent" :: path)
                        |> CompareGen.Collect (x0.Column, x1.Column) ("Column" :: path)
                        |> CompareGen.Collect (x0.Definition, x1.Definition) ("Definition" :: path)
+                       |> Compare.collectOption x0.MSDescription x1.MSDescription CompareGen.Collect ("MSDescription" :: path)
 
         static member Collect (x0 : View, x1 : View) =
                     fun path diffs ->
@@ -193,6 +194,7 @@ type CompareGen = CompareGenCase
                        |> Compare.collectArray x0.Columns x1.Columns SortOrder.orderBy ElementId.elementId CompareGen.Collect ("Columns" :: path)
                        |> Compare.collectArray x0.Indexes x1.Indexes SortOrder.orderBy ElementId.elementId CompareGen.Collect ("Indexes" :: path)
                        |> Compare.collectArray x0.Triggers x1.Triggers SortOrder.orderBy ElementId.elementId CompareGen.Collect ("Triggers" :: path)
+                       |> Compare.collectOption x0.MSDescription x1.MSDescription CompareGen.Collect ("MSDescription" :: path)
 
         static member Collect (x0 : TableType, x1 : TableType) =
                     fun path diffs ->
@@ -206,6 +208,7 @@ type CompareGen = CompareGenCase
                        |> Compare.collectArray x0.ReferencedForeignKeys x1.ReferencedForeignKeys SortOrder.orderBy ElementId.elementId CompareGen.Collect ("ReferencedForeignKeys" :: path)
                        |> Compare.collectArray x0.CheckConstraints x1.CheckConstraints SortOrder.orderBy ElementId.elementId CompareGen.Collect ("CheckConstraints" :: path)
                        |> Compare.collectArray x0.DefaultConstraints x1.DefaultConstraints SortOrder.orderBy ElementId.elementId CompareGen.Collect ("DefaultConstraints" :: path)
+                       |> Compare.collectOption x0.MSDescription x1.MSDescription CompareGen.Collect ("MSDescription" :: path)
 
         static member Collect (x0 : Procedure, x1 : Procedure) =
                     fun path diffs ->
@@ -216,6 +219,7 @@ type CompareGen = CompareGenCase
                        |> Compare.collectArray x0.Columns x1.Columns SortOrder.orderBy ElementId.elementId CompareGen.Collect ("Columns" :: path)
                        |> CompareGen.Collect (x0.Definition, x1.Definition) ("Definition" :: path)
                        |> Compare.collectArray x0.Indexes x1.Indexes SortOrder.orderBy ElementId.elementId CompareGen.Collect ("Indexes" :: path)
+                       |> Compare.collectOption x0.MSDescription x1.MSDescription CompareGen.Collect ("MSDescription" :: path)
 
         static member Collect (x0 : Parameter, x1 : Parameter) =
                     fun path diffs ->
@@ -224,6 +228,7 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.Name, x1.Name) ("Name" :: path)
                        |> CompareGen.Collect (x0.ParameterId, x1.ParameterId) ("ParameterId" :: path)
                        |> CompareGen.Collect (x0.Datatype, x1.Datatype) ("Datatype" :: path)
+                       |> Compare.collectOption x0.MSDescription x1.MSDescription CompareGen.Collect ("MSDescription" :: path)
 
         static member Collect (x0 : XmlSchemaCollection, x1 : XmlSchemaCollection) =
                     fun path diffs ->
@@ -232,6 +237,7 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.Schema, x1.Schema) ("Schema" :: path)
                        |> CompareGen.Collect (x0.Name, x1.Name) ("Name" :: path)
                        |> CompareGen.Collect (x0.Definition, x1.Definition) ("Definition" :: path)
+                       |> Compare.collectOption x0.MSDescription x1.MSDescription CompareGen.Collect ("MSDescription" :: path)
 
         static member Collect (x0 : DatabaseTrigger, x1 : DatabaseTrigger) =
                     fun path diffs ->
@@ -240,6 +246,7 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.Definition, x1.Definition) ("Definition" :: path)
                        |> CompareGen.Collect (x0.IsDisabled, x1.IsDisabled) ("IsDisabled" :: path)
                        |> CompareGen.Collect (x0.IsInsteadOfTrigger, x1.IsInsteadOfTrigger) ("IsInsteadOfTrigger" :: path)
+                       |> Compare.collectOption x0.MSDescription x1.MSDescription CompareGen.Collect ("MSDescription" :: path)
 
         static member Collect (x0 : Synonym, x1 : Synonym) =
                     fun path diffs ->

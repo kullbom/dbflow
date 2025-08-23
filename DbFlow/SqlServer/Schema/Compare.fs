@@ -104,7 +104,14 @@ module Compare =
             diffs
         | _ -> equalCollector (x0.Name, x1.Name) ("name" :: path) diffs
     
-    //let sys_datatype (x0 : SYS_DATATYPE, x1 : SYS_DATATYPE, path, diff) = equalCollector (x0, x1) path diff
+    let datatypeSpec (x0 : DatatypeSpec, x1 : DatatypeSpec) objectCollector path diff = 
+        match x0, x1 with
+        | UserDefined, UserDefined -> diff
+        | SystemType t0, SystemType t1 -> equalCollector (t0, t1) path diff
+        | TableType o0, TableType o1 -> objectCollector (o0,o1) path diff
+        | _ -> Diff.create $"types is not the same" path x0 x1 :: diff
+
+            
 
     let indexName (x0 : Index, x1 : Index) path diff =
         match x0.IsSystemNamed, x0.Name, x1.IsSystemNamed, x1.Name with
@@ -206,7 +213,8 @@ module Generator =
    
                 sDefT<Column> "IdentityDefinition" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.identityDefinition (\"{pname}\" :: path)")
                 sDefT<Datatype> "SystemDatatype" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.equalCollector (\"{pname}\" :: path)")
-                
+                sDefT<Datatype> "DatatypeSpec" 
+                    (fun pname -> $"|> Compare.datatypeSpec (x0.{pname}, x1.{pname}) CompareGen.Collect (\"{pname}\" :: path)")
             ] |> Map.ofList
 
         let sDefNone pname = pname, fun (_ : string) -> ""
@@ -218,9 +226,8 @@ module Generator =
                 sDefNone "ModifyDate"
                 sDefNone "OrigDefinition"
 
-                // TODO: This should be part of the generated scripts
-                sDefNone "MSDescription"
-                sDefNone "ms_description"
+                // TODO: This should probably be part of the generated scripts in the future
+                sDefNone "IsAnsiPadded"
             ] |> Map.ofList
 
         let getSpecialDef pname (parentType : System.Type) (propertyType : System.Type) =
@@ -292,7 +299,7 @@ type CompareGen = CompareGenCase
         let skipObjects =
             [ 
                 "Object"
-                "ReferentialAction"; "ObjectType"; "SystemDatatype"; "IndexType"; 
+                "ReferentialAction"; "ObjectType"; "SystemDatatype"; "DatatypeSpec"; "IndexType"; 
                 "IdentityDefinition"; "SequenceDefinition"
             ]
             |> Set.ofList

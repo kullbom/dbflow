@@ -54,8 +54,8 @@ module Rule =
                 (fun db ->
                     Helpers.foldAllColumns exclude db
                         (fun acc c -> 
-                            match c.Datatype.SystemDatatype with
-                            | Some Schema.SystemDatatype.DATETIME ->
+                            match c.Datatype.DatatypeSpec with
+                            | Schema.SystemType Schema.SystemDatatype.DATETIME ->
                                 $"{c.Object.Schema.Name}.{c.Object.Name}.{c.Name}" :: acc
                             | _ -> acc)
                         []
@@ -74,10 +74,10 @@ module Rule =
                 (fun db ->
                     Helpers.foldAllColumns exclude db
                         (fun acc c -> 
-                            match c.Datatype.SystemDatatype with
-                            | Some Schema.SystemDatatype.DATETIME when not (c.Name.ToUpperInvariant().EndsWith "UTC") ->
+                            match c.Datatype.DatatypeSpec with
+                            | Schema.SystemType Schema.SystemDatatype.DATETIME when not (c.Name.ToUpperInvariant().EndsWith "UTC") ->
                                 $"{c.Object.Schema.Name}.{c.Object.Name}.{c.Name}" :: acc
-                            | Some Schema.SystemDatatype.DATETIME2 when not (c.Name.ToUpperInvariant().EndsWith "UTC") -> 
+                            | Schema.SystemType Schema.SystemDatatype.DATETIME2 when not (c.Name.ToUpperInvariant().EndsWith "UTC") -> 
                                 $"{c.Object.Schema.Name}.{c.Object.Name}.{c.Name}" :: acc
                             | _ -> acc)
                         []

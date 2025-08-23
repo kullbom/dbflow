@@ -41,7 +41,9 @@ module Trigger =
                 {
                         //object = RCMap.pick object_id objects 
                         Name = name
-                        Definition = (RCMap.pick object_id sql_modules).Definition.Trim()
+                        Definition = 
+                            let sqlModule = RCMap.pick object_id sql_modules
+                            sqlModule.Definition |> String.trim 
                         IsDisabled = readBool "is_disabled" r
                         IsInsteadOfTrigger = readBool "is_instead_of_trigger" r
 
@@ -63,7 +65,9 @@ module Trigger =
                 let object = RCMap.pick object_id objects
                 let parent = RCMap.pick parent_id objects
                 let name = readString "name" r
-                let trigger_definition = (RCMap.pick object_id sql_modules).Definition.Trim()
+                let trigger_definition = 
+                    let sqlModule = RCMap.pick object_id sql_modules
+                    sqlModule.Definition |> String.trim
                 let updated_trigger_definition = 
                     SqlParser.SqlDefinitions.updateTriggerDefinition 
                         $"[{object.Schema.Name}].[{name}]" $"[{parent.Schema.Name}].[{parent.Name}]"

@@ -7,17 +7,26 @@ The current version of DbFlow can be used for
 - generate complete scripts for a database schema that can be used for improved version control	
 - clone an existing database to a local copy that can be used for unit testing or other
 
-DbFlow supports
+### DbFlow supports
 
 - Microsoft Sql Server
 
-Planned features:
+### Known bugs/limitation
+
+- Does **not** consider ansi padding of individual columns
+- XML INDEX **is not** yet supported 
+- Disabled keys **is not** yet supprted 
+- Disabled default constraints **is not** yet supprted 
+
+### Planned features:
 
 - Replace the need for DbUp
 - Generate documentation from ms_description
 - Support for PostgreSql 
 
-To clone a database:
+## Examples 
+
+### To clone a database (F#):
 
 ```fsharp
 open Microsoft.Data.SqlClient
@@ -41,7 +50,7 @@ connection.Open()
 Execute.clone logger options dbSchema connection 
 ```
 
-To generate scripts from a database:
+### To generate scripts from a database (F#):
 
 ```fsharp
 open Microsoft.Data.SqlClient
@@ -61,4 +70,30 @@ let dbSchema =
     Execute.readSchema logger options connection
 
 Execute.generateScriptFiles options dbSchema dstDirectory   
+```
+
+### To clone a database (C#):
+
+```csharp
+var logger = LoggerModule.fromFunc(s => { });
+var options = OptionsModule.Default;
+
+using var sourceConnection = new Microsoft.Data.SqlClient.SqlConnection(sourceConnectionString);
+sourceConnection.Open();
+var schema = Execute.readSchema(logger, options, sourceConnection);
+
+var cloneDb = Execute.cloneToLocal(logger, options, schema);
+```
+
+### To generate scripts from a database (C#):
+
+```csharp
+var logger = LoggerModule.fromFunc(s => { });
+var options = OptionsModule.Default;
+
+using var sourceConnection = new Microsoft.Data.SqlClient.SqlConnection(sourceConnectionString);
+sourceConnection.Open();
+var schema = Execute.readSchema(logger, options, sourceConnection);
+
+Execute.generateScriptFiles(options, schema, destinationDirectory);
 ```

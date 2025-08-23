@@ -98,11 +98,16 @@ module DbTr =
         reader cmdText parameters (fun s r -> Set.add (f r) s) Set.empty
 
     let commit (c : IDbConnection) (i : System.Data.IsolationLevel) (DbTr t) =
-        // Should have error handling
         let tr = c.BeginTransaction(i)
-        let res = t { Connection = c; Transaction = Some tr }
-        tr.Commit ()
-        res
+        let mutable success = false
+        try 
+            let res = t { Connection = c; Transaction = Some tr }
+            tr.Commit ()
+            success <- true
+            res
+        finally
+            if not success
+            then tr.Rollback ()
         
     let commit_ c t = commit c System.Data.IsolationLevel.ReadCommitted t
 

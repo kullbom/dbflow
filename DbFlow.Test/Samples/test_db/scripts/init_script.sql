@@ -25,6 +25,41 @@ CREATE TABLE TestTable02 (
     
 )
 
+SET ANSI_PADDING OFF
+
+CREATE TABLE TestTablePadding (
+	Id CHAR(7) NOT NULL UNIQUE,
+    Content NVARCHAR(16)
+)
+
+SET ANSI_PADDING ON
+
+CREATE INDEX IX_TestTablePadding_Content1 ON TestTablePadding (Content)
+CREATE INDEX IX_TestTablePadding_Content2 ON TestTablePadding (Content)
+ALTER INDEX IX_TestTablePadding_Content2 ON TestTablePadding DISABLE
+
+-- TRIGGERS --------------------------------------------------------------------
+GO
+
+CREATE TRIGGER TR_TestTable02_Enabled ON TestTable02
+    AFTER UPDATE AS
+BEGIN
+    DECLARE @Count int = (SELECT COUNT(1) FROM Inserted);
+END
+
+GO
+
+CREATE TRIGGER TR_TestTable02_Disabled ON TestTable02
+    AFTER UPDATE AS
+BEGIN
+    DECLARE @Count int = (SELECT COUNT(1) FROM Inserted);
+END
+
+GO
+
+DISABLE TRIGGER TR_TestTable02_Disabled ON TestTable02
+
+GO
 -- INDEXES --------------------------------------------------------------------
 
 CREATE NONCLUSTERED INDEX IX_TestTable02_RefId ON TestTable02 (RefId) INCLUDE (FirstName)

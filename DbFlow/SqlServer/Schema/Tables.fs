@@ -130,7 +130,9 @@ module View =
                     Name = readString "view_name" r
                     Object = RCMap.pick objectId objects
                     
-                    Definition = (RCMap.pick objectId sql_modules).Definition.Trim()
+                    Definition = 
+                        let sqlModule = RCMap.pick objectId sql_modules
+                        sqlModule.Definition |> String.trim
 
                     Columns = RCMap.tryPick objectId columns |> Option.escape [||]
                     Indexes = RCMap.tryPick objectId indexes |> Option.escape [||]

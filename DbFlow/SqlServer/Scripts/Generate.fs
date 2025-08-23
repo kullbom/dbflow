@@ -16,7 +16,118 @@ type SchemaScriptPart =
     | ObjectDefinitions of {| Contains : int list; DependsOn : int list |}
     | XmlSchemaCollectionDefinition
 
+module Documentation =
+    let docStr (doc : string) keysAndValues =
+        let escapedDoc = doc.Replace("'", "''")
+        match keysAndValues with
+        | [key0, value0; key1, value1] ->
+            $"EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'{escapedDoc}', {key0}, {value0}, {key1}, {value1};"
+        | [key0, value0; key1, value1; key2, value2] ->
+            $"EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'{escapedDoc}', {key0}, {value0}, {key1}, {value1}, {key2}, {value2};"
+        
+        | _ -> failwithf "Can not generate documentation script for %A" keysAndValues
 
+    let database wl msDescription =
+        match msDescription with
+        | None -> ()
+        | Some doc -> 
+            wl ""
+            wl <| docStr doc ["NULL", "NULL"; "NULL", "NULL"]
+    
+    let xmlSchemaCollection wl (xmlSchema : XmlSchemaCollection) =
+        match xmlSchema.MSDescription with
+        | None -> ()
+        | Some doc -> 
+            wl ""
+            wl <| docStr doc ["N'SCHEMA'", $"[{xmlSchema.Schema.Name}]"; "N'XML SCHEMA COLLECTION'", $"[{xmlSchema.Name}]"; "NULL", "NULL"]
+
+    let schema wl (s : Schema) =
+        match s.MSDescription with
+        | None -> ()
+        | Some tableDoc -> 
+            wl ""
+            wl <| docStr tableDoc ["N'SCHEMA'", $"[{s.Name}]"; "NULL", "NULL"; "NULL", "NULL"]
+    
+    let procedure wl (p : Procedure) =
+        let pType =
+            match p.Object.ObjectType with
+            | ObjectType.SqlScalarFunction 
+            | ObjectType.SqlInlineTableValuedFunction
+            | ObjectType.SqlTableValuedFunction  -> "FUNCTION"
+            | ObjectType.SqlStoredProcedure -> "PROCEDURE"
+            | t -> failwithf "Unsupported object type %A" t
+                
+        p.Parameters
+        |> Array.fold 
+            (fun acc para ->
+                match para.MSDescription with
+                | None -> acc
+                | Some pDoc ->
+                    docStr pDoc ["N'SCHEMA'", $"[{p.Object.Schema.Name}]"; $"N'{pType}'", $"[{p.Name}]"; "N'PARAMETER'", $"'{para.Name}'"] :: acc)
+            (match p.MSDescription with
+             | None -> []
+             | Some doc -> 
+                [docStr doc ["N'SCHEMA'", $"[{p.Object.Schema.Name}]"; $"N'{pType}'", $"[{p.Name}]"; "NULL", "NULL"]])
+        |> function
+            | [] -> ()
+            | ds ->
+                wl ""
+                ds |> List.iter wl
+
+    let constraint' wl (schemaName : string) (tableName : string) constraintName msDescription =
+        match msDescription with
+        | None -> ()
+        | Some doc -> 
+            wl ""
+            wl <| docStr doc ["N'SCHEMA'", $"[{schemaName}]"; "N'TABLE'", $"[{tableName}]"; "N'CONSTRAINT'", $"[{constraintName}]"]
+            wl ""
+            wl "GO"
+    
+    let foreignKey wl (t : Table) (fk : ForeignKey) = constraint' wl t.Schema.Name t.Name fk.Name fk.MSDescription 
+    let checkConstraint wl (schemaName : string) (tableName : string) (cc : CheckConstraint) = 
+        constraint' wl schemaName tableName cc.Object.Name cc.MSDescription 
+    let defaultConstraint wl (schemaName : string) (tableName : string) (dc : DefaultConstraint) = 
+        constraint' wl schemaName tableName dc.Object.Name dc.MSDescription 
+            
+    let trigger wl (tr : Trigger) =
+        match tr.MSDescription with
+        | Some doc ->
+            wl (docStr doc ["N'SCHEMA'", $"[{tr.Parent.Schema.Name}]"; "N'TABLE'", $"[{tr.Parent.Name}]"; "N'TRIGGER'", $"[{tr.Name}]"])
+        | _ -> ()
+    
+        
+    let index wl cType (i : Index) =
+        match i.MSDescription, i.Name with
+        | Some doc, Some iName ->
+            wl (docStr doc ["N'SCHEMA'", $"[{i.Parent.Schema.Name}]"; cType, $"[{i.Parent.Name}]"; "N'INDEX'", $"[{iName}]"])
+        | _ -> ()
+    
+    let containerAndColumns wl schemaName cType cName cMSDescription (columns : Column array) =
+        columns
+        |> Array.fold 
+            (fun acc c ->
+                match c.MSDescription with
+                | None -> acc
+                | Some cd -> 
+                    docStr cd ["N'SCHEMA'", $"[{schemaName}]"; cType, $"[{cName}]"; "N'COLUMN'", $"[{c.Name}]"] :: acc)
+            (match cMSDescription with 
+             | None -> []
+             | Some tableDoc -> [docStr tableDoc ["N'SCHEMA'", $"[{schemaName}]"; cType, $"[{cName}]"; "NULL", "NULL"]])
+        |> function 
+            | [] -> () 
+            | docs ->
+                wl ""
+                docs |> List.iter wl
+
+    let table wl (t : Table) =
+        containerAndColumns wl t.Schema.Name "N'TABLE'" t.Name t.MSDescription t.Columns
+        t.Indexes
+        |> Array.iter (index wl "N'TABLE'")
+
+    let viewAndColumns wl (v : View) =
+        containerAndColumns wl v.Schema.Name "N'VIEW'" v.Name v.MSDescription v.Columns
+
+        
 let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes isTableType (columnInlineDefaults : Map<int, DefaultConstraint>) (column : Column) =
     let columnDefStr =
         match column.ComputedDefinition with
@@ -62,7 +173,7 @@ let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes 
                 else ""
             let typeStr = 
                 if opt.SchemazenCompatibility 
-                    && (column.Datatype.IsUserDefined || column.Datatype.Name = "sysname")
+                    && ((match column.Datatype.DatatypeSpec with UserDefined -> true | _ -> false ) || column.Datatype.Name = "sysname")
                 then 
                     Datatype.typeStr opt.SchemazenCompatibility false 
                         { (Map.find (int column.Datatype.SystemTypeId) allTypes) with Parameter = column.Datatype.Parameter }
@@ -75,8 +186,9 @@ let separateBy f xs =
     |> Array.fold (fun (xs, ys) x -> if f x then x :: xs, ys else xs, x :: ys) ([], [])
     |> fun (xs, ys) -> xs |> List.rev |> List.toArray, ys |> List.rev |> List.toArray
     
-let generateSettingsScript (w : System.IO.StreamWriter) (opt : Options) (s : DatabaseProperties) =
+let generateSettingsScript (w : System.IO.StreamWriter) (opt : Options) (schema : DatabaseSchema) =
     let wl : string -> unit = w.WriteLine
+    let s = schema.Properties
     let onOff isSet = if isSet then "ON" else "OFF"
     let recoveryModel = match s.recovery_model with 1uy -> "FULL" | 2uy -> "BULK_LOGGED" | 3uy -> "SIMPLE" | rm -> failwithf "Unknown recovery model %i" rm
     let parameterization = if s.is_parameterization_forced then "FORCED" else "SIMPLE"
@@ -112,8 +224,13 @@ let generateSettingsScript (w : System.IO.StreamWriter) (opt : Options) (s : Dat
     wl $"EXEC('ALTER DATABASE [' + @DB + '] SET PARAMETERIZATION {parameterization}')"
     wl $"EXEC('ALTER DATABASE [' + @DB + '] SET DATE_CORRELATION_OPTIMIZATION {onOff s.is_date_correlation_on}')"
     wl "GO"
+    
     if opt.SchemazenCompatibility
     then wl ""
+
+    if not opt.SchemazenCompatibility
+    then Documentation.database wl schema.MSDescription
+
     DatabaseDefinition
 
 
@@ -122,6 +239,10 @@ let generateSchemaScript (w : System.IO.StreamWriter) (opt : Options) (schema : 
     then w.WriteLine $"create schema [{schema.Name}] authorization [{schema.PrincipalName}]"
     else w.WriteLine $"CREATE SCHEMA [{schema.Name}] AUTHORIZATION [{schema.PrincipalName}]"
     w.WriteLine "GO"
+
+    if not opt.SchemazenCompatibility
+    then Documentation.schema w.WriteLine schema
+
     SchemaDefinition
 
 let commaSeparated (w : System.IO.StreamWriter) (indentionStr : string) xs (formatter : _ -> string) =
@@ -206,6 +327,8 @@ let generateStandardIndexScript (opt : Options) (index : Index) (parentName : st
             
 
     $"CREATE {indexTypeStr} INDEX [{indexName}] ON {parentName} ({keyColumnsStr}){includeStr}{filterStr}{withSettings}"
+
+    
 
 let generateXMLIndexScript (opt : Options) (index : Index) (parentName : string) parentIsView (indexName : string) =
     let (includeColumns, keyColumns) =
@@ -314,7 +437,14 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) ds allType
     for index in standaloneIndexes |> List.sortBy (fun i -> i.IndexId) do
         let indexStr = getIndexDefinitionStr opt parentName false index
         match indexStr with
-        | Some s -> w.WriteLine $"{s}"
+        | Some s -> 
+            w.WriteLine s
+            if not opt.SchemazenCompatibility
+            then
+                match index.IsDisabled, index.Name with
+                | true, Some iName -> 
+                    w.WriteLine $"ALTER INDEX {iName} ON {parentName} DISABLE"
+                | _ -> ()
         | None -> ()
 
     w.WriteLine ""
@@ -334,6 +464,9 @@ let generateTableScript allTypes ds (w : System.IO.StreamWriter) (opt : Options)
         generateTableScript' w opt ds allTypes false tableName 
             t.Columns t.Indexes t.CheckConstraints t.DefaultConstraints
     
+    if not opt.SchemazenCompatibility
+    then Documentation.table w.WriteLine t
+
     ObjectDefinitions {| Contains = t.Object.ObjectId :: objectIds; DependsOn = [] |}
 
 let generateTableTypeScript allTypes ds (w : System.IO.StreamWriter) (opt : Options) (t : TableType) =
@@ -353,6 +486,9 @@ let generateViewScript (w : System.IO.StreamWriter) (opt : Options) (view : View
         "GO"; "SET QUOTED_IDENTIFIER OFF "; "GO"; "SET ANSI_NULLS OFF "; "GO"; ""; "GO"
     ]
     |> List.iter w.WriteLine
+    // vProductModelCatalogDescription
+    if not opt.SchemazenCompatibility
+    then Documentation.viewAndColumns w.WriteLine view
 
     ObjectDefinitions {| Contains = [view.Object.ObjectId]; DependsOn = [] |}
 
@@ -378,6 +514,10 @@ let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options)
                         if cc.IsDisabled
                         then w.WriteLine $"ALTER TABLE {tableFullname} NOCHECK CONSTRAINT [{cc.Object.Name}]"
                 "GO" |> w.WriteLine
+
+                if not opt.SchemazenCompatibility
+                then Documentation.checkConstraint w.WriteLine schemaName tableName cc
+
                 cc.Object.ObjectId :: acc)
             []
     ObjectDefinitions {| Contains = object_ids; DependsOn = [table_object_id] |}
@@ -397,6 +537,9 @@ let generateDefaultConstraintsScript (w : System.IO.StreamWriter) (opt : Options
                 else $"ALTER TABLE {tableName} ADD CONSTRAINT [{dc.Object.Name}] DEFAULT {dc.Definition} FOR [{dc.Column.Name}]"
                 |> w.WriteLine
                 "GO" |> w.WriteLine
+
+                if not opt.SchemazenCompatibility
+                then Documentation.defaultConstraint w.WriteLine table.Schema.Name table.Name dc
                 
                 dc.Object.ObjectId :: acc)
             []
@@ -425,6 +568,9 @@ let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (tabl
                 w.WriteLine ""
                 w.WriteLine "GO"
 
+                if not opt.SchemazenCompatibility
+                then Documentation.foreignKey w.WriteLine table fk
+
                 fk.Object.ObjectId :: object_ids,
                 fk.Parent.ObjectId :: fk.Referenced.ObjectId :: depends_on)
             ([], [])
@@ -435,10 +581,15 @@ let generateTriggerScript (w : System.IO.StreamWriter) (opt : Options) (trigger 
         "SET QUOTED_IDENTIFIER ON "; "GO"; "SET ANSI_NULLS ON "; "GO"
         if opt.SchemazenCompatibility then trigger.OrigDefinition else trigger.Definition
         "GO"; "SET QUOTED_IDENTIFIER OFF "; "GO"; "SET ANSI_NULLS OFF "; "GO"; ""; 
-        $"ENABLE TRIGGER [{trigger.Object.Schema.Name}].[{trigger.Object.Name}] ON [{trigger.Parent.Schema.Name}].[{trigger.Parent.Name}]"
+        if trigger.IsDisabled
+        then $"DISABLE TRIGGER [{trigger.Object.Schema.Name}].[{trigger.Object.Name}] ON [{trigger.Parent.Schema.Name}].[{trigger.Parent.Name}]"
+        else $"ENABLE TRIGGER [{trigger.Object.Schema.Name}].[{trigger.Object.Name}] ON [{trigger.Parent.Schema.Name}].[{trigger.Parent.Name}]"
         "GO"; ""; "GO"
     ]
     |> List.iter w.WriteLine
+
+    if not opt.SchemazenCompatibility
+    then Documentation.trigger w.WriteLine trigger 
 
     ObjectDefinitions {| Contains = [trigger.Object.ObjectId]; DependsOn = [trigger.Parent.ObjectId] |}
 
@@ -449,6 +600,11 @@ let generateProcedureScript (w : System.IO.StreamWriter) (opt : Options) (p : Pr
         "GO"; "SET QUOTED_IDENTIFIER OFF "; "GO"; "SET ANSI_NULLS OFF "; "GO"; ""; "GO"
     ]
     |> List.iter w.WriteLine
+
+    if not opt.SchemazenCompatibility
+    then 
+        Documentation.procedure w.WriteLine p
+
     ObjectDefinitions {| Contains = [p.Object.ObjectId]; DependsOn = [] |}
 
 let generateSynonymScript (w : System.IO.StreamWriter) (opt : Options) (synonym : Synonym) =
@@ -464,6 +620,10 @@ let generateXmlSchemaCollectionScript (w : System.IO.StreamWriter) (opt : Option
         else $"[{s.Schema.Name}].[{s.Name}]"
     w.WriteLine $"CREATE XML SCHEMA COLLECTION {name} AS N'{s.Definition}'"
     w.WriteLine "GO"
+    
+    if not opt.SchemazenCompatibility
+    then Documentation.xmlSchemaCollection w.WriteLine s
+
     XmlSchemaCollectionDefinition
 
 (*
@@ -507,7 +667,7 @@ CREATE TYPE [ schema_name. ] type_name
 let generateUserDefinedTypeScript (types : Map<int, Datatype>) (w : System.IO.StreamWriter) (opt : Options) (t : Datatype) =
     let tDef =
         let baseType = types |> Map.find (int t.SystemTypeId)
-        Datatype.typeStr' opt.SchemazenCompatibility true baseType.Name baseType.SystemDatatype t.Parameter
+        Datatype.typeStr' opt.SchemazenCompatibility true baseType.Name baseType.DatatypeSpec t.Parameter
     let nullStr = if t.Parameter.IsNullable then "NULL" else "NOT NULL"
     w.WriteLine $"CREATE TYPE [{t.Schema.Name}].[{t.Name}] FROM {tDef} {nullStr}"
     w.WriteLine "GO"
@@ -552,14 +712,14 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
         |> List.map (fun t -> t.UserTypeId, t)
         |> Map.ofList
     
-    [db.Properties]
+    [db]
     |> dataForFolder "" (fun s -> $"props.sql") generateSettingsScript
 
     db.Schemas |> List.filter (fun s -> not s.IsSystemSchema)
     |> dataForFolder "schemas" (fun s -> $"{s.Name}.sql") generateSchemaScript
 
     db.Types
-    |> List.filter (fun t -> t.IsUserDefined && t.TableDatatype.IsNone)
+    |> List.filter (fun t -> match t.DatatypeSpec with UserDefined -> true | _ -> false)
     |> dataForFolder "user_defined_types" (fun t -> objectFilename t.Schema.Name t.Name) (generateUserDefinedTypeScript allTypes)
 
     db.TableTypes
@@ -586,6 +746,10 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
         (fun w _o (_name,view,index,def)-> 
             w.WriteLine def
             w.WriteLine "GO"
+            
+            view.Indexes
+            |> Array.iter (Documentation.index w.WriteLine "N'VIEW'")
+
             ObjectDefinitions 
                 {| 
                     Contains = match index.Object with Some o -> [o.ObjectId] | None -> []; 

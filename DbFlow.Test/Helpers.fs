@@ -9,25 +9,28 @@ open DbFlow
 open DbFlow.SqlServer
 
 module Helpers = 
-    let separateTableKeys (fullTableScript : string) =
+    let separateTableScript (fullTableScript : string) =
         fullTableScript.Split("\r\n")
         |> Array.fold 
-            (fun (sb : System.Text.StringBuilder, inlineKeys, standAloneKeys) (line : string) ->
+            (fun (sb : System.Text.StringBuilder, inlineKeys, standAloneKeys, documentation) (line : string) ->
                 match line with
                 | "" ->
                     // Filter away empty lines as well ... since I could not understand the logic behind the schemazen output 
-                    sb, inlineKeys, standAloneKeys
+                    sb, inlineKeys, standAloneKeys, documentation
                 | _ when line.StartsWith "CREATE" && not (line.StartsWith "CREATE TABLE") ->
-                    sb, inlineKeys, line :: standAloneKeys
+                    sb, inlineKeys, line :: standAloneKeys, documentation
                 | _ when line.StartsWith "   ," ->
-                    sb, line :: inlineKeys, standAloneKeys
+                    sb, line :: inlineKeys, standAloneKeys, documentation
+                | _ when line.StartsWith "EXECUTE [sys].[sp_addextendedproperty]" ->
+                    sb, inlineKeys, standAloneKeys, line :: documentation
                 | _ ->
-                    sb.AppendLine line, inlineKeys, standAloneKeys)
-            (System.Text.StringBuilder (), [], [])
-        |> fun (sb, inlineKeys, standAloneKeys) -> 
+                    sb.AppendLine line, inlineKeys, standAloneKeys, documentation)
+            (System.Text.StringBuilder (), [], [], [])
+        |> fun (sb, inlineKeys, standAloneKeys, documentation) -> 
             sb.ToString (), 
             inlineKeys |> List.sort |> List.toArray,
-            standAloneKeys |> List.sort |> List.toArray
+            standAloneKeys |> List.sort |> List.toArray,
+            documentation |> List.sort |> List.toArray
                     
     let aEqual a0 a1 = 
         (a0 |> Array.length) = (a1 |> Array.length) 
@@ -66,8 +69,8 @@ module Helpers =
 
             | "tables" ->
                 // In table definitions the key order does not seems to be deterministic
-                let (content0, inlineKeys0, standAloneKeys0) = separateTableKeys fileContent0    
-                let (content1, inlineKeys1, standAloneKeys1) = separateTableKeys fileContent1
+                let (content0, inlineKeys0, standAloneKeys0, doc0) = separateTableScript fileContent0    
+                let (content1, inlineKeys1, standAloneKeys1, doc1) = separateTableScript fileContent1
 
                 Assert.True ((content0 = content1), $"The content of {dirName}\\{file} is not the same")
 
@@ -76,6 +79,9 @@ module Helpers =
 
                 if not (aEqual standAloneKeys0 standAloneKeys1)
                 then Assert.Fail $"The content ('stand alone keys') of {dirName}\\{file} is not the same"
+
+                if not (aEqual doc0 doc1)
+                then Assert.Fail $"The content ('documentation') of {dirName}\\{file} is not the same"
                 ()
             // These folders are expected to contain identical files
             | "" // Root folder

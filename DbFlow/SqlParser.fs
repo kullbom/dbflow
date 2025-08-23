@@ -147,7 +147,7 @@ module Batches =
                                 else -1
                         if i' <> -1
                         then 
-                            match script.Substring(from, i - from).Trim() with
+                            match script.Substring(from, i - from) |> String.trim with
                             | "" -> collect acc false i' i'
                             | batch -> collect (batch :: acc) false i' i'
                         else collect acc false from i'
@@ -155,7 +155,7 @@ module Batches =
                 | _ -> collect acc false from (i + 1)
         let (batches', last) = collect [] false 0 0
         let batches =
-            match script.Substring(last).Trim() with
+            match script.Substring(last) |> String.trim with
             | "" -> batches'
             | batch -> batch :: batches'
         batches |> List.rev

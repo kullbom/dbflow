@@ -12,6 +12,8 @@ module Array =
         |> Array.map formatter
         |> fun ss -> System.String.Join (separator, ss)
 
+module String =
+    let trim (s : string) = s.Trim ()
 
 /// A reference counting map - used to ensure that all objects are referenced/used
 type RCMap<'key, 'data when 'key : comparison> = { mutable Map : Map<'key, int * 'data> }

@@ -35,27 +35,24 @@ type DatatypeParameter = {
     IsNullable : bool
 }
 
-type TableDatatype = {
-    Object : OBJECT
-}
+type DatatypeSpec =
+      UserDefined //of SystemDatatype
+    | SystemType of SystemDatatype
+    | TableType of OBJECT
 
 type Datatype = {
     Name : string
     Schema : Schema
 
     SystemTypeId : byte
-    UserTypeId : int // ID
+    UserTypeId : int // "PK"
 
     Parameter : DatatypeParameter
     
-    IsUserDefined : bool
-
-    SystemDatatype : SystemDatatype option
-    TableDatatype : TableDatatype option
-}
+    DatatypeSpec : DatatypeSpec }
 
 module Datatype =
-    let typeStr' schemazenCompatibility is_user_defined_type (dtName : string) (sys_datatype : SystemDatatype option) (p : DatatypeParameter)=
+    let typeStr' schemazenCompatibility is_user_defined_type (dtName : string) (typeSpec : DatatypeSpec) (p : DatatypeParameter)=
         let formatTypeName (tName : string) = if schemazenCompatibility then tName.ToLowerInvariant () else tName.ToUpperInvariant () 
         let plain tName =
             $"[{formatTypeName tName}]"
@@ -70,26 +67,26 @@ module Datatype =
             $"[{formatTypeName tName}]({precision})"
         let withPrecisionScale tName precision scale =
             $"[{formatTypeName tName}]({precision},{scale})"
-        match sys_datatype with
-        | Some(SystemDatatype.DATETIME2) -> 
+        match typeSpec with
+        | SystemType SystemDatatype.DATETIME2 -> 
             if schemazenCompatibility then plain dtName else withPrecision dtName p.Scale
-        | Some(SystemDatatype.DATETIMEOFFSET) -> 
+        | SystemType SystemDatatype.DATETIMEOFFSET -> 
             if schemazenCompatibility then plain dtName else withPrecision dtName p.Scale
 
-        | Some(SystemDatatype.CHAR) -> withSize dtName p.MaxLength 1s
-        | Some(SystemDatatype.VARCHAR) -> withSize dtName p.MaxLength 1s
-        | Some(SystemDatatype.NCHAR) -> withSize dtName p.MaxLength 2s
-        | Some(SystemDatatype.NVARCHAR) -> withSize dtName p.MaxLength 2s
-        | Some(SystemDatatype.BINARY) -> withSize dtName p.MaxLength 1s
-        | Some(SystemDatatype.VARBINARY) -> withSize dtName p.MaxLength 1s
+        | SystemType SystemDatatype.CHAR -> withSize dtName p.MaxLength 1s
+        | SystemType SystemDatatype.VARCHAR -> withSize dtName p.MaxLength 1s
+        | SystemType SystemDatatype.NCHAR -> withSize dtName p.MaxLength 2s
+        | SystemType SystemDatatype.NVARCHAR -> withSize dtName p.MaxLength 2s
+        | SystemType SystemDatatype.BINARY -> withSize dtName p.MaxLength 1s
+        | SystemType SystemDatatype.VARBINARY -> withSize dtName p.MaxLength 1s
 
-        | Some(SystemDatatype.DECIMAL) -> withPrecisionScale dtName p.Precision p.Scale
-        | Some(SystemDatatype.NUMERIC) -> withPrecisionScale dtName p.Precision p.Scale
+        | SystemType SystemDatatype.DECIMAL -> withPrecisionScale dtName p.Precision p.Scale
+        | SystemType SystemDatatype.NUMERIC -> withPrecisionScale dtName p.Precision p.Scale
 
         | _ -> plain dtName
 
     let typeStr schemazenCompatibility is_user_defined_type (dt : Datatype) =
-        typeStr' schemazenCompatibility is_user_defined_type dt.Name dt.SystemDatatype dt.Parameter
+        typeStr' schemazenCompatibility is_user_defined_type dt.Name dt.DatatypeSpec dt.Parameter
 
     let createSystemDataType sys_type_name =
         match sys_type_name with 
@@ -204,21 +201,16 @@ module Datatype =
                                 IsNullable = readBool "is_nullable" r
                             }
                         
-                        IsUserDefined = isUserDefined
-
-                        SystemDatatype = 
-                            if isTableType
-                            then None
-                            else Map.tryFind userTypeId systemTypes
-                        TableDatatype = 
-                            if isTableType
-                            then 
+                        DatatypeSpec =
+                            match isTableType, isUserDefined with
+                            | true, _ -> 
                                 let objectId = readInt32 "type_table_object_id" r
-                                {
-                                    Object = RCMap.pick objectId objects
-                                }
-                                |> Some
-                            else None
+                                RCMap.pick objectId objects
+                                |> TableType 
+                            | false, true ->
+                                UserDefined
+                            | false, false ->
+                                SystemType (Map.find userTypeId systemTypes)
                     }
                     m)
             Map.empty
@@ -281,13 +273,14 @@ module Column =
                 | ObjectType.SystemTable
                     -> acc
                 | _ ->
+                    let datatype = Datatype.readType types (nullable "collation_name" readString r) r
                     {
                         Name = readString "column_name" r
                         Object = object
                             
                         ColumnId = column_id
                         
-                        Datatype = Datatype.readType types (nullable "collation_name" readString r) r
+                        Datatype = datatype
                         
                         IsAnsiPadded = readBool "is_ansi_padded" r
                         ComputedDefinition = 

@@ -7,3 +7,7 @@ ALTER TABLE [SalesLT].[SalesOrderDetail] WITH CHECK ADD CONSTRAINT [FK_SalesOrde
    ON DELETE CASCADE
 
 GO
+
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Foreign key constraint referencing SalesOrderHeader.SalesOrderID.', N'SCHEMA', [SalesLT], N'TABLE', [SalesOrderDetail], N'CONSTRAINT', [FK_SalesOrderDetail_SalesOrderHeader_SalesOrderID];
+
+GO

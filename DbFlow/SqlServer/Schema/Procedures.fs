@@ -90,7 +90,9 @@ module Procedure =
                 | Some definingToken ->
                     let objectId = o.ObjectId
                     let object = RCMap.pick objectId objects // to increase the ref count
-                    let origDefinition = (RCMap.pick objectId sql_modules).Definition.Trim()
+                    let origDefinition = 
+                        let sqlModule = RCMap.pick objectId sql_modules
+                        sqlModule.Definition |> String.trim
                     {
                         Object = object
                         Name = o.Name
