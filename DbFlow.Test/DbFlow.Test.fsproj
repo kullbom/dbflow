@@ -17,6 +17,8 @@
 	<Compile Include="Helpers.fs" />
 	
 	<Compile Include="Search.fs" />
+	
+	<Compile Include="CopyData.fs" />
     <Compile Include="Tests.fs" />
     <Compile Include="CodeGenerator.fs" />
     <Compile Include="Program.fs" />

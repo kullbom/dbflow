@@ -36,6 +36,7 @@
     <Compile Include="SqlServer\Schema\CompareGen.fs" />
     <Compile Include="SqlServer\Scripts\Generate.fs" />
     <Compile Include="SqlServer\LocalDatabase.fs" />
+    <Compile Include="SqlServer\CopyData.fs" />
     <Compile Include="SqlServer\Execute.fs" />
     <Compile Include="SqlServer\Rules.fs" />
   </ItemGroup>
