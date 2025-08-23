@@ -747,8 +747,10 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
             w.WriteLine def
             w.WriteLine "GO"
             
-            view.Indexes
-            |> Array.iter (Documentation.index w.WriteLine "N'VIEW'")
+            if not opt.SchemazenCompatibility
+            then 
+                view.Indexes
+                |> Array.iter (Documentation.index w.WriteLine "N'VIEW'")
 
             ObjectDefinitions 
                 {| 
