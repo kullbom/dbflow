@@ -1,6 +1,6 @@
 ﻿# Release plan
 
-## Version 0.1.0(-beta)
+## Version 0.1.0(-beta) - 2025-08-23
 
 [x] C# friendly interface to all functionality
 [x] Add C# example 
@@ -34,61 +34,58 @@
 [x] Add support for disabled indexes
 [x] Add support for disabled check constraints
 
-## Version 0.2.0(-beta)
+## Version 0.2.0(-beta) - 2025-08-23
 
-[ ] Add (experimental) support for cloning/copy data
+[x] Add (experimental) support for cloning/copy data
 
-## Make the repo public
+## Version 0.3.0(-beta) 
 
+[ ] Improved support for cloning/copy data
+    [ ] Support for specific data (not only TopN)
 [ ] License-header in all files
 [ ] Generate to temp directory and rename when finished
 [x] Go through the schema model and clean it up... 
     [x] Specifically think through the model of types
 [ ] Investigate key constraints (read but not used today)
 [x] "LocalTempDatabase" does not match its module (...and make the module private?)
-[ ] Ta bort all svenska... t.ex. i detta dokument 
+[ ] Make the repo public
+[ ] Investigate/play with improved interface to connections
+[ ] Consider removing all references to Schemazen
 
 ## Version 1.0.0
 
 [ ] Add support for disabled default constraints
 [ ] Add support for disabled keys
 [ ] Add a case in test_db to illustrate problem with XML indexes
-[ ] There is a problem with XML indexes... see failing test AdventureWorks 2024-2022 - or search for "[XMLPATH_Person_Demographics]"
+[ ] There is a problem with XML indexes... see failing test for "AdventureWorks 2014-2022"" - or search for "[XMLPATH_Person_Demographics]"
 [ ] More flexible interface to Connections (a Union like Connection | ConnectionStr | ConnectionFactory... ?)
 [x] Ensure that the db user has suitable privileges before readSchema ( IS_ROLEMEMBER ('db_ddladmin'))
-[ ] Go through att meta data SELECTs and make sure to pick up everything (primary for the comparision)
-[ ] Add interface to find i specific table, view etc. from schema+name or similar
+[ ] Go through all the meta data SELECTs and make sure to pick up everything (primary for the comparision)
+[ ] Add interface to find a specific table, view etc. from schema+name or similar
 [ ] Consider adding concepts 
     [ ] "key" (a tuple of columns?)
     [ ] "value" (a concrete sql value of a specific type?)
-[ ] Tester som visar på problem/buggar (eller lösning på problemet):
-    [x] CHECK_CONSTRAINT väl hårdkodad vad gäller "CHECK" etc. 
-        [x] Täck ordentligt med tester
-    [ ] Test för triggers, procedures och views man bytt namn på...
-    [x] BUG: Named defaults blir fel - se [DF_TestTable01_ColWithNamedDefault]
-    [x] Index "FILLFACTOR" är inte med i de genererade scripten - och blir därför fel i kloner.
-[ ] Dokumentera alla kända problem i någon slags readme - eller som issues i github...? Eller så får fallerande test räcka...
-[ ] DbUp-kompatibel (kan använda dbo.SchemaVersion - om konfad så) 
-[x] Någon form av db compare (syfte: hitta buggar)
-[x] Test med hjälp av detta som jämför db från originalscripten med db från genererade script/clone
-[ ] Testerna klarar inte att köras parallellt - pga delade mappar?
-[ ] Support for copying data
+[ ] Add test for triggers, procedures and views that has changed name (with `sp_rename`)...
+[x] BUG: Named defaults is generated wrong - see [DF_TestTable01_ColWithNamedDefault]
+[x] Index "FILLFACTOR" is not part of the generated scripts - and generates error when clones are compared.
+[x] Add some kind of db-compare (to find more bugs)
+[x] Add test that uses db-compare (on clones) for all regression suites 
+[ ] The tests sometimes fail when run in parallell - might be the shared folders...?
+[ ] DbFlow should track executed update scripts like DbUp do
+[ ] It should be possible to configure DbFlow to be compatible with DbUp (use table dbo.SchemaVersion) 
 
-## Därpå följande version?
+## Some upcoming version?
 
+[ ] Generate documentation using something like literate programming... 
 [ ] ANSI PADDING is not supported. It is not considered in the db comparison and is not part of generated scripts.
-[ ] Något form av dokumentationsgenerering
-[ ] (Recursive) copy of data (following all FKs) - and not interfere with constraint trust!
-[ ] Support (model) for  query input/output
+[ ] Support for generating documentation
+[ ] Support (model) for query input/output
 [ ] Investigate how a "health report" can be constructed (on deploy?) (Validate Rules, compare to "dbup" scripts)
-
-## Kommande version
-
-[ ] ("DbUp") Stöd för att generera "cachade brytpunkter" som körs istället för originalen (vid behov)
-[ ] Stöd för CLR-grejor... (https://github.com/sethreno/schemazen/blob/master/Library/Models/Assembly.cs)
-[ ] Statistikstöd (Inkl. TOP-usage)
-[ ] Data import
+[ ] Support for generating cached snapshots for update-scripts - to save time on cloning
+[ ] Support for CLR types and functions...
+[ ] Support for running and storing db statistics (Incl. TOP-usage)
+[ ] Data import from files
 [ ] Support for importing data from another database - following keys and copy data recursivly ...?
-[ ] Data export
+[ ] Data export to files
 
  

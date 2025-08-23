@@ -14,10 +14,10 @@ The current version of DbFlow can be used for
 
 ### Known bugs/limitation
 
-- Does **not** consider ansi padding of individual columns
-- XML INDEX **is not** yet supported 
+- Does **not** consider `ANSI PADDING` of individual columns
+- XML indexes **is not** yet fully supported 
 - Disabled keys **is not** yet supprted 
-- Disabled default constraints **is not** yet supprted 
+- Disabled default constraints **is not** yet supported 
 
 ### Planned features:
 
