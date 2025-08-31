@@ -169,8 +169,6 @@ module DatabaseSchema =
         let (columns, columnsByObject) = Column.readAll objects types xProperties |> Logger.logTime logger "COLUMN" connection
         let triggersByParent = Trigger.readAll objects sql_modules xProperties |> Logger.logTime logger "TRIGGER" connection
         
-        // A bit strange that keyConstraints isn't used...?!
-        let keyConstraints = KeyConstraint.readAll objects xProperties connection
         let checkConstraintsByParent = 
             CheckConstraint.readAll objects columns xProperties
             |> Logger.logTime logger "CHECK_CONSTRAINT" connection

@@ -69,6 +69,7 @@ module IndexColumn =
 
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-indexes-transact-sql?view=sql-server-ver17
+// https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-key-constraints-transact-sql?view=sql-server-ver17
 
 [<RequireQualifiedAccess>]
 type IndexType =

@@ -52,40 +52,6 @@ module DefaultConstraint =
         |> RCMap.ofMap
         
 
-// https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-key-constraints-transact-sql?view=sql-server-ver17
-
-type KeyConstraint = {
-    Object : OBJECT
-    
-    IsSystemNamed : bool
-    UniqueIndexId : int
-    
-    XProperties : Map<string, string>
-}
-
-module KeyConstraint =
-    let readAll objects xProperties connection =
-        DbTr.reader
-            "SELECT kc.object_id, kc.unique_index_id, kc.is_system_named FROM sys.key_constraints kc" 
-            []
-            (fun m r ->
-                let object_id = readInt32 "object_id" r
-                Map.add
-                    object_id
-                    {
-                        Object = RCMap.pick object_id objects
-
-                        IsSystemNamed = readBool "is_system_named" r
-                        UniqueIndexId = readInt32 "unique_index_id" r
-                        
-                        XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, object_id, 0) xProperties
-                    }
-                    m)
-            Map.empty
-        |> DbTr.commit_ connection
-        |> RCMap.ofMap
-
-
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-check-constraints-transact-sql?view=sql-server-ver17
 
 type CheckConstraint = {

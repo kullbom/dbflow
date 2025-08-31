@@ -49,7 +49,7 @@
 [ ] Generate to temp directory and rename when finished
 [x] Go through the schema model and clean it up... 
     [x] Specifically think through the model of types
-[ ] Investigate key constraints (read but not used today)
+[x] Make sure that key constraints is handled correct
 [x] "LocalTempDatabase" does not match its module (...and make the module private?)
 [ ] Make the repo public
 [ ] Investigate/play with improved interface to connections

@@ -2,7 +2,7 @@ CREATE TABLE [dbo].[TestTablePadding] (
    [Id] [char](7) NOT NULL,
    [Content] [nvarchar](16) NULL
 
-   ,CONSTRAINT [UQ__TestTabl__3214EC06EC1EF315] UNIQUE NONCLUSTERED ([Id])
+   ,CONSTRAINT [UQ__TestTabl__3214EC06C3F235CC] UNIQUE NONCLUSTERED ([Id])
 )
 
 CREATE NONCLUSTERED INDEX [IX_TestTablePadding_Content1] ON [dbo].[TestTablePadding] ([Content])
