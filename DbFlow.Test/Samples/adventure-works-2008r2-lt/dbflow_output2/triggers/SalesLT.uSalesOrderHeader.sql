@@ -47,4 +47,5 @@ ENABLE TRIGGER [SalesLT].[uSalesOrderHeader] ON [SalesLT].[SalesOrderHeader]
 GO
 
 GO
+
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'AFTER UPDATE trigger that updates the RevisionNumber and ModifiedDate columns in the SalesOrderHeader table.', N'SCHEMA', [SalesLT], N'TABLE', [SalesOrderHeader], N'TRIGGER', [uSalesOrderHeader];

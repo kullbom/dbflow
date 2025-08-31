@@ -96,6 +96,16 @@ module Compare =
 
     // A few manual implementations
 
+    let xProperties (x0 : Map<string, string>, x1 : Map<string, string>) path diffs =
+        List.fold2
+            (fun diffs' (k0,v0) (k1,v1) ->
+                diffs'
+                |> equalCollector (k0, k1) path 
+                |> equalCollector (v0, v1) (k0 :: path))
+            diffs
+            (Map.toList x0)
+            (Map.toList x1)
+
     let objectName (x0 : OBJECT, x1 : OBJECT) path diffs =
         match x0.ObjectType, x1.ObjectType with
         | ObjectType.ForeignKeyConstraint, ObjectType.ForeignKeyConstraint 
@@ -225,6 +235,7 @@ module Generator =
                 sDefNone "CreateDate"
                 sDefNone "ModifyDate"
                 sDefNone "OrigDefinition"
+                sDef "XProperties" (fun pname -> $"|> Compare.xProperties (x0.{pname}, x1.{pname}) (\"{pname}\" :: path)")
 
                 // TODO: This should probably be part of the generated scripts in the future
                 sDefNone "IsAnsiPadded"

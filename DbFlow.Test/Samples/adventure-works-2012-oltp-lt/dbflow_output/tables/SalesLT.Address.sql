@@ -28,7 +28,11 @@ EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Second street addres
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'First street address line.', N'SCHEMA', [SalesLT], N'TABLE', [Address], N'COLUMN', [AddressLine1];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key for Address records.', N'SCHEMA', [SalesLT], N'TABLE', [Address], N'COLUMN', [AddressID];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Street address information for customers.', N'SCHEMA', [SalesLT], N'TABLE', [Address], NULL, NULL;
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Clustered index created by a primary key constraint.', N'SCHEMA', [SalesLT], N'TABLE', [Address], N'INDEX', [PK_Address_AddressID];
+
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key (clustered) constraint', N'SCHEMA', [SalesLT], N'TABLE', [Address], N'INDEX', [PK_Address_AddressID];
+
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Unique nonclustered constraint. Used to support replication samples.', N'SCHEMA', [SalesLT], N'TABLE', [Address], N'INDEX', [AK_Address_rowguid];
+
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Nonclustered index.', N'SCHEMA', [SalesLT], N'TABLE', [Address], N'INDEX', [IX_Address_AddressLine1_AddressLine2_City_StateProvince_PostalCode_CountryRegion];
+
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Nonclustered index.', N'SCHEMA', [SalesLT], N'TABLE', [Address], N'INDEX', [IX_Address_StateProvince];

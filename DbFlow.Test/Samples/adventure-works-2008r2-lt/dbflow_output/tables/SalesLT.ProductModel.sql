@@ -14,6 +14,9 @@ CREATE TABLE [SalesLT].[ProductModel] (
 CREATE PRIMARY XML INDEX [PXML_ProductModel_CatalogDescription] ON [SalesLT].[ProductModel] ([CatalogDescription])
 
 GO
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Clustered index created by a primary key constraint.', N'SCHEMA', [SalesLT], N'TABLE', [ProductModel], N'INDEX', [PK_ProductModel_ProductModelID];
+
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key (clustered) constraint', N'SCHEMA', [SalesLT], N'TABLE', [ProductModel], N'INDEX', [PK_ProductModel_ProductModelID];
+
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Unique nonclustered constraint. Used to support replication samples.', N'SCHEMA', [SalesLT], N'TABLE', [ProductModel], N'INDEX', [AK_ProductModel_rowguid];
+
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Unique nonclustered constraint.', N'SCHEMA', [SalesLT], N'TABLE', [ProductModel], N'INDEX', [AK_ProductModel_Name];

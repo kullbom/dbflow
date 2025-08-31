@@ -30,7 +30,7 @@ type Schema = {
 
     IsSystemSchema : bool
 
-    MSDescription : string option 
+    XProperties : Map<string, string>
 }
 
 module Schema =
@@ -38,7 +38,7 @@ module Schema =
         let sysSchemas = ["dbo"; "guest"; "sys"; "INFORMATION_SCHEMA"] |> Set.ofList
         fun name id -> id >= 16384 || Set.contains name sysSchemas
 
-    let readAll ms_descriptions connection =
+    let readAll xProperties connection =
         DbTr.reader 
             "SELECT s.name schema_name, s.schema_id, p.name principal_name FROM sys.schemas s
              INNER JOIN sys.database_principals p ON s.principal_id = p.principal_id" 
@@ -55,7 +55,7 @@ module Schema =
 
                         IsSystemSchema = isSystemSchema schemaName schemaId
                     
-                        MSDescription = RCMap.tryPick (XPropertyClass.Schema, schemaId, 0) ms_descriptions
+                        XProperties = XProperty.getXProperties (XPropertyClass.Schema, schemaId, 0) xProperties
                     } 
                     m)
             Map.empty
@@ -204,11 +204,11 @@ type XmlSchemaCollection = {
 
     Definition : string 
 
-    MSDescription : string option
+    XProperties : Map<string, string>
 }
 
 module XmlSchemaCollection = 
-    let readAll schemas ms_descriptions connection =
+    let readAll schemas xProperties connection =
         DbTr.reader
             "SELECT 
                 xc.xml_collection_id, xc.schema_id, xc.principal_id, xc.name, xc.create_date, xc.modify_date,
@@ -229,7 +229,7 @@ module XmlSchemaCollection =
 
                     Definition = readString "definition" r
 
-                    MSDescription = RCMap.tryPick (XPropertyClass.XmlSchemaCollection, xmlCollectionId, 0) ms_descriptions
+                    XProperties = XProperty.getXProperties (XPropertyClass.XmlSchemaCollection, xmlCollectionId, 0) xProperties
                 } :: acc)
             []
         |> DbTr.commit_ connection

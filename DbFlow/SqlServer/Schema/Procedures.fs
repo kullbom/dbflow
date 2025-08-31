@@ -23,11 +23,11 @@ type Parameter = {
     // encryption_algorithm_name
     // column_encryption_key_id
     // column_encryption_key_database_name
-    MSDescription : string option
+    XProperties : Map<string, string>
 }
 
 module Parameter = 
-    let readAll' objects types ms_descriptions connection =
+    let readAll' objects types xProperties connection =
         DbTr.reader
             "SELECT 
                 p.object_id, p.name, p.parameter_id,
@@ -44,13 +44,13 @@ module Parameter =
 
                     Datatype = Datatype.readType types None r
 
-                    MSDescription = RCMap.tryPick (XPropertyClass.Parameter, object_id, parameter_id) ms_descriptions
+                    XProperties = XProperty.getXProperties (XPropertyClass.Parameter, object_id, parameter_id) xProperties
                 } :: acc)
             []
         |> DbTr.commit_ connection
 
-    let readAll objects types ms_descriptions connection =
-        let parameters' = readAll' objects types ms_descriptions connection
+    let readAll objects types xProperties connection =
+        let parameters' = readAll' objects types xProperties connection
         parameters'
         |> List.groupBy (fun c -> c.Object.ObjectId)
         |> List.fold 
@@ -71,11 +71,11 @@ type Procedure = {
 
     Indexes : Index array
 
-    MSDescription : string option
+    XProperties : Map<string, string>
 } 
 
 module Procedure =
-    let readAll (objects : RCMap<_,OBJECT>) parameters columns indexes (sql_modules : RCMap<int, SqlModule>) ms_descriptions _connection =
+    let readAll (objects : RCMap<_,OBJECT>) parameters columns indexes (sql_modules : RCMap<int, SqlModule>) xProperties _connection =
         objects
         |> RCMap.fold 
             (fun acc _ _ o ->
@@ -107,7 +107,7 @@ module Procedure =
 
                         Indexes = match RCMap.tryPick objectId indexes with Some is -> is | None -> [||]
 
-                        MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, objectId, 0) ms_descriptions
+                        XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, objectId, 0) xProperties
                     } :: acc
                 | None -> acc)
             []

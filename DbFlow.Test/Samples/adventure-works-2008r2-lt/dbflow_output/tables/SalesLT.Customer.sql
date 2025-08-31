@@ -40,6 +40,9 @@ EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'A courtesy title. Fo
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'0 = The data in FirstName and LastName are stored in western style (first name, last name) order.  1 = Eastern style (last name, first name) order.', N'SCHEMA', [SalesLT], N'TABLE', [Customer], N'COLUMN', [NameStyle];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key for Customer records.', N'SCHEMA', [SalesLT], N'TABLE', [Customer], N'COLUMN', [CustomerID];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Customer information.', N'SCHEMA', [SalesLT], N'TABLE', [Customer], NULL, NULL;
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Clustered index created by a primary key constraint.', N'SCHEMA', [SalesLT], N'TABLE', [Customer], N'INDEX', [PK_Customer_CustomerID];
+
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key (clustered) constraint', N'SCHEMA', [SalesLT], N'TABLE', [Customer], N'INDEX', [PK_Customer_CustomerID];
+
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Unique nonclustered constraint. Used to support replication samples.', N'SCHEMA', [SalesLT], N'TABLE', [Customer], N'INDEX', [AK_Customer_rowguid];
+
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Nonclustered index.', N'SCHEMA', [SalesLT], N'TABLE', [Customer], N'INDEX', [IX_Customer_EmailAddress];

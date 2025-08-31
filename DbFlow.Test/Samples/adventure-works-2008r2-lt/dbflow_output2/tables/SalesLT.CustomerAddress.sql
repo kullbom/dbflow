@@ -18,5 +18,7 @@ EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'The kind of Address.
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key. Foreign key to Address.AddressID.', N'SCHEMA', [SalesLT], N'TABLE', [CustomerAddress], N'COLUMN', [AddressID];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key. Foreign key to Customer.CustomerID.', N'SCHEMA', [SalesLT], N'TABLE', [CustomerAddress], N'COLUMN', [CustomerID];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Cross-reference table mapping customers to their address(es).', N'SCHEMA', [SalesLT], N'TABLE', [CustomerAddress], NULL, NULL;
+
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key (clustered) constraint', N'SCHEMA', [SalesLT], N'TABLE', [CustomerAddress], N'INDEX', [PK_CustomerAddress_CustomerID_AddressID];
+
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Unique nonclustered constraint. Used to support replication samples.', N'SCHEMA', [SalesLT], N'TABLE', [CustomerAddress], N'INDEX', [AK_CustomerAddress_rowguid];

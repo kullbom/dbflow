@@ -125,11 +125,11 @@ type Index = {
 
     Columns : IndexColumn array
 
-    MSDescription : string option
+    XProperties : Map<string, string>
 }
 
 module Index =
-    let readAll' objects indexColumnsByIndex ms_descriptions connection =
+    let readAll' objects indexColumnsByIndex xProperties connection =
         DbTr.reader
             "SELECT 
                 i.object_id parent_object_id, kc.object_id index_object_id, 
@@ -153,11 +153,13 @@ module Index =
                     match RCMap.tryPick (parent_object_id, index_id) indexColumnsByIndex with
                     | Some cs -> cs 
                     | None -> [||]
-                let ms_description =
-                    match index_object_id, RCMap.tryPick (XPropertyClass.Index, parent_object_id, index_id) ms_descriptions with
-                    | _, Some d -> Some d
-                    | Some id, None -> RCMap.tryPick (XPropertyClass.ObjectOrColumn, id, 0) ms_descriptions
-                    | _ -> None 
+                let xProperties =
+                    let x0 = XProperty.getXProperties (XPropertyClass.Index, parent_object_id, index_id) xProperties
+                    match index_object_id with
+                    | None -> x0
+                    | Some id -> 
+                        Map.fold (fun m k v -> Map.add k v m) x0
+                            (XProperty.getXProperties (XPropertyClass.ObjectOrColumn, id, 0) xProperties)
                 {
                     Parent = parent
                     Object = object
@@ -187,13 +189,13 @@ module Index =
 
                     Columns = columns
 
-                    MSDescription = ms_description
+                    XProperties = xProperties
                 } :: acc)
             []
         |> DbTr.commit_ connection
 
-    let readAll objects indexColumnsByIndex ms_descriptions connection =
-        let indexes = readAll' objects indexColumnsByIndex ms_descriptions connection 
+    let readAll objects indexColumnsByIndex xProperties connection =
+        let indexes = readAll' objects indexColumnsByIndex xProperties connection 
         let indexesByParent =
             indexes
             |> List.groupBy (fun i -> i.Parent.ObjectId)

@@ -16,37 +16,36 @@ type SchemaScriptPart =
     | ObjectDefinitions of {| Contains : int list; DependsOn : int list |}
     | XmlSchemaCollectionDefinition
 
-module Documentation =
-    let docStr (doc : string) keysAndValues =
-        let escapedDoc = doc.Replace("'", "''")
+module XProperties =
+    let xPropStr (propName : string) (propValue : string) keysAndValues =
+        let escapedValue = propValue.Replace("'", "''")
         match keysAndValues with
         | [key0, value0; key1, value1] ->
-            $"EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'{escapedDoc}', {key0}, {value0}, {key1}, {value1};"
+            $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', N'{escapedValue}', {key0}, {value0}, {key1}, {value1};"
         | [key0, value0; key1, value1; key2, value2] ->
-            $"EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'{escapedDoc}', {key0}, {value0}, {key1}, {value1}, {key2}, {value2};"
+            $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', N'{escapedValue}', {key0}, {value0}, {key1}, {value1}, {key2}, {value2};"
         
         | _ -> failwithf "Can not generate documentation script for %A" keysAndValues
 
-    let database wl msDescription =
-        match msDescription with
-        | None -> ()
-        | Some doc -> 
-            wl ""
-            wl <| docStr doc ["NULL", "NULL"; "NULL", "NULL"]
+    let xProps (xProperties : Map<string, string>) keysAndValues f seed =
+        xProperties
+        |> Map.fold (fun acc k v -> f acc (xPropStr k v keysAndValues)) seed
+    
+    let formatXProps wl (xProperties : Map<string, string>) keysAndValues =
+        if not xProperties.IsEmpty
+        then wl ""
+        xProps xProperties keysAndValues (fun () xp -> wl xp; ()) ()
+    
+    let database wl (xProperties : Map<string, string>) =
+        formatXProps wl xProperties ["NULL", "NULL"; "NULL", "NULL"]
     
     let xmlSchemaCollection wl (xmlSchema : XmlSchemaCollection) =
-        match xmlSchema.MSDescription with
-        | None -> ()
-        | Some doc -> 
-            wl ""
-            wl <| docStr doc ["N'SCHEMA'", $"[{xmlSchema.Schema.Name}]"; "N'XML SCHEMA COLLECTION'", $"[{xmlSchema.Name}]"; "NULL", "NULL"]
+        formatXProps wl xmlSchema.XProperties 
+            ["N'SCHEMA'", $"[{xmlSchema.Schema.Name}]"; "N'XML SCHEMA COLLECTION'", $"[{xmlSchema.Name}]"; "NULL", "NULL"]
 
     let schema wl (s : Schema) =
-        match s.MSDescription with
-        | None -> ()
-        | Some tableDoc -> 
-            wl ""
-            wl <| docStr tableDoc ["N'SCHEMA'", $"[{s.Name}]"; "NULL", "NULL"; "NULL", "NULL"]
+        formatXProps wl s.XProperties
+            ["N'SCHEMA'", $"[{s.Name}]"; "NULL", "NULL"; "NULL", "NULL"]
     
     let procedure wl (p : Procedure) =
         let pType =
@@ -60,59 +59,62 @@ module Documentation =
         p.Parameters
         |> Array.fold 
             (fun acc para ->
-                match para.MSDescription with
-                | None -> acc
-                | Some pDoc ->
-                    docStr pDoc ["N'SCHEMA'", $"[{p.Object.Schema.Name}]"; $"N'{pType}'", $"[{p.Name}]"; "N'PARAMETER'", $"'{para.Name}'"] :: acc)
-            (match p.MSDescription with
-             | None -> []
-             | Some doc -> 
-                [docStr doc ["N'SCHEMA'", $"[{p.Object.Schema.Name}]"; $"N'{pType}'", $"[{p.Name}]"; "NULL", "NULL"]])
+                xProps para.XProperties
+                    ["N'SCHEMA'", $"[{p.Object.Schema.Name}]"; $"N'{pType}'", $"[{p.Name}]"; "N'PARAMETER'", $"'{para.Name}'"]
+                    (fun acc' x -> x :: acc')
+                    acc)
+            (xProps p.XProperties 
+                ["N'SCHEMA'", $"[{p.Object.Schema.Name}]"; $"N'{pType}'", $"[{p.Name}]"; "NULL", "NULL"]
+                (fun acc x -> x :: acc)
+                [])
         |> function
             | [] -> ()
             | ds ->
                 wl ""
                 ds |> List.iter wl
 
-    let constraint' wl (schemaName : string) (tableName : string) constraintName msDescription =
-        match msDescription with
-        | None -> ()
-        | Some doc -> 
-            wl ""
-            wl <| docStr doc ["N'SCHEMA'", $"[{schemaName}]"; "N'TABLE'", $"[{tableName}]"; "N'CONSTRAINT'", $"[{constraintName}]"]
-            wl ""
-            wl "GO"
+    let constraint' wl (schemaName : string) (tableName : string) constraintName xProperties =
+        xProps xProperties ["N'SCHEMA'", $"[{schemaName}]"; "N'TABLE'", $"[{tableName}]"; "N'CONSTRAINT'", $"[{constraintName}]"]
+            (fun acc x -> x :: acc)
+            []
+        |> function 
+            | [] -> ()
+            | ds -> 
+                wl ""
+                ds |> List.iter wl 
+                wl ""
+                wl "GO"
     
-    let foreignKey wl (t : Table) (fk : ForeignKey) = constraint' wl t.Schema.Name t.Name fk.Name fk.MSDescription 
+    let foreignKey wl (t : Table) (fk : ForeignKey) = constraint' wl t.Schema.Name t.Name fk.Name fk.XProperties 
     let checkConstraint wl (schemaName : string) (tableName : string) (cc : CheckConstraint) = 
-        constraint' wl schemaName tableName cc.Object.Name cc.MSDescription 
+        constraint' wl schemaName tableName cc.Object.Name cc.XProperties
     let defaultConstraint wl (schemaName : string) (tableName : string) (dc : DefaultConstraint) = 
-        constraint' wl schemaName tableName dc.Object.Name dc.MSDescription 
+        constraint' wl schemaName tableName dc.Object.Name dc.XProperties 
             
     let trigger wl (tr : Trigger) =
-        match tr.MSDescription with
-        | Some doc ->
-            wl (docStr doc ["N'SCHEMA'", $"[{tr.Parent.Schema.Name}]"; "N'TABLE'", $"[{tr.Parent.Name}]"; "N'TRIGGER'", $"[{tr.Name}]"])
-        | _ -> ()
+        formatXProps wl tr.XProperties
+            ["N'SCHEMA'", $"[{tr.Parent.Schema.Name}]"; "N'TABLE'", $"[{tr.Parent.Name}]"; "N'TRIGGER'", $"[{tr.Name}]"]
     
         
     let index wl cType (i : Index) =
-        match i.MSDescription, i.Name with
-        | Some doc, Some iName ->
-            wl (docStr doc ["N'SCHEMA'", $"[{i.Parent.Schema.Name}]"; cType, $"[{i.Parent.Name}]"; "N'INDEX'", $"[{iName}]"])
-        | _ -> ()
+        match i.Name with
+        | Some iName ->
+            formatXProps wl i.XProperties 
+                ["N'SCHEMA'", $"[{i.Parent.Schema.Name}]"; cType, $"[{i.Parent.Name}]"; "N'INDEX'", $"[{iName}]"]
+        | None -> ()
     
-    let containerAndColumns wl schemaName cType cName cMSDescription (columns : Column array) =
+    let containerAndColumns wl schemaName cType cName cXProperties (columns : Column array) =
         columns
         |> Array.fold 
             (fun acc c ->
-                match c.MSDescription with
-                | None -> acc
-                | Some cd -> 
-                    docStr cd ["N'SCHEMA'", $"[{schemaName}]"; cType, $"[{cName}]"; "N'COLUMN'", $"[{c.Name}]"] :: acc)
-            (match cMSDescription with 
-             | None -> []
-             | Some tableDoc -> [docStr tableDoc ["N'SCHEMA'", $"[{schemaName}]"; cType, $"[{cName}]"; "NULL", "NULL"]])
+                xProps c.XProperties
+                    ["N'SCHEMA'", $"[{schemaName}]"; cType, $"[{cName}]"; "N'COLUMN'", $"[{c.Name}]"]
+                    (fun acc' x -> x :: acc')
+                    acc)
+            (xProps cXProperties
+                ["N'SCHEMA'", $"[{schemaName}]"; cType, $"[{cName}]"; "NULL", "NULL"]
+                (fun acc x -> x :: acc)
+                [])
         |> function 
             | [] -> () 
             | docs ->
@@ -120,12 +122,12 @@ module Documentation =
                 docs |> List.iter wl
 
     let table wl (t : Table) =
-        containerAndColumns wl t.Schema.Name "N'TABLE'" t.Name t.MSDescription t.Columns
+        containerAndColumns wl t.Schema.Name "N'TABLE'" t.Name t.XProperties t.Columns
         t.Indexes
         |> Array.iter (index wl "N'TABLE'")
 
     let viewAndColumns wl (v : View) =
-        containerAndColumns wl v.Schema.Name "N'VIEW'" v.Name v.MSDescription v.Columns
+        containerAndColumns wl v.Schema.Name "N'VIEW'" v.Name v.XProperties v.Columns
 
         
 let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes isTableType (columnInlineDefaults : Map<int, DefaultConstraint>) (column : Column) =
@@ -229,7 +231,7 @@ let generateSettingsScript (w : System.IO.StreamWriter) (opt : Options) (schema 
     then wl ""
 
     if not opt.SchemazenCompatibility
-    then Documentation.database wl schema.MSDescription
+    then XProperties.database wl schema.XProperties
 
     DatabaseDefinition
 
@@ -241,7 +243,7 @@ let generateSchemaScript (w : System.IO.StreamWriter) (opt : Options) (schema : 
     w.WriteLine "GO"
 
     if not opt.SchemazenCompatibility
-    then Documentation.schema w.WriteLine schema
+    then XProperties.schema w.WriteLine schema
 
     SchemaDefinition
 
@@ -465,7 +467,7 @@ let generateTableScript allTypes ds (w : System.IO.StreamWriter) (opt : Options)
             t.Columns t.Indexes t.CheckConstraints t.DefaultConstraints
     
     if not opt.SchemazenCompatibility
-    then Documentation.table w.WriteLine t
+    then XProperties.table w.WriteLine t
 
     ObjectDefinitions {| Contains = t.Object.ObjectId :: objectIds; DependsOn = [] |}
 
@@ -488,7 +490,7 @@ let generateViewScript (w : System.IO.StreamWriter) (opt : Options) (view : View
     |> List.iter w.WriteLine
     // vProductModelCatalogDescription
     if not opt.SchemazenCompatibility
-    then Documentation.viewAndColumns w.WriteLine view
+    then XProperties.viewAndColumns w.WriteLine view
 
     ObjectDefinitions {| Contains = [view.Object.ObjectId]; DependsOn = [] |}
 
@@ -516,7 +518,7 @@ let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options)
                 "GO" |> w.WriteLine
 
                 if not opt.SchemazenCompatibility
-                then Documentation.checkConstraint w.WriteLine schemaName tableName cc
+                then XProperties.checkConstraint w.WriteLine schemaName tableName cc
 
                 cc.Object.ObjectId :: acc)
             []
@@ -539,7 +541,7 @@ let generateDefaultConstraintsScript (w : System.IO.StreamWriter) (opt : Options
                 "GO" |> w.WriteLine
 
                 if not opt.SchemazenCompatibility
-                then Documentation.defaultConstraint w.WriteLine table.Schema.Name table.Name dc
+                then XProperties.defaultConstraint w.WriteLine table.Schema.Name table.Name dc
                 
                 dc.Object.ObjectId :: acc)
             []
@@ -569,7 +571,7 @@ let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (tabl
                 w.WriteLine "GO"
 
                 if not opt.SchemazenCompatibility
-                then Documentation.foreignKey w.WriteLine table fk
+                then XProperties.foreignKey w.WriteLine table fk
 
                 fk.Object.ObjectId :: object_ids,
                 fk.Parent.ObjectId :: fk.Referenced.ObjectId :: depends_on)
@@ -589,7 +591,7 @@ let generateTriggerScript (w : System.IO.StreamWriter) (opt : Options) (trigger 
     |> List.iter w.WriteLine
 
     if not opt.SchemazenCompatibility
-    then Documentation.trigger w.WriteLine trigger 
+    then XProperties.trigger w.WriteLine trigger 
 
     ObjectDefinitions {| Contains = [trigger.Object.ObjectId]; DependsOn = [trigger.Parent.ObjectId] |}
 
@@ -603,7 +605,7 @@ let generateProcedureScript (w : System.IO.StreamWriter) (opt : Options) (p : Pr
 
     if not opt.SchemazenCompatibility
     then 
-        Documentation.procedure w.WriteLine p
+        XProperties.procedure w.WriteLine p
 
     ObjectDefinitions {| Contains = [p.Object.ObjectId]; DependsOn = [] |}
 
@@ -622,7 +624,7 @@ let generateXmlSchemaCollectionScript (w : System.IO.StreamWriter) (opt : Option
     w.WriteLine "GO"
     
     if not opt.SchemazenCompatibility
-    then Documentation.xmlSchemaCollection w.WriteLine s
+    then XProperties.xmlSchemaCollection w.WriteLine s
 
     XmlSchemaCollectionDefinition
 
@@ -750,7 +752,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
             if not opt.SchemazenCompatibility
             then 
                 view.Indexes
-                |> Array.iter (Documentation.index w.WriteLine "N'VIEW'")
+                |> Array.iter (XProperties.index w.WriteLine "N'VIEW'")
 
             ObjectDefinitions 
                 {| 

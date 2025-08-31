@@ -121,7 +121,7 @@ type DatabaseSchema = {
     
     Properties : DatabaseProperties
 
-    MSDescription : string option
+    XProperties : Map<string, string>
 
     //all_objects : OBJECT list
     Dependencies : Map<int, int list>
@@ -130,84 +130,84 @@ type DatabaseSchema = {
 module DatabaseSchema =
     // Read all views in order to redefined them - to get fresh/correct meta data 
     let preReadAllViews logger connection =
-        let ms_descs = RCMap.ofMap Map.empty
+        let xProperties = RCMap.ofMap Map.empty
         let dependencies = Dependency.readAll |> Logger.logTime logger "Dependencies" connection
         
-        let schemas = Schema.readAll ms_descs connection
+        let schemas = Schema.readAll xProperties connection
         let objects = OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
-        let types = Datatype.readAll schemas objects ms_descs connection
+        let types = Datatype.readAll schemas objects xProperties connection
 
         let sql_modules = SqlModule.readAll connection
         
-        let (columns, columnsByObject) = Column.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
-        let triggersByParent = Trigger.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
+        let (columns, columnsByObject) = Column.readAll objects types xProperties |> Logger.logTime logger "COLUMN" connection
+        let triggersByParent = Trigger.readAll objects sql_modules xProperties |> Logger.logTime logger "TRIGGER" connection
         
         let indexesColumnsByIndex = IndexColumn.readAll objects columns |> Logger.logTime logger "INDEX_COLUMN" connection
-        let indexesByParent = Index.readAll objects indexesColumnsByIndex ms_descs |> Logger.logTime logger "INDEX" connection
+        let indexesByParent = Index.readAll objects indexesColumnsByIndex xProperties |> Logger.logTime logger "INDEX" connection
         
         let views = 
-            View.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules ms_descs
+            View.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules xProperties
             |> Logger.logTime logger "VIEW" connection
         
         views, dependencies
 
     let read logger (options : Options) connection =
-        let ms_descs = MS_Description.readAll |> Logger.logTime logger "MS_Description" connection
+        let xProperties = XProperty.readAll |> Logger.logTime logger "XProperties" connection
         let dependencies = Dependency.readAll |> Logger.logTime logger "Dependencies" connection
         
         let dbProperties = DatabaseProperties.readAll connection
 
-        let schemas = Schema.readAll ms_descs connection
+        let schemas = Schema.readAll xProperties connection
         let objects = OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
-        let types = Datatype.readAll schemas objects ms_descs connection
+        let types = Datatype.readAll schemas objects xProperties connection
 
         let sequences = Sequence.readAll objects types connection
         let synonyms = Synonym.readAll objects connection
         let sql_modules = SqlModule.readAll connection
-        let xml_schema_collections = XmlSchemaCollection.readAll schemas ms_descs connection
+        let xml_schema_collections = XmlSchemaCollection.readAll schemas xProperties connection
         
-        let (columns, columnsByObject) = Column.readAll objects types ms_descs |> Logger.logTime logger "COLUMN" connection
-        let triggersByParent = Trigger.readAll objects sql_modules ms_descs |> Logger.logTime logger "TRIGGER" connection
+        let (columns, columnsByObject) = Column.readAll objects types xProperties |> Logger.logTime logger "COLUMN" connection
+        let triggersByParent = Trigger.readAll objects sql_modules xProperties |> Logger.logTime logger "TRIGGER" connection
         
         // A bit strange that keyConstraints isn't used...?!
-        let keyConstraints = KeyConstraint.readAll objects ms_descs connection
+        let keyConstraints = KeyConstraint.readAll objects xProperties connection
         let checkConstraintsByParent = 
-            CheckConstraint.readAll objects columns ms_descs
+            CheckConstraint.readAll objects columns xProperties
             |> Logger.logTime logger "CHECK_CONSTRAINT" connection
         let defaultConstraintsByParent = 
-            DefaultConstraint.readAll objects columns ms_descs 
+            DefaultConstraint.readAll objects columns xProperties 
             |> Logger.logTime logger "DEFAULT_CONSTRAINT" connection
         
 
         let fkColsByConstraint = ForeignKeycolumn.readAll objects columns |> Logger.logTime logger "FOREIGN_KEY_COLUMN" connection 
         let (foreignKeysByParent, foreignKeysByReferenced)  = 
-            ForeignKey.readAll objects fkColsByConstraint ms_descs 
+            ForeignKey.readAll objects fkColsByConstraint xProperties 
              |> Logger.logTime logger "FOREIGN_KEY" connection
         
         let indexesColumnsByIndex = IndexColumn.readAll objects columns |> Logger.logTime logger "INDEX_COLUMN" connection
-        let indexesByParent = Index.readAll objects indexesColumnsByIndex ms_descs |> Logger.logTime logger "INDEX" connection
+        let indexesByParent = Index.readAll objects indexesColumnsByIndex xProperties |> Logger.logTime logger "INDEX" connection
         
         let tableTypes =
-            TableType.readAll schemas objects ms_descs columnsByObject 
+            TableType.readAll schemas objects xProperties columnsByObject 
                 indexesByParent foreignKeysByParent foreignKeysByReferenced checkConstraintsByParent defaultConstraintsByParent 
             |> Logger.logTime logger "TABLE_TYPE" connection
             
 
-        let parametersByObject = Parameter.readAll objects types ms_descs connection
-        let procedures = Procedure.readAll objects parametersByObject columnsByObject indexesByParent sql_modules ms_descs connection
+        let parametersByObject = Parameter.readAll objects types xProperties connection
+        let procedures = Procedure.readAll objects parametersByObject columnsByObject indexesByParent sql_modules xProperties connection
 
         let tables = 
             Table.readAll 
                 schemas objects columnsByObject indexesByParent
                 triggersByParent foreignKeysByParent foreignKeysByReferenced 
-                checkConstraintsByParent defaultConstraintsByParent ms_descs 
+                checkConstraintsByParent defaultConstraintsByParent xProperties 
             |> Logger.logTime logger "TABLE" connection
         let views = 
-            View.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules ms_descs
+            View.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules xProperties
             |> Logger.logTime logger "VIEW" connection
         
-        let db_msDesc = RCMap.tryPick (XPropertyClass.Database, 0, 0) ms_descs
-        let db_triggers = Trigger.readAllDatabaseTriggers objects sql_modules ms_descs connection
+        let db_XProperties = XProperty.getXProperties (XPropertyClass.Database, 0, 0) xProperties
+        let db_triggers = Trigger.readAllDatabaseTriggers objects sql_modules xProperties connection
 
         let checkUnused (id : string) exclude pm =
             match RCMap.unused exclude pm with
@@ -217,7 +217,7 @@ module DatabaseSchema =
         // Verify that all objects are "picked" (referenced) by something
         if not options.BypassReferenceChecksOnLoad
         then
-            ms_descs |> checkUnused "ms_descriptions" (fun _ -> false)
+            xProperties |> checkUnused "xProperties" (fun _ -> false)
             columnsByObject |> checkUnused "columns" (fun _ -> false)
             objects |> checkUnused "objects" (fun c -> c.ObjectType = ObjectType.ServiceQueue)
             triggersByParent |> checkUnused "triggers" (fun _ -> false)
@@ -253,7 +253,7 @@ module DatabaseSchema =
 
             Properties = dbProperties
             
-            MSDescription = db_msDesc
+            XProperties = db_XProperties
 
             //all_objects = objects |> RCMap.toList
             Dependencies = dependencies

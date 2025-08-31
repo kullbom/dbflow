@@ -20,6 +20,9 @@ EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Category description
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Product category identification number of immediate ancestor category. Foreign key to ProductCategory.ProductCategoryID.', N'SCHEMA', [SalesLT], N'TABLE', [ProductCategory], N'COLUMN', [ParentProductCategoryID];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key for ProductCategory records.', N'SCHEMA', [SalesLT], N'TABLE', [ProductCategory], N'COLUMN', [ProductCategoryID];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'High-level product categorization.', N'SCHEMA', [SalesLT], N'TABLE', [ProductCategory], NULL, NULL;
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Clustered index created by a primary key constraint.', N'SCHEMA', [SalesLT], N'TABLE', [ProductCategory], N'INDEX', [PK_ProductCategory_ProductCategoryID];
+
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key (clustered) constraint', N'SCHEMA', [SalesLT], N'TABLE', [ProductCategory], N'INDEX', [PK_ProductCategory_ProductCategoryID];
+
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Unique nonclustered constraint.', N'SCHEMA', [SalesLT], N'TABLE', [ProductCategory], N'INDEX', [AK_ProductCategory_Name];
+
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Unique nonclustered constraint. Used to support replication samples.', N'SCHEMA', [SalesLT], N'TABLE', [ProductCategory], N'INDEX', [AK_ProductCategory_rowguid];

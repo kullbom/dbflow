@@ -14,11 +14,11 @@ type DefaultConstraint = {
     
     Definition : string
 
-    MSDescription : string option
+    XProperties : Map<string, string>
 }
 
 module DefaultConstraint =
-    let readAll' objects columns ms_descriptions connection =
+    let readAll' objects columns xProperties connection =
         DbTr.reader 
             "SELECT dc.object_id, dc.parent_object_id, dc.parent_column_id, dc.definition,dc.is_system_named 
              FROM sys.default_constraints dc"
@@ -36,7 +36,7 @@ module DefaultConstraint =
                     
                     Definition = readString "definition" r
 
-                    MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
+                    XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, object_id, 0) xProperties
                 } :: acc)
             []
         |> DbTr.commit_ connection
@@ -60,11 +60,11 @@ type KeyConstraint = {
     IsSystemNamed : bool
     UniqueIndexId : int
     
-    MSDescription : string option
+    XProperties : Map<string, string>
 }
 
 module KeyConstraint =
-    let readAll objects ms_descriptions connection =
+    let readAll objects xProperties connection =
         DbTr.reader
             "SELECT kc.object_id, kc.unique_index_id, kc.is_system_named FROM sys.key_constraints kc" 
             []
@@ -78,7 +78,7 @@ module KeyConstraint =
                         IsSystemNamed = readBool "is_system_named" r
                         UniqueIndexId = readInt32 "unique_index_id" r
                         
-                        MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
+                        XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, object_id, 0) xProperties
                     }
                     m)
             Map.empty
@@ -103,11 +103,11 @@ type CheckConstraint = {
     UsesDatabaseCollation : bool
     IsSystemNamed : bool
 
-    MSDescription : string option
+    XProperties : Map<string, string>
 }
 
 module CheckConstraint =
-    let readAll' objects columns ms_descriptions connection =
+    let readAll' objects columns xProperties connection =
         DbTr.reader 
             "SELECT 
                  cc.object_id, cc.parent_object_id, cc.parent_column_id, cc.is_disabled, cc.is_not_for_replication, cc.is_not_trusted, cc.definition, cc.uses_database_collation, cc.is_system_named
@@ -134,14 +134,14 @@ module CheckConstraint =
                         UsesDatabaseCollation = readBool "uses_database_collation" r
                         IsSystemNamed = readBool "is_system_named" r
 
-                        MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, objectId, 0) ms_descriptions
+                        XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, objectId, 0) xProperties
                 } :: acc)
             []
         |> DbTr.commit_ connection
             
 
-    let readAll objects columns ms_descriptions connection =
-        let checkConstraints' = readAll' objects columns ms_descriptions connection
+    let readAll objects columns xProperties connection =
+        let checkConstraints' = readAll' objects columns xProperties connection
         checkConstraints'
         |> List.groupBy (fun cc -> cc.Parent.ObjectId)
         |> List.fold 

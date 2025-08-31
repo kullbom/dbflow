@@ -12,7 +12,7 @@ type DatabaseTrigger = {
     IsDisabled : bool
     IsInsteadOfTrigger : bool
 
-    MSDescription : string option
+    XProperties : Map<string, string>
 }
 
 type Trigger = {
@@ -24,11 +24,11 @@ type Trigger = {
     IsDisabled : bool
     IsInsteadOfTrigger : bool
 
-    MSDescription : string option
+    XProperties : Map<string, string>
 }
 
 module Trigger =
-    let readAllDatabaseTriggers objects (sql_modules : RCMap<int, SqlModule>) ms_descriptions connection =
+    let readAllDatabaseTriggers objects (sql_modules : RCMap<int, SqlModule>) xProperties connection =
         DbTr.reader 
             "SELECT
                  tr.object_id, tr.name, tr.is_disabled, tr.is_instead_of_trigger 
@@ -47,12 +47,12 @@ module Trigger =
                         IsDisabled = readBool "is_disabled" r
                         IsInsteadOfTrigger = readBool "is_instead_of_trigger" r
 
-                        MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
+                        XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, object_id, 0) xProperties
                 } :: acc)
             []
         |> DbTr.commit_ connection
         
-    let readAll' (objects : RCMap<int, OBJECT>) (sql_modules : RCMap<int, SqlModule>) ms_descriptions connection =
+    let readAll' (objects : RCMap<int, OBJECT>) (sql_modules : RCMap<int, SqlModule>) xProperties connection =
         DbTr.reader 
             "SELECT
                  tr.object_id, tr.parent_id, tr.name, tr.is_disabled, tr.is_instead_of_trigger 
@@ -81,14 +81,14 @@ module Trigger =
                         IsDisabled = readBool "is_disabled" r
                         IsInsteadOfTrigger = readBool "is_instead_of_trigger" r
 
-                        MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
+                        XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, object_id, 0) xProperties
                 } :: acc)
             []
         |> DbTr.commit_ connection
             
 
-    let readAll objects sql_modules ms_descriptions connection =
-        let triggers' = readAll' objects sql_modules ms_descriptions connection
+    let readAll objects sql_modules xProperties connection =
+        let triggers' = readAll' objects sql_modules xProperties connection
         triggers' 
         |> List.groupBy (fun tr -> tr.Parent.ObjectId)
         |> List.fold 

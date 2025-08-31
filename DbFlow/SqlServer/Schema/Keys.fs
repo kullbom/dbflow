@@ -70,7 +70,7 @@ type ForeignKey = {
 
     Columns : ForeignKeycolumn array
 
-    MSDescription : string option
+    XProperties : Map<string, string>
 }
 
 module ForeignKey =
@@ -82,7 +82,7 @@ module ForeignKey =
         | 3uy -> ReferentialAction.SetDefault
         | _ -> failwithf "Unknown REFERENTIAL_ACTION: %i" b
     
-    let readAll' objects fkColumns ms_descriptions connection =
+    let readAll' objects fkColumns xProperties connection =
         DbTr.reader 
             "SELECT 
                 fk.name, fk.object_id, fk.parent_object_id, fk.referenced_object_id, fk.is_disabled, fk.is_system_named, fk.key_index_id, 
@@ -105,14 +105,14 @@ module ForeignKey =
 
                     Columns = match RCMap.tryPick object_id fkColumns with Some cs -> cs | None -> [||]
 
-                    MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, 0) ms_descriptions
+                    XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, object_id, 0) xProperties
                 } :: acc)
             []
         |> DbTr.commit_ connection
             
 
-    let readAll objects fkColumns ms_descriptions connection =
-        let foreignKeys' = readAll' objects fkColumns ms_descriptions connection
+    let readAll objects fkColumns xProperties connection =
+        let foreignKeys' = readAll' objects fkColumns xProperties connection
         let foreignKeysByParent =
             foreignKeys'
             |> List.groupBy (fun fk -> fk.Parent.ObjectId)

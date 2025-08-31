@@ -151,7 +151,7 @@ module Datatype =
             Map.empty
         |> DbTr.commit_ connection
 
-    let readAll schemas objects ms_descriptions connection =
+    let readAll schemas objects xProperties connection =
         let systemTypes = readSystemTypes connection
         DbTr.reader 
             "SELECT
@@ -244,11 +244,11 @@ type Column = {
     MaskingFunction : string option
     IsRowguidcol : bool     
 
-    MSDescription : string option
+    XProperties : Map<string,string>
 }    
 
 module Column =
-    let readAll' objects types ms_descriptions connection =
+    let readAll' objects types xProperties connection =
         DbTr.reader 
             "SELECT 
                  c.name column_name, c.object_id, c.column_id, 
@@ -306,14 +306,14 @@ module Column =
                             | false -> None
                         IsRowguidcol = readBool "is_rowguidcol" r
 
-                        MSDescription = RCMap.tryPick (XPropertyClass.ObjectOrColumn, object_id, column_id) ms_descriptions 
+                        XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, object_id, column_id) xProperties
                     } :: acc)
             []
         |> DbTr.commit_ connection
             
 
-    let readAll objects types ms_descriptions connection =
-        let columns' = readAll' objects types ms_descriptions connection
+    let readAll objects types xProperties connection =
+        let columns' = readAll' objects types xProperties connection
         let columns =
             columns' 
             |> List.map (fun c -> (c.Object.ObjectId, c.ColumnId), c)
