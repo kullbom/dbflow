@@ -44,7 +44,7 @@ EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Product color.', N'S
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Unique product identification number.', N'SCHEMA', [SalesLT], N'TABLE', [Product], N'COLUMN', [ProductNumber];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Name of the product.', N'SCHEMA', [SalesLT], N'TABLE', [Product], N'COLUMN', [Name];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key for Product records.', N'SCHEMA', [SalesLT], N'TABLE', [Product], N'COLUMN', [ProductID];
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Products sold or used in the manfacturing of sold products.', N'SCHEMA', [SalesLT], N'TABLE', [Product], NULL, NULL;
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Products sold or used in the manfacturing of sold products.', N'SCHEMA', [SalesLT], N'TABLE', [Product];
 
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key (clustered) constraint', N'SCHEMA', [SalesLT], N'TABLE', [Product], N'INDEX', [PK_Product_ProductID];
 

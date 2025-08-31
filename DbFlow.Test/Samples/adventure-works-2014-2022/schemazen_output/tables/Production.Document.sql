@@ -15,7 +15,7 @@ CREATE TABLE [Production].[Document] (
    [ModifiedDate] [datetime] NOT NULL
 
    ,CONSTRAINT [PK_Document_DocumentNode] PRIMARY KEY CLUSTERED ([DocumentNode])
-   ,CONSTRAINT [UQ__Document__F73921F7EBF1B6FC] UNIQUE NONCLUSTERED ([rowguid])
+   ,CONSTRAINT [UQ__Document__F73921F726D57E0F] UNIQUE NONCLUSTERED ([rowguid])
 )
 
 CREATE UNIQUE NONCLUSTERED INDEX [AK_Document_DocumentLevel_DocumentNode] ON [Production].[Document] ([DocumentLevel], [DocumentNode])

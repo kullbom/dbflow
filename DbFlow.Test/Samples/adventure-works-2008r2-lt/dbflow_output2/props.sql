@@ -28,4 +28,4 @@ EXEC('ALTER DATABASE [' + @DB + '] SET PARAMETERIZATION SIMPLE')
 EXEC('ALTER DATABASE [' + @DB + '] SET DATE_CORRELATION_OPTIMIZATION OFF')
 GO
 
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'AdventureWorksLT 2008R2 Sample OLTP Database', NULL, NULL, NULL, NULL;
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'AdventureWorksLT 2008R2 Sample OLTP Database', NULL, NULL;

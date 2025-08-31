@@ -54,7 +54,7 @@ EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Date the order is du
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Dates the sales order was created.', N'SCHEMA', [SalesLT], N'TABLE', [SalesOrderHeader], N'COLUMN', [OrderDate];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Incremental number to track changes to the sales order over time.', N'SCHEMA', [SalesLT], N'TABLE', [SalesOrderHeader], N'COLUMN', [RevisionNumber];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key.', N'SCHEMA', [SalesLT], N'TABLE', [SalesOrderHeader], N'COLUMN', [SalesOrderID];
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'General sales order information.', N'SCHEMA', [SalesLT], N'TABLE', [SalesOrderHeader], NULL, NULL;
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'General sales order information.', N'SCHEMA', [SalesLT], N'TABLE', [SalesOrderHeader];
 
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key (clustered) constraint', N'SCHEMA', [SalesLT], N'TABLE', [SalesOrderHeader], N'INDEX', [PK_SalesOrderHeader_SalesOrderID];
 

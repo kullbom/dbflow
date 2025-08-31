@@ -19,7 +19,7 @@ EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'ROWGUIDCOL number un
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Category description.', N'SCHEMA', [SalesLT], N'TABLE', [ProductCategory], N'COLUMN', [Name];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Product category identification number of immediate ancestor category. Foreign key to ProductCategory.ProductCategoryID.', N'SCHEMA', [SalesLT], N'TABLE', [ProductCategory], N'COLUMN', [ParentProductCategoryID];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key for ProductCategory records.', N'SCHEMA', [SalesLT], N'TABLE', [ProductCategory], N'COLUMN', [ProductCategoryID];
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'High-level product categorization.', N'SCHEMA', [SalesLT], N'TABLE', [ProductCategory], NULL, NULL;
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'High-level product categorization.', N'SCHEMA', [SalesLT], N'TABLE', [ProductCategory];
 
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key (clustered) constraint', N'SCHEMA', [SalesLT], N'TABLE', [ProductCategory], N'INDEX', [PK_ProductCategory_ProductCategoryID];
 

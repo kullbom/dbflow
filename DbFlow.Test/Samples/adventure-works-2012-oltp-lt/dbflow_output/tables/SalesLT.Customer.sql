@@ -39,7 +39,7 @@ EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'First name of the pe
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'A courtesy title. For example, Mr. or Ms.', N'SCHEMA', [SalesLT], N'TABLE', [Customer], N'COLUMN', [Title];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'0 = The data in FirstName and LastName are stored in western style (first name, last name) order.  1 = Eastern style (last name, first name) order.', N'SCHEMA', [SalesLT], N'TABLE', [Customer], N'COLUMN', [NameStyle];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key for Customer records.', N'SCHEMA', [SalesLT], N'TABLE', [Customer], N'COLUMN', [CustomerID];
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Customer information.', N'SCHEMA', [SalesLT], N'TABLE', [Customer], NULL, NULL;
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Customer information.', N'SCHEMA', [SalesLT], N'TABLE', [Customer];
 
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key (clustered) constraint', N'SCHEMA', [SalesLT], N'TABLE', [Customer], N'INDEX', [PK_Customer_CustomerID];
 

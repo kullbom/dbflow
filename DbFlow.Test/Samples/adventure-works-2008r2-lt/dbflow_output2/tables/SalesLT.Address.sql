@@ -27,7 +27,7 @@ EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Name of the city.', 
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Second street address line.', N'SCHEMA', [SalesLT], N'TABLE', [Address], N'COLUMN', [AddressLine2];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'First street address line.', N'SCHEMA', [SalesLT], N'TABLE', [Address], N'COLUMN', [AddressLine1];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key for Address records.', N'SCHEMA', [SalesLT], N'TABLE', [Address], N'COLUMN', [AddressID];
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Street address information for customers.', N'SCHEMA', [SalesLT], N'TABLE', [Address], NULL, NULL;
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Street address information for customers.', N'SCHEMA', [SalesLT], N'TABLE', [Address];
 
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key (clustered) constraint', N'SCHEMA', [SalesLT], N'TABLE', [Address], N'INDEX', [PK_Address_AddressID];
 

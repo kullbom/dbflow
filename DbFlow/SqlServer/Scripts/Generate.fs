@@ -20,6 +20,8 @@ module XProperties =
     let xPropStr (propName : string) (propValue : string) keysAndValues =
         let escapedValue = propValue.Replace("'", "''")
         match keysAndValues with
+        | [key0, value0] ->
+            $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', N'{escapedValue}', {key0}, {value0};"
         | [key0, value0; key1, value1] ->
             $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', N'{escapedValue}', {key0}, {value0}, {key1}, {value1};"
         | [key0, value0; key1, value1; key2, value2] ->

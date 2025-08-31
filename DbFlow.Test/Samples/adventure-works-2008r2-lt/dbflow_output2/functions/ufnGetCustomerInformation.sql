@@ -23,4 +23,4 @@ GO
 GO
 
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Input parameter for the table value function ufnGetCustomerInformation. Enter a valid CustomerID from the Sales.Customer table.', N'SCHEMA', [dbo], N'FUNCTION', [ufnGetCustomerInformation], N'PARAMETER', '@CustomerID';
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Table value function returning the customer ID, first name, and last name for a given customer.', N'SCHEMA', [dbo], N'FUNCTION', [ufnGetCustomerInformation], NULL, NULL;
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Table value function returning the customer ID, first name, and last name for a given customer.', N'SCHEMA', [dbo], N'FUNCTION', [ufnGetCustomerInformation];

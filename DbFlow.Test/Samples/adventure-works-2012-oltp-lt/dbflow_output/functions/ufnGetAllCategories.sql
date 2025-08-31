@@ -43,4 +43,4 @@ GO
 
 GO
 
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Table value function returning every product category and its parent, if applicable.', N'SCHEMA', [dbo], N'FUNCTION', [ufnGetAllCategories], NULL, NULL;
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Table value function returning every product category and its parent, if applicable.', N'SCHEMA', [dbo], N'FUNCTION', [ufnGetAllCategories];

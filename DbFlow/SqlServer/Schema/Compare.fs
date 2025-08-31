@@ -90,6 +90,12 @@ module Compare =
                 diffs
                 (l0 |> Array.sortBy orderBy) 
                 (l1 |> Array.sortBy orderBy)
+            
+    let collectAsList (m0 : Map<_,'a>) (m1 : Map<_,'a>) (orderBy : 'a -> 'k) (elementId : 'a -> string) (collector : 'a * 'a -> _ -> _ -> _) path diffs =
+        collectList 
+            (m0 |> Map.fold (fun acc _k v -> v :: acc) [])
+            (m1 |> Map.fold (fun acc _k v -> v :: acc) [])
+            orderBy elementId collector path diffs
 
     let equalCollector (x0 : _, x1 : _) path diff = 
         if x0 = x1 then diff else Diff.create $"{x0} != {x1}" path x0 x1 :: diff
@@ -105,6 +111,8 @@ module Compare =
             diffs
             (Map.toList x0)
             (Map.toList x1)
+
+
 
     let objectName (x0 : OBJECT, x1 : OBJECT) path diffs =
         match x0.ObjectType, x1.ObjectType with
@@ -225,6 +233,8 @@ module Generator =
                 sDefT<Datatype> "SystemDatatype" (fun pname -> $"|> Compare.collectOption x0.{pname} x1.{pname} Compare.equalCollector (\"{pname}\" :: path)")
                 sDefT<Datatype> "DatatypeSpec" 
                     (fun pname -> $"|> Compare.datatypeSpec (x0.{pname}, x1.{pname}) CompareGen.Collect (\"{pname}\" :: path)")
+                sDefT<DatabaseSchema> "TableTypes" (fun pname -> $"|> Compare.collectAsList x0.{pname} x1.{pname} SortOrder.orderBy ElementId.elementId CompareGen.Collect (\"{pname}\" :: path)")
+
             ] |> Map.ofList
 
         let sDefNone pname = pname, fun (_ : string) -> ""
