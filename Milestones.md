@@ -42,9 +42,6 @@
 
 [x] XProperties of types not scripted
 [x] Clone all xproperties - not only ms_description
-[ ] Improved support for cloning/copy data
-    [ ] (Basic) Support for specific data (not only TopN)
-    [ ] Consider some kind of support for exclusion and/or modification of cloned data (to be able to avoid certain data and anonymize)
 [ ] License-header in all files
 [ ] Generate to temp directory and rename when finished
 [x] Go through the schema model and clean it up... 
@@ -58,6 +55,9 @@
 
 ## Version 1.0.0
 
+[ ] Improved support for cloning/copy data
+    [ ] (Basic) Support for specific data (not only TopN)
+    [ ] Consider some kind of support for exclusion and/or modification of cloned data (to be able to avoid certain data and anonymize)
 [ ] Add support for disabled default constraints
 [ ] Add support for disabled keys
 [ ] Add a case in test_db to illustrate problem with XML indexes

@@ -59,7 +59,7 @@ module DbTr =
                 with e ->
                     raise (Exception($"Batch failed: {cmdText}", e)))
 
-    
+    /// Custom reader - traversing the data reader is up to the user    
     let reader' cmdText parameters f =
         DbTr
             (fun ctx -> 
@@ -76,6 +76,7 @@ module DbTr =
                 use dataReader = cmd.ExecuteReader() 
                 f dataReader)
 
+    /// Reader - folds that data of the data reader calling the fold function once per row of data
     let reader cmdText parameters f seed =
         reader' cmdText parameters
             (fun dataReader ->

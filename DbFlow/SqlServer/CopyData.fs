@@ -10,7 +10,7 @@ open Microsoft.Data.SqlClient
 
 type DataKey = obj array
 
-// Reference to a number of rows of a given table
+/// Reference to a number of rows of a given table
 type DataReference = {
     Id : string 
     Table : Schema.Table
@@ -90,34 +90,26 @@ let copyTableData' (dataRef : DataReference) (sourceConnection : System.Data.IDb
     dataRefToTempTable dataRef
     |> DbTr.bind
         (fun (_nCopied, tempTableName) ->
-            // Should use same instrastructure as other scripting
-            let cmdText = 
+            DbTr.reader'
                 $"SELECT {allColumnsStr}
                   FROM #{tempTableName} keys
                   INNER JOIN {tableName} source ON {joinCondition}"
-            DbTr (fun ctx ->
-                let cmd = ctx.Connection.CreateCommand()
-                match ctx.Transaction with
-                | Some tr -> cmd.Transaction <- tr
-                | None -> ()
-                cmd.CommandText <- cmdText
-                    
-                use dataReader = cmd.ExecuteReader ()
-            
-                // Ensure SET ANSI_NULLS ON 
-                DbTr.nonQuery "SET ANSI_NULLS ON" [] |> DbTr.exe targetConnection
-                DbTr.nonQuery "SET QUOTED_IDENTIFIER ON" [] |> DbTr.exe targetConnection
+                []
+                (fun dataReader ->            
+                    // Ensure SET ANSI_NULLS ON 
+                    DbTr.nonQuery "SET ANSI_NULLS ON" [] |> DbTr.exe targetConnection
+                    DbTr.nonQuery "SET QUOTED_IDENTIFIER ON" [] |> DbTr.exe targetConnection
 
-                // Now use the reader to pass data to the bulk insert 
-                use bc = new SqlBulkCopy(targetConnection :?> SqlConnection, bulkOptions, null) // NOT part of the source transaction
-                bc.DestinationTableName <- tableName
-                bc.BulkCopyTimeout <- 60 * 60 
+                    // Now use the reader to pass data to the bulk insert 
+                    use bc = new SqlBulkCopy(targetConnection :?> SqlConnection, bulkOptions, null) // NOT part of the source transaction
+                    bc.DestinationTableName <- tableName
+                    bc.BulkCopyTimeout <- 60 * 60 
 
-                for c in dataRef.Table.Columns do
-                    bc.ColumnMappings.Add (c.Name, c.Name) |> ignore
+                    for c in dataRef.Table.Columns do
+                        bc.ColumnMappings.Add (c.Name, c.Name) |> ignore
 
-                bc.WriteToServer dataReader
-                bc.RowsCopied))
+                    bc.WriteToServer dataReader
+                    bc.RowsCopied))
     |> DbTr.commit_ sourceConnection
 
 let rec collectDataRefs (logger : Logger) indent collected allTables (dataRef : DataReference) (sourceConnection : System.Data.IDbConnection) =
@@ -187,8 +179,8 @@ let copyData (logger : Logger) (schema : Schema.DatabaseSchema) (origDataRef : D
             match x.Content with
             | _, (df0 :: _ as dfAll) -> df0, dfAll
             | _ -> failwithf "Empty group - shoult not be possible"
-        // PROBLEM: KeyColumns skulle _kunna_ vara olika och nycklarna kan därför inte generellt kombinieras... 
-        //  Jag nöjer mig här med att identifiera och avvisa sådan fall, det är ju trots allt ovanligt att referera något annat än PK...(?!)
+        // PROBLEM: It is _possible_ that the KeyColumns is NOT the same here... 
+        //   If that is the case the data is rejected for now
         let allDataKeys =
             dfAll
             |> List.collect
