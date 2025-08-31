@@ -41,7 +41,7 @@ module Helpers =
         let acc = 
             db.Tables |> List.fold (fun acc' t -> if excludeObject t.Object then acc' else t.Columns |> foldColumns f acc') seed
         let acc = db.Views |> List.fold (fun acc' v -> if excludeObject v.Object then acc' else v.Columns |> foldColumns f acc') acc
-        let acc = db.TableTypes |> List.fold (fun acc' tt -> if excludeObject tt.Object then acc' else tt.Columns |> foldColumns f acc') acc
+        let acc = db.TableTypes |> Map.fold (fun acc' _ tt -> if excludeObject tt.Object then acc' else tt.Columns |> foldColumns f acc') acc
         let acc = db.Procedures |> List.fold (fun acc' p -> if excludeObject p.Object then acc' else p.Columns |> foldColumns f acc') acc
         acc
 

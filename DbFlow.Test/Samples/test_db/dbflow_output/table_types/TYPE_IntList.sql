@@ -13,3 +13,5 @@ CREATE TYPE [dbo].[IntList] AS TABLE (
 
 
 GO
+
+EXECUTE [sys].[sp_addextendedproperty] N'Foobar2', N'The value 456', N'SCHEMA', [dbo], N'TYPE', [IntList];

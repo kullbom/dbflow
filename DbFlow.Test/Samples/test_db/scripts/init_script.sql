@@ -71,6 +71,9 @@ CREATE NONCLUSTERED INDEX IX_TestTable02_FirstName_56 ON TestTable02 (FirstName)
 CREATE TYPE [dbo].[DateTime2Utc0] FROM datetime2(0) NULL
 CREATE TYPE [dbo].[DateTime2Utc1] FROM datetime2(3) NULL
 
+EXEC sys.sp_addextendedproperty @name=N'Foobar1', @value=N'The value 123' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TYPE', @level1name=N'DateTime2Utc1'
+GO
+
 
 CREATE TYPE [dbo].[IntList] AS TABLE (
     Id INT NOT NULL IDENTITY (1,1) PRIMARY KEY,
@@ -80,6 +83,9 @@ CREATE TYPE [dbo].[IntList] AS TABLE (
 
     ColWithNamedDefault INT NOT NULL DEFAULT (((-1)))
 )
+
+EXEC sys.sp_addextendedproperty @name=N'Foobar2', @value=N'The value 456' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TYPE', @level1name=N'IntList'
+GO
 
 
 -- SYNONYMS -------------------------------------------------------------------

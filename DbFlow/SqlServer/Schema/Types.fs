@@ -49,7 +49,10 @@ type Datatype = {
 
     Parameter : DatatypeParameter
     
-    DatatypeSpec : DatatypeSpec }
+    DatatypeSpec : DatatypeSpec
+    
+    XProperties : Map<string, string>
+}
 
 module Datatype =
     let typeStr' schemazenCompatibility is_user_defined_type (dtName : string) (typeSpec : DatatypeSpec) (p : DatatypeParameter)=
@@ -180,7 +183,10 @@ module Datatype =
                 let userTypeId = readInt32 "user_type_id" r
                 let systemTypeId = readByte "system_type_id" r
                 let isUserDefined = readBool "is_user_defined" r
-                let isTableType = readBool "is_table_type" r
+                let tableTypeObjectId = 
+                    if readBool "is_table_type" r 
+                    then Some (readInt32 "type_table_object_id" r)
+                    else None
                 let name = readString "name" r
  
                 Map.add
@@ -202,15 +208,22 @@ module Datatype =
                             }
                         
                         DatatypeSpec =
-                            match isTableType, isUserDefined with
-                            | true, _ -> 
-                                let objectId = readInt32 "type_table_object_id" r
+                            match tableTypeObjectId, isUserDefined with
+                            | Some objectId, _ -> 
                                 RCMap.pick objectId objects
                                 |> TableType 
-                            | false, true ->
+                            | None, true ->
                                 UserDefined
-                            | false, false ->
+                            | None, false ->
                                 SystemType (Map.find userTypeId systemTypes)
+
+                        XProperties = 
+                            let x0 = XProperty.getXProperties (XPropertyClass.Type, userTypeId, 0) xProperties
+                            match tableTypeObjectId with
+                            | None -> x0
+                            | Some objectId ->
+                                XProperty.getXProperties (XPropertyClass.ObjectOrColumn, objectId, 0) xProperties
+                                |> Map.fold (fun m k v -> Map.add k v m) x0
                     }
                     m)
             Map.empty

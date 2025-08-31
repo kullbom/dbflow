@@ -20,17 +20,18 @@ type TableType = {
     CheckConstraints : CheckConstraint array
     DefaultConstraints : DefaultConstraint array
 
-    XProperties : Map<string, string>
+    //XProperties : Map<string, string>
 }
 
 module TableType = 
     let readAll schemas objects xProperties columns indexes foreignKeys referencedForeignKeys checkConstraints defaultConstraints connection =
-        DbTr.reader
+        DbTr.readMap
             "SELECT tt.schema_id, tt.name type_name, tt.type_table_object_id, tt.is_memory_optimized  
              FROM sys.table_types tt"
             []
-            (fun acc r -> 
+            (fun r -> 
                 let object_id = readInt32 "type_table_object_id" r
+                object_id,
                 {
                     Schema = RCMap.pick (readInt32 "schema_id" r) schemas
                     Name = readString "type_name" r
@@ -42,15 +43,9 @@ module TableType =
                     ReferencedForeignKeys = match RCMap.tryPick object_id referencedForeignKeys with Some trs -> trs | None -> [||]
                     CheckConstraints = match RCMap.tryPick object_id checkConstraints with Some ccs -> ccs | None -> [||] 
                     DefaultConstraints = match RCMap.tryPick object_id defaultConstraints with Some dcs -> dcs | None -> [||]
-
-                    XProperties = 
-                        //RCMap.tryPick (XPROPERTY_CLASS.TYPE, object_id, 0) ms_descriptions
-                        XProperty.getXProperties (XPropertyClass.ObjectOrColumn, object_id, 0) xProperties
-                } :: acc)
-            []
+                })
         |> DbTr.commit_ connection
-        |> List.sortBy (fun t -> t.Schema.Name, t.Name)
-
+        
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-tables-transact-sql?view=sql-server-ver17
 

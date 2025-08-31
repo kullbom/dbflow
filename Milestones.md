@@ -40,7 +40,7 @@
 
 ## Version 0.3.0(-beta) 
 
-[ ] XProperties of types not scripted
+[x] XProperties of types not scripted
 [x] Clone all xproperties - not only ms_description
 [ ] Improved support for cloning/copy data
     [ ] (Basic) Support for specific data (not only TopN)

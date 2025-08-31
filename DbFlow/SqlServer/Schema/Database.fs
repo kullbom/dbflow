@@ -109,7 +109,7 @@ type DatabaseSchema = {
     Views : View list
 
     Types : Datatype list
-    TableTypes : TableType list
+    TableTypes : Map<int, TableType>
 
     Procedures : Procedure list
 

@@ -37,15 +37,15 @@ module XProperties =
         xProps xProperties keysAndValues (fun () xp -> wl xp; ()) ()
     
     let database wl (xProperties : Map<string, string>) =
-        formatXProps wl xProperties ["NULL", "NULL"; "NULL", "NULL"]
+        formatXProps wl xProperties ["NULL", "NULL";]
     
     let xmlSchemaCollection wl (xmlSchema : XmlSchemaCollection) =
         formatXProps wl xmlSchema.XProperties 
-            ["N'SCHEMA'", $"[{xmlSchema.Schema.Name}]"; "N'XML SCHEMA COLLECTION'", $"[{xmlSchema.Name}]"; "NULL", "NULL"]
+            ["N'SCHEMA'", $"[{xmlSchema.Schema.Name}]"; "N'XML SCHEMA COLLECTION'", $"[{xmlSchema.Name}]";]
 
     let schema wl (s : Schema) =
         formatXProps wl s.XProperties
-            ["N'SCHEMA'", $"[{s.Name}]"; "NULL", "NULL"; "NULL", "NULL"]
+            ["N'SCHEMA'", $"[{s.Name}]";]
     
     let procedure wl (p : Procedure) =
         let pType =
@@ -64,7 +64,7 @@ module XProperties =
                     (fun acc' x -> x :: acc')
                     acc)
             (xProps p.XProperties 
-                ["N'SCHEMA'", $"[{p.Object.Schema.Name}]"; $"N'{pType}'", $"[{p.Name}]"; "NULL", "NULL"]
+                ["N'SCHEMA'", $"[{p.Object.Schema.Name}]"; $"N'{pType}'", $"[{p.Name}]"]
                 (fun acc x -> x :: acc)
                 [])
         |> function
@@ -112,7 +112,7 @@ module XProperties =
                     (fun acc' x -> x :: acc')
                     acc)
             (xProps cXProperties
-                ["N'SCHEMA'", $"[{schemaName}]"; cType, $"[{cName}]"; "NULL", "NULL"]
+                ["N'SCHEMA'", $"[{schemaName}]"; cType, $"[{cName}]";]
                 (fun acc x -> x :: acc)
                 [])
         |> function 
@@ -128,6 +128,9 @@ module XProperties =
 
     let viewAndColumns wl (v : View) =
         containerAndColumns wl v.Schema.Name "N'VIEW'" v.Name v.XProperties v.Columns
+
+    let typeProps wl (s : Schema) (typeName : string) (xProps : Map<string, string>) =
+        formatXProps wl xProps  ["N'SCHEMA'", $"[{s.Name}]"; "N'TYPE'", $"[{typeName}]";]
 
         
 let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes isTableType (columnInlineDefaults : Map<int, DefaultConstraint>) (column : Column) =
@@ -471,14 +474,18 @@ let generateTableScript allTypes ds (w : System.IO.StreamWriter) (opt : Options)
 
     ObjectDefinitions {| Contains = t.Object.ObjectId :: objectIds; DependsOn = [] |}
 
-let generateTableTypeScript allTypes ds (w : System.IO.StreamWriter) (opt : Options) (t : TableType) =
-    let tName = $"[{t.Schema.Name}].[{t.Name}]"
+let generateTableTypeScript allTypes ds (w : System.IO.StreamWriter) (opt : Options) (ty : Datatype, tt : TableType) =
+    let tName = $"[{tt.Schema.Name}].[{tt.Name}]"
     w.WriteLine $"CREATE TYPE {tName} AS TABLE ("
     
     let object_ids =
         generateTableScript' w opt ds allTypes true tName 
-            t.Columns t.Indexes t.CheckConstraints t.DefaultConstraints
-    ObjectDefinitions {| Contains = t.Object.ObjectId :: object_ids; DependsOn = [] |}
+            tt.Columns tt.Indexes tt.CheckConstraints tt.DefaultConstraints
+    
+    if not opt.SchemazenCompatibility
+    then XProperties.typeProps w.WriteLine tt.Schema tt.Name ty.XProperties
+
+    ObjectDefinitions {| Contains = tt.Object.ObjectId :: object_ids; DependsOn = [] |}
 
 
 let generateViewScript (w : System.IO.StreamWriter) (opt : Options) (view : View)=
@@ -673,6 +680,10 @@ let generateUserDefinedTypeScript (types : Map<int, Datatype>) (w : System.IO.St
     let nullStr = if t.Parameter.IsNullable then "NULL" else "NOT NULL"
     w.WriteLine $"CREATE TYPE [{t.Schema.Name}].[{t.Name}] FROM {tDef} {nullStr}"
     w.WriteLine "GO"
+
+    if not opt.SchemazenCompatibility
+    then XProperties.typeProps w.WriteLine t.Schema t.Name t.XProperties
+
     UserDefinedTypeDefinition
 
 
@@ -722,10 +733,12 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
 
     db.Types
     |> List.filter (fun t -> match t.DatatypeSpec with UserDefined -> true | _ -> false)
-    |> dataForFolder "user_defined_types" (fun t -> objectFilename t.Schema.Name t.Name) (generateUserDefinedTypeScript allTypes)
+    |> dataForFolder "user_defined_types" (fun t -> objectFilename t.Schema.Name t.Name) 
+        (generateUserDefinedTypeScript allTypes)
 
-    db.TableTypes
-    |> dataForFolder "table_types" (fun t -> $"TYPE_{t.Name}.sql") 
+    db.Types
+    |> List.choose (fun t -> match t.DatatypeSpec with TableType o -> Some (t, Map.find o.ObjectId db.TableTypes) | _ -> None)
+    |> dataForFolder "table_types" (fun (ty, tt) -> $"TYPE_{tt.Name}.sql") 
         (generateTableTypeScript allTypes db.Properties)
 
     db.Tables 
