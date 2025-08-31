@@ -46,7 +46,6 @@
     [x] Specifically think through the model of types
 [x] Make sure that key constraints is handled correct
 [x] "LocalTempDatabase" does not match its module (...and make the module private?)
-[ ] License-header in all files
 [ ] Make the repo public
 
 ## Version 1.0.0
