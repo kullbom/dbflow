@@ -20,9 +20,12 @@ CREATE NONCLUSTERED INDEX [IX_Person_LastName_FirstName_MiddleName] ON [Person].
 CREATE UNIQUE NONCLUSTERED INDEX [AK_Person_rowguid] ON [Person].[Person] ([rowguid])
 CREATE PRIMARY XML INDEX [PXML_Person_AddContact] ON [Person].[Person] ([AdditionalContactInfo])
 CREATE PRIMARY XML INDEX [PXML_Person_Demographics] ON [Person].[Person] ([Demographics])
-CREATE PRIMARY XML INDEX [XMLPATH_Person_Demographics] ON [Person].[Person] ([Demographics])
-CREATE PRIMARY XML INDEX [XMLPROPERTY_Person_Demographics] ON [Person].[Person] ([Demographics])
-CREATE PRIMARY XML INDEX [XMLVALUE_Person_Demographics] ON [Person].[Person] ([Demographics])
+CREATE XML INDEX [XMLPATH_Person_Demographics] ON [Person].[Person] ([Demographics])
+USING XML INDEX [PXML_Person_Demographics] FOR PATH;
+CREATE XML INDEX [XMLPROPERTY_Person_Demographics] ON [Person].[Person] ([Demographics])
+USING XML INDEX [PXML_Person_Demographics] FOR PROPERTY;
+CREATE XML INDEX [XMLVALUE_Person_Demographics] ON [Person].[Person] ([Demographics])
+USING XML INDEX [PXML_Person_Demographics] FOR VALUE;
 
 GO
 

@@ -14,6 +14,7 @@ type SchemaScriptPart =
     | SchemaDefinition
     | UserDefinedTypeDefinition
     | ObjectDefinitions of {| Contains : int list; DependsOn : int list |}
+    | TriggerDefinition
     | XmlSchemaCollectionDefinition
 
 module XProperties =
@@ -316,7 +317,12 @@ let generateXMLIndexScript (opt : Options) (index : Index) (parentName : string)
     if includeColumns |> Array.isEmpty |> not
     then failwithf "XML index with included colunms not supported (index: %s)" indexName
     
-    $"CREATE PRIMARY XML INDEX [{indexName}] ON {parentName} ({keyColumnsStr})"
+    match index.XmlIndexSecondaryType with
+    | None -> $"CREATE PRIMARY XML INDEX [{indexName}] ON {parentName} ({keyColumnsStr})" 
+    | Some sType -> 
+        let indexScript = $"CREATE XML INDEX [{indexName}] ON {parentName} ({keyColumnsStr})"
+        $"{indexScript}\r\nUSING XML INDEX [{sType.PrimaryIndexName}] FOR {sType.SecondaryType};"
+        
 
 let objectFilename (schema_name :string) (object_name : string) =
     match schema_name with 
@@ -526,6 +532,10 @@ let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (tabl
                 | ReferentialAction.Cascade -> w.WriteLine "   ON DELETE CASCADE"
                 | ReferentialAction.SetNull -> w.WriteLine "   ON DELETE SET NULL"
                 | ReferentialAction.SetDefault -> w.WriteLine "   ON DELETE SET DEFAULT"
+                
+                if fk.IsDisabled 
+                then w.WriteLine $"ALTER TABLE [{table.Schema.Name}].[{table.Name}] NOCHECK {name}"
+                 
                 w.WriteLine ""
                 w.WriteLine "GO"
 
@@ -550,7 +560,8 @@ let generateTriggerScript (w : System.IO.StreamWriter) (opt : Options) (trigger 
 
     XProperties.trigger w.WriteLine trigger 
 
-    ObjectDefinitions {| Contains = [trigger.Object.ObjectId]; DependsOn = [trigger.Parent.ObjectId] |}
+    //ObjectDefinitions {| Contains = [trigger.Object.ObjectId]; DependsOn = [trigger.Parent.ObjectId] |}
+    TriggerDefinition
 
 let generateProcedureScript (w : System.IO.StreamWriter) (opt : Options) (p : Procedure) =
     [
@@ -648,7 +659,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
                         | UserDefinedTypeDefinition -> false, 2,  [],[]
                         | ObjectDefinitions x -> false, 3, x.Contains, x.DependsOn
                         | XmlSchemaCollectionDefinition -> false, 4, [], []
-                        
+                        | TriggerDefinition -> false, 5, [], []
                     isDatabaseDefinition,
                     {
                         Contains = Set.ofList containsObjects

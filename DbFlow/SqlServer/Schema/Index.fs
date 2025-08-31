@@ -70,6 +70,7 @@ module IndexColumn =
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-indexes-transact-sql?view=sql-server-ver17
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-key-constraints-transact-sql?view=sql-server-ver17
+// https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-xml-indexes-transact-sql?view=sql-server-ver17
 
 [<RequireQualifiedAccess>]
 type IndexType =
@@ -99,6 +100,7 @@ module IndexType =
         | 9uy -> IndexType.Json
         | c -> failwithf "Unknwon index type: %i" c
 
+type XmlIndexSecondaryType = { PrimaryIndexName : string; SecondaryType : string }
 
 type Index = {
     Parent : OBJECT // The object to which this index belongs
@@ -123,7 +125,9 @@ type Index = {
     Filter : string option 
     //suppress_dup_key_messages : bool  // Introduced in 2017
     //auto_created : bool // Introduced in 2017
-
+    
+    XmlIndexSecondaryType : XmlIndexSecondaryType option
+    
     Columns : IndexColumn array
 
     XProperties : Map<string, string>
@@ -137,9 +141,13 @@ module Index =
                 i.name, i.index_id, i.type index_type, i.is_unique, i.data_space_id, i.ignore_dup_key, i.is_primary_key, i.is_unique_constraint,
                 ISNULL(kc.is_system_named, 0) is_system_named,
                 i.fill_factor, i.is_padded, i.is_disabled, i.is_hypothetical, /* i.is_ignored_in_optimization, */
-                i.allow_row_locks, i.allow_page_locks, i.has_filter, i.filter_definition, i.compression_delay /*, i.suppress_dup_key_messages, i.auto_created */
+                i.allow_row_locks, i.allow_page_locks, i.has_filter, i.filter_definition, i.compression_delay, /*, i.suppress_dup_key_messages, i.auto_created */
+                xi.secondary_type_desc AS xml_index_secondary_type_desc,
+                pi.name AS xml_index_primary_index_name
              FROM sys.indexes i
-             LEFT OUTER JOIN sys.key_constraints kc ON i.object_id = kc.parent_object_id AND i.name = kc.name"
+             LEFT OUTER JOIN sys.key_constraints kc ON i.object_id = kc.parent_object_id AND i.name = kc.name
+             LEFT OUTER JOIN sys.xml_indexes xi ON i.object_id = xi.object_id AND i.index_id = xi.index_id
+             LEFT OUTER JOIN sys.indexes pi ON pi.object_id = xi.object_id AND pi.index_id = xi.using_xml_index_id"
             []
             (fun acc r -> 
                 let index_object_id = nullable "index_object_id" readInt32 r
@@ -187,7 +195,12 @@ module Index =
                         | false -> None
                     //suppress_dup_key_messages = readBool "suppress_dup_key_messages" r
                     //auto_created = readBool "auto_created" r
-
+                    XmlIndexSecondaryType = 
+                        match nullable "xml_index_primary_index_name" readString r with
+                        | None -> None
+                        | Some piName ->
+                            let sType = readString "xml_index_secondary_type_desc" r 
+                            Some { SecondaryType = sType; PrimaryIndexName = piName }
                     Columns = columns
 
                     XProperties = xProperties

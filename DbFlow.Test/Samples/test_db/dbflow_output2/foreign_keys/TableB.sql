@@ -1,0 +1,5 @@
+ALTER TABLE [dbo].[TableB] WITH CHECK ADD CONSTRAINT [FK_TableB_TableA]
+   FOREIGN KEY([AId]) REFERENCES [dbo].[TableA] ([Id])
+ALTER TABLE [dbo].[TableB] NOCHECK CONSTRAINT [FK_TableB_TableA]
+
+GO
