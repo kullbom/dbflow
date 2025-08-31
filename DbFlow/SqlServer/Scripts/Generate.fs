@@ -14,7 +14,6 @@ type SchemaScriptPart =
     | SchemaDefinition
     | UserDefinedTypeDefinition
     | ObjectDefinitions of {| Contains : int list; DependsOn : int list |}
-    | TriggerDefinition
     | XmlSchemaCollectionDefinition
 
 module XProperties =
@@ -434,7 +433,7 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) ds allType
     
 
 let generateTableScript allTypes ds (w : System.IO.StreamWriter) (opt : Options) (t : Table) =
-    let tableName = $"[{t.Schema.Name}].[{t.Name}]"
+    let tableName = Table.fullName t
     w.WriteLine $"CREATE TABLE {tableName} ("
     
     let objectIds =
@@ -499,7 +498,7 @@ let generateDefaultConstraintsScript (w : System.IO.StreamWriter) (opt : Options
         |> Array.sortBy (fun dc -> dc.Object.ObjectId)
         |> Array.fold
             (fun acc dc ->
-                let tableName = $"[{table.Schema.Name}].[{table.Name}]"
+                let tableName = Table.fullName table
                 if dc.IsSystemNamed
                 then $"ALTER TABLE {tableName} ADD DEFAULT {dc.Definition} FOR [{dc.Column.Name}]"
                 else $"ALTER TABLE {tableName} ADD CONSTRAINT [{dc.Object.Name}] DEFAULT {dc.Definition} FOR [{dc.Column.Name}]"
@@ -560,8 +559,8 @@ let generateTriggerScript (w : System.IO.StreamWriter) (opt : Options) (trigger 
 
     XProperties.trigger w.WriteLine trigger 
 
-    //ObjectDefinitions {| Contains = [trigger.Object.ObjectId]; DependsOn = [trigger.Parent.ObjectId] |}
-    TriggerDefinition
+    ObjectDefinitions {| Contains = [trigger.Object.ObjectId]; DependsOn = [trigger.Parent.ObjectId] |}
+    
 
 let generateProcedureScript (w : System.IO.StreamWriter) (opt : Options) (p : Procedure) =
     [
@@ -659,7 +658,6 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
                         | UserDefinedTypeDefinition -> false, 2,  [],[]
                         | ObjectDefinitions x -> false, 3, x.Contains, x.DependsOn
                         | XmlSchemaCollectionDefinition -> false, 4, [], []
-                        | TriggerDefinition -> false, 5, [], []
                     isDatabaseDefinition,
                     {
                         Contains = Set.ofList containsObjects

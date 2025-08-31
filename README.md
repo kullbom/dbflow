@@ -14,8 +14,6 @@ The current version of DbFlow can be used for
 
 ### Known bugs/limitation
 
-- Disabled keys **is not** yet supprted 
-- Disabled default constraints **is not** yet supported 
 - Does **not** consider `ANSI PADDING` of individual columns
 - XML indexes **is not** yet fully supported 
 

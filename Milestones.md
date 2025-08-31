@@ -47,6 +47,10 @@
 [x] Make sure that key constraints is handled correct
 [x] "LocalTempDatabase" does not match its module (...and make the module private?)
 
+## Version X
+
+[x] Add support for disabled keys
+
 ## Version 1.0.0
 
 [ ] There is a problem with XML indexes... see failing test for "AdventureWorks 2014-2022"" - or search for "[XMLPATH_Person_Demographics]"
@@ -55,8 +59,6 @@
 [ ] Improved support for cloning/copy data
     [ ] (Basic) Support for specific data (not only TopN)
     [ ] Consider some kind of support for exclusion and/or modification of cloned data (to be able to avoid certain data and anonymize)
-[ ] Add support for disabled default constraints
-[ ] Add support for disabled keys
 [ ] Add a case in test_db to illustrate problem with XML indexes
 [x] Ensure that the db user has suitable privileges before readSchema (IS_ROLEMEMBER ('db_ddladmin'))
 [ ] Go through all the meta data SELECTs and make sure to pick up everything (primary for the comparision)
@@ -69,7 +71,7 @@
 [x] Add some kind of db-compare (to find more bugs)
 [x] Add test that uses db-compare (on clones) for all regression suites 
 [x] Index "FILLFACTOR" is not part of the generated scripts - and generates error when clones are compared.
-[ ] The tests sometimes fail when run in parallell - might be the shared folders...?
+[x] The tests sometimes fail when run in parallell - might be the shared folders...?
 [ ] DbFlow should track executed update scripts like DbUp do
 [ ] It should be possible to configure DbFlow to be compatible with DbUp (use table dbo.SchemaVersion) 
 

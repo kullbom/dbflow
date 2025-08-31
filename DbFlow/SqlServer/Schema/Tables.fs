@@ -68,6 +68,8 @@ type Table = {
 }
 
 module Table = 
+    let fullName (t : Table) = $"[{t.Schema.Name}].[{t.Name}]"
+    
     let readAll schemas objects columns indexes triggers foreignKeys referencedForeignKeys checkConstraints defaultConstraints xProperties connection =
         DbTr.reader 
             "SELECT t.name table_name, t.object_id, t.schema_id FROM sys.tables t" 

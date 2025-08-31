@@ -1,0 +1,2 @@
+ALTER TABLE [dbo].[TableB] ADD CONSTRAINT [DC_TableB_AId] DEFAULT ((0)) FOR [AId]
+GO
