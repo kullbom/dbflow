@@ -37,7 +37,7 @@
 
 [x] Add (experimental) support for cloning/copy data
 
-## Version 0.3.0(-beta) 
+## Version 0.3.0 - 2025-08-31
 
 [x] XProperties of types not scripted
 [x] Clone all xproperties - not only ms_description
