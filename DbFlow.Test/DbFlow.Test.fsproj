@@ -12,8 +12,6 @@
 	<Compile Include="Examples.fs" />
 	<None Include="Samples\**\*.*" />
 	
-	<Compile Include="DbUp.fs" />
-	
 	<Compile Include="Helpers.fs" />
 	
 	<Compile Include="Search.fs" />
@@ -29,9 +27,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="dbup-sqlserver" Version="6.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageReference Include="SchemaZen.Library" Version="2.2.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />

@@ -22,7 +22,6 @@
     [x] Add all (relevant) db settings to the model
     [x] Add collation to columns (script) where not the same as the database default
     [x] Add settings/property file 
-    [x] Include root folder in the schemazen compatibility tests
 [x] There is a problem with (comparison of) collation_name
 [x] Should have the possibility to create a LocalTempDatabase as a clone of a source in one step
 [x] There is a problem with (comparison of) is_not-trusted of check constraints
@@ -42,26 +41,25 @@
 
 [x] XProperties of types not scripted
 [x] Clone all xproperties - not only ms_description
-[ ] License-header in all files
-[ ] Generate to temp directory and rename when finished
+[x] Generate to temp directory and rename when finished
 [x] Go through the schema model and clean it up... 
     [x] Specifically think through the model of types
 [x] Make sure that key constraints is handled correct
 [x] "LocalTempDatabase" does not match its module (...and make the module private?)
+[ ] License-header in all files
 [ ] Make the repo public
-[ ] Investigate/play with improved interface to connections
-    [ ] a Union like Connection | ConnectionStr | ConnectionFactory... ?
-[ ] Consider removing all references to Schemazen
 
 ## Version 1.0.0
 
+[ ] There is a problem with XML indexes... see failing test for "AdventureWorks 2014-2022"" - or search for "[XMLPATH_Person_Demographics]"
+[ ] Investigate/play with improved interface to connections
+    [ ] a Union like Connection | ConnectionStr | ConnectionFactory... ?
 [ ] Improved support for cloning/copy data
     [ ] (Basic) Support for specific data (not only TopN)
     [ ] Consider some kind of support for exclusion and/or modification of cloned data (to be able to avoid certain data and anonymize)
 [ ] Add support for disabled default constraints
 [ ] Add support for disabled keys
 [ ] Add a case in test_db to illustrate problem with XML indexes
-[ ] There is a problem with XML indexes... see failing test for "AdventureWorks 2014-2022"" - or search for "[XMLPATH_Person_Demographics]"
 [x] Ensure that the db user has suitable privileges before readSchema (IS_ROLEMEMBER ('db_ddladmin'))
 [ ] Go through all the meta data SELECTs and make sure to pick up everything (primary for the comparision)
 [ ] Add interface to find a specific table, view etc. from schema+name or similar

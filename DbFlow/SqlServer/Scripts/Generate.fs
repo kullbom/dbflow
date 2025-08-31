@@ -142,34 +142,25 @@ let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes 
             let persistStr = 
                 if computed.IsPersisted 
                 then 
-                    if opt.SchemazenCompatibility || column.Datatype.Parameter.IsNullable 
+                    if column.Datatype.Parameter.IsNullable 
                     then " PERSISTED" 
                     else " PERSISTED NOT NULL"
                 else ""
             $"AS {computed.ComputedDefinition}{persistStr}"
         | None -> 
             let collateStr = 
-                if opt.SchemazenCompatibility
-                then ""
-                else
-                    match column.Datatype.Parameter.CollationName with
-                    | Some c when c <> dbProps.collation_name -> $" COLLATE {c}"
-                    | _ -> ""
+                match column.Datatype.Parameter.CollationName with
+                | Some c when c <> dbProps.collation_name -> $" COLLATE {c}"
+                | _ -> ""
             let nullStr = if column.Datatype.Parameter.IsNullable then "NULL" else "NOT NULL"
             let maskedStr =
-                if opt.SchemazenCompatibility
-                then ""
-                else 
-                    match column.MaskingFunction with
-                    | Some m -> $" MASKED WITH ( FUNCTION = '{m}' )"
-                    | None -> ""
+                match column.MaskingFunction with
+                | Some m -> $" MASKED WITH ( FUNCTION = '{m}' )"
+                | None -> ""
             let identityStr = 
-                if opt.SchemazenCompatibility && isTableType
-                then ""
-                else
-                    match column.IdentityDefinition with
-                    | Some def -> $"\r\n      IDENTITY ({def.SeedValue},{def.IncrementValue})"
-                    | None -> ""
+                match column.IdentityDefinition with
+                | Some def -> $"\r\n      IDENTITY ({def.SeedValue},{def.IncrementValue})"
+                | None -> ""
             let checkStr = 
                 match Map.tryFind column.ColumnId columnInlineDefaults with
                 | Some dc -> $"\r\n       DEFAULT {dc.Definition}"
@@ -179,12 +170,7 @@ let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes 
                 then " ROWGUIDCOL "
                 else ""
             let typeStr = 
-                if opt.SchemazenCompatibility 
-                    && ((match column.Datatype.DatatypeSpec with UserDefined -> true | _ -> false ) || column.Datatype.Name = "sysname")
-                then 
-                    Datatype.typeStr opt.SchemazenCompatibility false 
-                        { (Map.find (int column.Datatype.SystemTypeId) allTypes) with Parameter = column.Datatype.Parameter }
-                else Datatype.typeStr opt.SchemazenCompatibility false column.Datatype
+                Datatype.typeStr column.Datatype
             $"{typeStr}{collateStr}{maskedStr} {nullStr}{identityStr}{checkStr}{rowGuidStr}"
     $"[{column.Name}] {columnDefStr}"
 
@@ -232,23 +218,16 @@ let generateSettingsScript (w : System.IO.StreamWriter) (opt : Options) (schema 
     wl $"EXEC('ALTER DATABASE [' + @DB + '] SET DATE_CORRELATION_OPTIMIZATION {onOff s.is_date_correlation_on}')"
     wl "GO"
     
-    if opt.SchemazenCompatibility
-    then wl ""
-
-    if not opt.SchemazenCompatibility
-    then XProperties.database wl schema.XProperties
+    XProperties.database wl schema.XProperties
 
     DatabaseDefinition
 
 
 let generateSchemaScript (w : System.IO.StreamWriter) (opt : Options) (schema : Schema) =
-    if opt.SchemazenCompatibility
-    then w.WriteLine $"create schema [{schema.Name}] authorization [{schema.PrincipalName}]"
-    else w.WriteLine $"CREATE SCHEMA [{schema.Name}] AUTHORIZATION [{schema.PrincipalName}]"
+    w.WriteLine $"CREATE SCHEMA [{schema.Name}] AUTHORIZATION [{schema.PrincipalName}]"
     w.WriteLine "GO"
 
-    if not opt.SchemazenCompatibility
-    then XProperties.schema w.WriteLine schema
+    XProperties.schema w.WriteLine schema
 
     SchemaDefinition
 
@@ -286,16 +265,10 @@ let primaryKeyStr (opt : Options) isTableType (pk : Index) =
         | IndexType.Nonclustered -> "NONCLUSTERED"
         | iType -> failwithf "Unhandled index type %A of primary key %s" iType pkName
     let pkColumnsStr = indexColumnsStr pk.Columns 
-    if opt.SchemazenCompatibility
-    then 
-        if isTableType 
-        then $"PRIMARY KEY {clusteredStr} ({pkColumnsStr})"
-        else $"CONSTRAINT [{pkName}] PRIMARY KEY {clusteredStr} ({pkColumnsStr})"
-    else    
-        let withSettings = indexWithSettings false pk
-        if isTableType || pk.IsSystemNamed
-        then $"PRIMARY KEY {clusteredStr} ({pkColumnsStr}){withSettings}"
-        else $"CONSTRAINT [{pkName}] PRIMARY KEY {clusteredStr} ({pkColumnsStr}){withSettings}"
+    let withSettings = indexWithSettings false pk
+    if isTableType || pk.IsSystemNamed
+    then $"PRIMARY KEY {clusteredStr} ({pkColumnsStr}){withSettings}"
+    else $"CONSTRAINT [{pkName}] PRIMARY KEY {clusteredStr} ({pkColumnsStr}){withSettings}"
         
 let uniqueKeyStr (opt : Options) (i : Index) =
     let iName = 
@@ -306,7 +279,7 @@ let uniqueKeyStr (opt : Options) (i : Index) =
         | IndexType.Nonclustered -> "NONCLUSTERED"
         | iType -> failwithf "Unhandled index type %A of primary key %s" iType iName
     let indexColumnsStr = indexColumnsStr i.Columns
-    if (not i.IsSystemNamed) || opt.SchemazenCompatibility
+    if (not i.IsSystemNamed)
     then $"CONSTRAINT [{iName}] UNIQUE {clusteredStr} ({indexColumnsStr})"
     else $"UNIQUE {clusteredStr} ({indexColumnsStr})"
 
@@ -328,10 +301,7 @@ let generateStandardIndexScript (opt : Options) (index : Index) (parentName : st
         | Some filter -> $" WHERE {filter}"
     
     let withSettings = 
-        if opt.SchemazenCompatibility
-        then ""
-        else indexWithSettings parentIsView index
-            
+        indexWithSettings parentIsView index
 
     $"CREATE {indexTypeStr} INDEX [{indexName}] ON {parentName} ({keyColumnsStr}){includeStr}{filterStr}{withSettings}"
 
@@ -346,9 +316,7 @@ let generateXMLIndexScript (opt : Options) (index : Index) (parentName : string)
     if includeColumns |> Array.isEmpty |> not
     then failwithf "XML index with included colunms not supported (index: %s)" indexName
     
-    if opt.SchemazenCompatibility
-    then $"CREATE XML INDEX [{indexName}] ON {parentName} ({keyColumnsStr})"
-    else $"CREATE PRIMARY XML INDEX [{indexName}] ON {parentName} ({keyColumnsStr})"
+    $"CREATE PRIMARY XML INDEX [{indexName}] ON {parentName} ({keyColumnsStr})"
 
 let objectFilename (schema_name :string) (object_name : string) =
     match schema_name with 
@@ -392,9 +360,7 @@ let generateTableBody (w : System.IO.StreamWriter) (opt : Options) ds allTypes i
         |> List.map 
             (fun (inlineCheck : CheckConstraint) ->
                 if inlineCheck.IsSystemNamed
-                then 
-                    let extraSpace = if opt.SchemazenCompatibility then " " else ""
-                    $"   ,CHECK {extraSpace}{inlineCheck.Definition}"
+                then $"   ,CHECK {inlineCheck.Definition}"
                 else $"   ,CONSTRAINT [{inlineCheck.Object.Name}] CHECK ({inlineCheck.Definition})")
 
         
@@ -446,12 +412,10 @@ let generateTableScript' (w : System.IO.StreamWriter) (opt : Options) ds allType
         match indexStr with
         | Some s -> 
             w.WriteLine s
-            if not opt.SchemazenCompatibility
-            then
-                match index.IsDisabled, index.Name with
-                | true, Some iName -> 
-                    w.WriteLine $"ALTER INDEX {iName} ON {parentName} DISABLE"
-                | _ -> ()
+            match index.IsDisabled, index.Name with
+            | true, Some iName -> 
+                w.WriteLine $"ALTER INDEX {iName} ON {parentName} DISABLE"
+            | _ -> ()
         | None -> ()
 
     w.WriteLine ""
@@ -471,8 +435,7 @@ let generateTableScript allTypes ds (w : System.IO.StreamWriter) (opt : Options)
         generateTableScript' w opt ds allTypes false tableName 
             t.Columns t.Indexes t.CheckConstraints t.DefaultConstraints
     
-    if not opt.SchemazenCompatibility
-    then XProperties.table w.WriteLine t
+    XProperties.table w.WriteLine t
 
     ObjectDefinitions {| Contains = t.Object.ObjectId :: objectIds; DependsOn = [] |}
 
@@ -484,8 +447,7 @@ let generateTableTypeScript allTypes ds (w : System.IO.StreamWriter) (opt : Opti
         generateTableScript' w opt ds allTypes true tName 
             tt.Columns tt.Indexes tt.CheckConstraints tt.DefaultConstraints
     
-    if not opt.SchemazenCompatibility
-    then XProperties.typeProps w.WriteLine tt.Schema tt.Name ty.XProperties
+    XProperties.typeProps w.WriteLine tt.Schema tt.Name ty.XProperties
 
     ObjectDefinitions {| Contains = tt.Object.ObjectId :: object_ids; DependsOn = [] |}
 
@@ -497,9 +459,8 @@ let generateViewScript (w : System.IO.StreamWriter) (opt : Options) (view : View
         "GO"; "SET QUOTED_IDENTIFIER OFF "; "GO"; "SET ANSI_NULLS OFF "; "GO"; ""; "GO"
     ]
     |> List.iter w.WriteLine
-    // vProductModelCatalogDescription
-    if not opt.SchemazenCompatibility
-    then XProperties.viewAndColumns w.WriteLine view
+    
+    XProperties.viewAndColumns w.WriteLine view
 
     ObjectDefinitions {| Contains = [view.Object.ObjectId]; DependsOn = [] |}
 
@@ -511,23 +472,16 @@ let generateCheckConstraintsScript (w : System.IO.StreamWriter) (opt : Options)
         |> Array.fold 
             (fun acc cc ->
                 let tableFullname = $"[{schemaName}].[{tableName}]"
-                if opt.SchemazenCompatibility
-                then 
-                    if cc.IsSystemNamed
-                    then w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK  {cc.Definition}"
-                    else w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CONSTRAINT [{cc.Object.Name}] CHECK  {cc.Definition}"
-                else
-                    if cc.IsSystemNamed
-                    then w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK {cc.Definition}"
-                    else 
-                        let trustClause = if cc.IsNotTrusted then "NOCHECK" else "CHECK" 
-                        w.WriteLine $"ALTER TABLE {tableFullname} WITH {trustClause} ADD CONSTRAINT [{cc.Object.Name}] CHECK {cc.Definition}"
-                        if cc.IsDisabled
-                        then w.WriteLine $"ALTER TABLE {tableFullname} NOCHECK CONSTRAINT [{cc.Object.Name}]"
+                if cc.IsSystemNamed
+                then w.WriteLine $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK {cc.Definition}"
+                else 
+                    let trustClause = if cc.IsNotTrusted then "NOCHECK" else "CHECK" 
+                    w.WriteLine $"ALTER TABLE {tableFullname} WITH {trustClause} ADD CONSTRAINT [{cc.Object.Name}] CHECK {cc.Definition}"
+                    if cc.IsDisabled
+                    then w.WriteLine $"ALTER TABLE {tableFullname} NOCHECK CONSTRAINT [{cc.Object.Name}]"
                 "GO" |> w.WriteLine
 
-                if not opt.SchemazenCompatibility
-                then XProperties.checkConstraint w.WriteLine schemaName tableName cc
+                XProperties.checkConstraint w.WriteLine schemaName tableName cc
 
                 cc.Object.ObjectId :: acc)
             []
@@ -541,16 +495,12 @@ let generateDefaultConstraintsScript (w : System.IO.StreamWriter) (opt : Options
             (fun acc dc ->
                 let tableName = $"[{table.Schema.Name}].[{table.Name}]"
                 if dc.IsSystemNamed
-                then 
-                    if opt.SchemazenCompatibility
-                    then $"ALTER TABLE {tableName} ADD  DEFAULT {dc.Definition} FOR [{dc.Column.Name}]"
-                    else $"ALTER TABLE {tableName} ADD DEFAULT {dc.Definition} FOR [{dc.Column.Name}]"
+                then $"ALTER TABLE {tableName} ADD DEFAULT {dc.Definition} FOR [{dc.Column.Name}]"
                 else $"ALTER TABLE {tableName} ADD CONSTRAINT [{dc.Object.Name}] DEFAULT {dc.Definition} FOR [{dc.Column.Name}]"
                 |> w.WriteLine
                 "GO" |> w.WriteLine
 
-                if not opt.SchemazenCompatibility
-                then XProperties.defaultConstraint w.WriteLine table.Schema.Name table.Name dc
+                XProperties.defaultConstraint w.WriteLine table.Schema.Name table.Name dc
                 
                 dc.Object.ObjectId :: acc)
             []
@@ -579,8 +529,7 @@ let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (tabl
                 w.WriteLine ""
                 w.WriteLine "GO"
 
-                if not opt.SchemazenCompatibility
-                then XProperties.foreignKey w.WriteLine table fk
+                XProperties.foreignKey w.WriteLine table fk
 
                 fk.Object.ObjectId :: object_ids,
                 fk.Parent.ObjectId :: fk.Referenced.ObjectId :: depends_on)
@@ -590,7 +539,7 @@ let generateForeignKeysScript (w : System.IO.StreamWriter) (opt : Options) (tabl
 let generateTriggerScript (w : System.IO.StreamWriter) (opt : Options) (trigger : Trigger) =
     [
         "SET QUOTED_IDENTIFIER ON "; "GO"; "SET ANSI_NULLS ON "; "GO"
-        if opt.SchemazenCompatibility then trigger.OrigDefinition else trigger.Definition
+        trigger.Definition
         "GO"; "SET QUOTED_IDENTIFIER OFF "; "GO"; "SET ANSI_NULLS OFF "; "GO"; ""; 
         if trigger.IsDisabled
         then $"DISABLE TRIGGER [{trigger.Object.Schema.Name}].[{trigger.Object.Name}] ON [{trigger.Parent.Schema.Name}].[{trigger.Parent.Name}]"
@@ -599,22 +548,19 @@ let generateTriggerScript (w : System.IO.StreamWriter) (opt : Options) (trigger 
     ]
     |> List.iter w.WriteLine
 
-    if not opt.SchemazenCompatibility
-    then XProperties.trigger w.WriteLine trigger 
+    XProperties.trigger w.WriteLine trigger 
 
     ObjectDefinitions {| Contains = [trigger.Object.ObjectId]; DependsOn = [trigger.Parent.ObjectId] |}
 
 let generateProcedureScript (w : System.IO.StreamWriter) (opt : Options) (p : Procedure) =
     [
         "SET QUOTED_IDENTIFIER ON "; "GO"; "SET ANSI_NULLS ON "; "GO"
-        if opt.SchemazenCompatibility then p.OrigDefinition else p.Definition
+        p.Definition
         "GO"; "SET QUOTED_IDENTIFIER OFF "; "GO"; "SET ANSI_NULLS OFF "; "GO"; ""; "GO"
     ]
     |> List.iter w.WriteLine
 
-    if not opt.SchemazenCompatibility
-    then 
-        XProperties.procedure w.WriteLine p
+    XProperties.procedure w.WriteLine p
 
     ObjectDefinitions {| Contains = [p.Object.ObjectId]; DependsOn = [] |}
 
@@ -625,15 +571,11 @@ let generateSynonymScript (w : System.IO.StreamWriter) (opt : Options) (synonym 
 
 
 let generateXmlSchemaCollectionScript (w : System.IO.StreamWriter) (opt : Options) (s : XmlSchemaCollection) =
-    let name =
-        if opt.SchemazenCompatibility
-        then $"{s.Schema.Name}.{s.Name}"
-        else $"[{s.Schema.Name}].[{s.Name}]"
+    let name = $"[{s.Schema.Name}].[{s.Name}]"
     w.WriteLine $"CREATE XML SCHEMA COLLECTION {name} AS N'{s.Definition}'"
     w.WriteLine "GO"
     
-    if not opt.SchemazenCompatibility
-    then XProperties.xmlSchemaCollection w.WriteLine s
+    XProperties.xmlSchemaCollection w.WriteLine s
 
     XmlSchemaCollectionDefinition
 
@@ -651,7 +593,7 @@ CREATE SEQUENCE [schema_name . ] sequence_name
 
 let generateSequenceScript (w : System.IO.StreamWriter) (opt : Options) (s : Sequence) =
     let name = $"[{s.Object.Schema.Name}].[{s.Object.Name}]"
-    let typeStr = Datatype.typeStr opt.SchemazenCompatibility false s.Datatype
+    let typeStr = Datatype.typeStr s.Datatype
     let startWith = match s.SequenceDefinition.StartValue with Some v -> $" START WITH {v}" | None -> ""
     let incrementBy = $" INCREMENT BY {s.SequenceDefinition.Increment}"
     let minValue = match s.SequenceDefinition.MinimumValue with Some v -> $" MINVALUE {v}" | None -> " NO MINVALUE"
@@ -678,13 +620,12 @@ CREATE TYPE [ schema_name. ] type_name
 let generateUserDefinedTypeScript (types : Map<int, Datatype>) (w : System.IO.StreamWriter) (opt : Options) (t : Datatype) =
     let tDef =
         let baseType = types |> Map.find (int t.SystemTypeId)
-        Datatype.typeStr' opt.SchemazenCompatibility true baseType.Name baseType.DatatypeSpec t.Parameter
+        Datatype.typeStr' baseType.Name baseType.DatatypeSpec t.Parameter
     let nullStr = if t.Parameter.IsNullable then "NULL" else "NOT NULL"
     w.WriteLine $"CREATE TYPE [{t.Schema.Name}].[{t.Name}] FROM {tDef} {nullStr}"
     w.WriteLine "GO"
 
-    if not opt.SchemazenCompatibility
-    then XProperties.typeProps w.WriteLine t.Schema t.Name t.XProperties
+    XProperties.typeProps w.WriteLine t.Schema t.Name t.XProperties
 
     UserDefinedTypeDefinition
 
@@ -764,10 +705,8 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
             w.WriteLine def
             w.WriteLine "GO"
             
-            if not opt.SchemazenCompatibility
-            then 
-                view.Indexes
-                |> Array.iter (XProperties.index w.WriteLine "N'VIEW'")
+            view.Indexes
+            |> Array.iter (XProperties.index w.WriteLine "N'VIEW'")
 
             ObjectDefinitions 
                 {| 
@@ -806,8 +745,6 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
     db.XmlSchemaCollections
     |> dataForFolder "xmlschemacollections" (fun s -> objectFilename s.Schema.Name s.Name) generateXmlSchemaCollectionScript
 
-    if not (opt.SchemazenCompatibility)
-    then 
-        db.Sequences
-        |> dataForFolder "sequences" (fun s -> objectFilename s.Object.Schema.Name s.Object.Name) generateSequenceScript    
+    db.Sequences
+    |> dataForFolder "sequences" (fun s -> objectFilename s.Object.Schema.Name s.Object.Name) generateSequenceScript    
 

@@ -3,8 +3,6 @@
 open Xunit
 open Microsoft.Data.SqlClient
 
-open MyDbUp
-
 open DbFlow
 open DbFlow.SqlServer
 
@@ -15,7 +13,7 @@ module Helpers =
             (fun (sb : System.Text.StringBuilder, inlineKeys, standAloneKeys, documentation) (line : string) ->
                 match line with
                 | "" ->
-                    // Filter away empty lines as well ... since I could not understand the logic behind the schemazen output 
+                    // Filter away empty lines as well ... 
                     sb, inlineKeys, standAloneKeys, documentation
                 | _ when line.StartsWith "CREATE" && not (line.StartsWith "CREATE TABLE") ->
                     sb, inlineKeys, line :: standAloneKeys, documentation
@@ -94,8 +92,6 @@ module Helpers =
             | "triggers" 
             | "sequences" 
             | "user_defined_types" 
-            // Schemazen adds files for indexes of all views to the same folder (!)
-            // This will make it hard to use the output for scripting (ensure working order)
             | "views" -> 
                 Assert.True ((fileContent0 = fileContent1), $"The content of {dirName}\\{file} is not the same")
                 ()
@@ -131,60 +127,6 @@ module Helpers =
             (fun connectionStr ->
                 Execute.performDbUpgrade logger connectionStr scriptFolder
 
-                //let config = Db.createDbupConfiguration connectionStr scriptFolder 120 (fun s -> ()) //logger
-                //let r = 
-                //    Db.performDbUpgrade config
-                //    |> Logger.logTime logger "DbUp" logger
-
-                //Assert.True(r)
-
                 f connectionStr)
 
-    let runSchemazenGeneratedScripts logger connectionStr scriptsFolder =
-        let scriptFolders =
-            [
-                "schemas" 
-
-                "user_defined_types" 
-                "table_types"
-
-                // The problem: 
-                // - if functions are executed before tables then functions that refer to tables fail
-                // - if tables are executed before functions then tables (computed columns) that refer to functions fail
-                "tables"
-                "functions" 
-                
-                "check_constraints"
-                "foreign_keys"
-                "defaults" 
-
-                // CHALLANGE: SqlException : 
-                // Cannot create secondary xml or secondary selective xml index 'PXML_Person_AddContact' without a USING XML INDEX clause.
-                //   (AdventureWorks db fails with this...)
-                //
-                // SOLUTION: Need to understand how these beast works and their purpose...?
-                "xmlschemacollections"
-                "synonyms" 
-
-                "procedures"
-                "triggers"
-
-                "views"  
-            ]
-        scriptFolders
-        |> List.fold 
-            (fun acc folder ->
-                let folderDir = System.IO.Path.Combine (scriptsFolder, folder)
-                if System.IO.Directory.Exists folderDir
-                then 
-                    System.IO.Directory.GetFiles folderDir 
-                    |> Array.fold (fun acc' file -> System.IO.File.ReadAllText file :: acc') acc
-                else acc)
-            []
-        |> List.rev 
-        |> List.map Execute.Internal.scriptTransaction
-        |> DbTr.sequence_
-        |> fun dbTransaction ->
-            use connection = new SqlConnection(connectionStr)
-            connection.Open()
-            DbTr.commit_ connection dbTransaction
+    

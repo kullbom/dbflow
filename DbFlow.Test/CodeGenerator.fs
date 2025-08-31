@@ -7,7 +7,7 @@ type ``The code generator`` (outputHelper:ITestOutputHelper) =
     let logger s = outputHelper.WriteLine s
     
     [<Fact>]
-    member x.``Generate comparison`` () =
+    member x.``Generate comparison code`` () =
         let fileContent = DbFlow.SqlServer.Schema.Generator.generate ()
 
         let targetFolder = 

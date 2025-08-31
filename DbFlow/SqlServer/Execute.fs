@@ -88,8 +88,6 @@ module Internal =
         |> List.sortBy fst
         |> List.map snd
 
-
-
 /// Read the schema of a database given a connection
 let readSchema logger (options : Options) connection =
     DbTr.reader "SELECT IS_ROLEMEMBER('db_ddladmin') CanRead" []
@@ -99,10 +97,8 @@ let readSchema logger (options : Options) connection =
         | [true] -> ()
         | r -> failwithf "Missing privileges to read schema" 
     
-    if not options.SchemazenCompatibility
-    then 
-        Internal.redefineViews logger options 
-        |> Logger.logTime logger "Refresh view meta data" connection 
+    Internal.redefineViews logger options 
+    |> Logger.logTime logger "Refresh view meta data" connection 
 
     DatabaseSchema.read logger options connection
 
@@ -139,22 +135,24 @@ let cloneToLocal logger (options : Options) (sourceDb : DatabaseSchema) =
     localDb
 
 /// Generate scripts of a schema to a folder structure
-let generateScriptFiles (opt : Options) (schema : DatabaseSchema) folder =
-    if System.IO.Directory.Exists folder
-    then System.IO.Directory.Delete(folder,true)
-
+let generateScriptFiles (opt : Options) (schema : DatabaseSchema) directory =
+    let tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), (System.Guid.NewGuid ()).ToString().Replace("-", ""))
     Scripts.Generate.generateScripts opt schema
         (fun _isDatabaseSettings script ->
             let subfolder = 
                 match script.Content.Subdirectory with
-                | Some sDir -> System.IO.Path.Combine(folder, sDir)
-                | None -> folder
+                | Some sDir -> System.IO.Path.Combine(tempDir, sDir)
+                | None -> tempDir
             if not <| System.IO.Directory.Exists subfolder
             then System.IO.Directory.CreateDirectory (subfolder) |> ignore
             
             let file = System.IO.Path.Combine(subfolder, script.Content.Filename)
             System.IO.File.WriteAllText (file, script.Content.Content)
             ())
+    if System.IO.Directory.Exists directory
+    then System.IO.Directory.Delete(directory,true)
+
+    System.IO.Directory.Move(tempDir, directory)
 
 
 /// Schema compare. Compares two schemas returning a list of differences

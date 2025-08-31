@@ -52,7 +52,7 @@ let dataRefToTempTable (dataRef : DataReference) =
             ",\r\n" 
             (fun c -> 
                 let dataType = c.Datatype
-                let typeStr = Schema.Datatype.typeStr false (match dataType.DatatypeSpec with Schema.UserDefined -> true | _ -> false) dataType
+                let typeStr = Schema.Datatype.typeStr dataType
                 $"{c.Name} {typeStr}")
     let createTempTable = DbTr.nonQuery $"CREATE TABLE #{tempTableName} ({columnDefs});" []
     let insertKeys = dataRefToTempTable' $"#{tempTableName}" dataRef

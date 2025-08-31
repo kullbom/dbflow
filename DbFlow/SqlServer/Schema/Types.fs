@@ -55,26 +55,25 @@ type Datatype = {
 }
 
 module Datatype =
-    let typeStr' schemazenCompatibility is_user_defined_type (dtName : string) (typeSpec : DatatypeSpec) (p : DatatypeParameter)=
-        let formatTypeName (tName : string) = if schemazenCompatibility then tName.ToLowerInvariant () else tName.ToUpperInvariant () 
+    let typeStr' (dtName : string) (typeSpec : DatatypeSpec) (p : DatatypeParameter)=
+        let formatTypeName (tName : string) = tName.ToUpperInvariant () 
         let plain tName =
             $"[{formatTypeName tName}]"
         let withSize tName size divisor = 
             let sizeS = 
                 match size with 
-                | -1s -> if schemazenCompatibility then "max" else "MAX" 
+                | -1s -> "MAX" 
                 | s -> $"{s / divisor}"
-            let extraSpace = if schemazenCompatibility && is_user_defined_type then " " else ""
-            $"[{formatTypeName tName}]{extraSpace}({sizeS})"
+            $"[{formatTypeName tName}]({sizeS})"
         let withPrecision tName precision =
             $"[{formatTypeName tName}]({precision})"
         let withPrecisionScale tName precision scale =
             $"[{formatTypeName tName}]({precision},{scale})"
         match typeSpec with
         | SystemType SystemDatatype.DATETIME2 -> 
-            if schemazenCompatibility then plain dtName else withPrecision dtName p.Scale
+            withPrecision dtName p.Scale
         | SystemType SystemDatatype.DATETIMEOFFSET -> 
-            if schemazenCompatibility then plain dtName else withPrecision dtName p.Scale
+            withPrecision dtName p.Scale
 
         | SystemType SystemDatatype.CHAR -> withSize dtName p.MaxLength 1s
         | SystemType SystemDatatype.VARCHAR -> withSize dtName p.MaxLength 1s
@@ -88,8 +87,8 @@ module Datatype =
 
         | _ -> plain dtName
 
-    let typeStr schemazenCompatibility is_user_defined_type (dt : Datatype) =
-        typeStr' schemazenCompatibility is_user_defined_type dt.Name dt.DatatypeSpec dt.Parameter
+    let typeStr (dt : Datatype) =
+        typeStr' dt.Name dt.DatatypeSpec dt.Parameter
 
     let createSystemDataType sys_type_name =
         match sys_type_name with 
