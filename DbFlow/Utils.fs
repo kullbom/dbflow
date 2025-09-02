@@ -55,11 +55,14 @@ module Logger =
     
     let decorate f (Logger logger') = Logger (fun m -> logger' (f m))
         
-    let logTime (logger : Logger) (id : string) arg fn =
+    let infoWithTime (message : string) (logger : Logger) =  
+        let timestamp = System.DateTime.Now.ToString("HH:mm:ss.fff")
+        logger.info $"{timestamp} {message}" 
+        
+    let logTime (logger : Logger) (taskName : string) arg fn =
         let ws = System.Diagnostics.Stopwatch ()
         ws.Start ()
         let result = fn arg
-        let timestamp = System.DateTime.Now.ToString("HH:mm:ss.fff")
-        logger.info $"{timestamp} Executed {id} (took {ws.ElapsedMilliseconds} ms)"
+        infoWithTime $"{taskName} (in {ws.ElapsedMilliseconds} ms)" logger
         result
 

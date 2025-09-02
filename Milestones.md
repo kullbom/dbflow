@@ -50,6 +50,7 @@
 ## Version X
 
 [x] Add support for disabled keys
+[ ] `generateScripts` should be implemented as a "fold"
 
 ## Version 1.0.0
 

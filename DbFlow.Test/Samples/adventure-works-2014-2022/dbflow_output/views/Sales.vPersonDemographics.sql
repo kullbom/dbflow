@@ -1,6 +1,6 @@
-SET QUOTED_IDENTIFIER ON 
+SET QUOTED_IDENTIFIER ON
 GO
-SET ANSI_NULLS ON 
+SET ANSI_NULLS ON
 GO
 CREATE VIEW [Sales].[vPersonDemographics]
 AS
@@ -35,9 +35,7 @@ CROSS APPLY p.[Demographics].nodes(N'declare default element namespace "http://s
     /IndividualSurvey') AS [IndividualSurvey](ref)
 WHERE [Demographics] IS NOT NULL;
 GO
-SET QUOTED_IDENTIFIER OFF 
+SET QUOTED_IDENTIFIER OFF
 GO
-SET ANSI_NULLS OFF 
-GO
-
+SET ANSI_NULLS OFF
 GO

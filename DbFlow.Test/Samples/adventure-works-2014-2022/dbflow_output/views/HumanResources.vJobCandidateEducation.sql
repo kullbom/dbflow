@@ -1,6 +1,6 @@
-SET QUOTED_IDENTIFIER ON 
+SET QUOTED_IDENTIFIER ON
 GO
-SET ANSI_NULLS ON 
+SET ANSI_NULLS ON
 GO
 CREATE VIEW [HumanResources].[vJobCandidateEducation]
 AS
@@ -34,9 +34,7 @@ FROM [HumanResources].[JobCandidate] jc
 CROSS APPLY jc.[Resume].nodes(N'declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume";
     /Resume/Education') AS [Education](ref);
 GO
-SET QUOTED_IDENTIFIER OFF 
+SET QUOTED_IDENTIFIER OFF
 GO
-SET ANSI_NULLS OFF 
-GO
-
+SET ANSI_NULLS OFF
 GO

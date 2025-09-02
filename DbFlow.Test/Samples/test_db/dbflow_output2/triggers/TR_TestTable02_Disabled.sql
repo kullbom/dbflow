@@ -15,5 +15,3 @@ GO
 
 DISABLE TRIGGER [dbo].[TR_TestTable02_Disabled] ON [dbo].[TestTable02]
 GO
-
-GO

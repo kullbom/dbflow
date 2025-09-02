@@ -64,5 +64,3 @@ GO
 
 ENABLE TRIGGER [Purchasing].[iPurchaseOrderDetail] ON [Purchasing].[PurchaseOrderDetail]
 GO
-
-GO

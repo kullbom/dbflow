@@ -1,6 +1,6 @@
-SET QUOTED_IDENTIFIER ON 
+SET QUOTED_IDENTIFIER ON
 GO
-SET ANSI_NULLS ON 
+SET ANSI_NULLS ON
 GO
 CREATE VIEW [Production].[vProductAndDescription]
 WITH SCHEMABINDING
@@ -20,9 +20,7 @@ FROM [Production].[Product] p
     INNER JOIN [Production].[ProductDescription] pd
     ON pmx.[ProductDescriptionID] = pd.[ProductDescriptionID];
 GO
-SET QUOTED_IDENTIFIER OFF 
+SET QUOTED_IDENTIFIER OFF
 GO
-SET ANSI_NULLS OFF 
-GO
-
+SET ANSI_NULLS OFF
 GO

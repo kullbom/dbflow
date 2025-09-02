@@ -34,5 +34,3 @@ GO
 
 ENABLE TRIGGER [HumanResources].[dEmployee] ON [HumanResources].[Employee]
 GO
-
-GO

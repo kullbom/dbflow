@@ -1,6 +1,6 @@
-SET QUOTED_IDENTIFIER ON 
+SET QUOTED_IDENTIFIER ON
 GO
-SET ANSI_NULLS ON 
+SET ANSI_NULLS ON
 GO
 CREATE VIEW [Person].[vStateProvinceCountryRegion]
 WITH SCHEMABINDING
@@ -17,9 +17,7 @@ FROM [Person].[StateProvince] sp
     INNER JOIN [Person].[CountryRegion] cr
     ON sp.[CountryRegionCode] = cr.[CountryRegionCode];
 GO
-SET QUOTED_IDENTIFIER OFF 
+SET QUOTED_IDENTIFIER OFF
 GO
-SET ANSI_NULLS OFF 
-GO
-
+SET ANSI_NULLS OFF
 GO

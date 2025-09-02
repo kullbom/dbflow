@@ -9,8 +9,12 @@ CREATE TABLE [dbo].[BuildVersion] (
 
 GO
 
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Date and time the record was last updated.', N'SCHEMA', [dbo], N'TABLE', [BuildVersion], N'COLUMN', [ModifiedDate];
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Date and time the record was last updated.', N'SCHEMA', [dbo], N'TABLE', [BuildVersion], N'COLUMN', [VersionDate];
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Version number of the database in 9.yy.mm.dd.00 format.', N'SCHEMA', [dbo], N'TABLE', [BuildVersion], N'COLUMN', [Database Version];
-EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key for BuildVersion records.', N'SCHEMA', [dbo], N'TABLE', [BuildVersion], N'COLUMN', [SystemInformationID];
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Current version number of the AdventureWorksLT 2012 sample database. ', N'SCHEMA', [dbo], N'TABLE', [BuildVersion];
+
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Primary key for BuildVersion records.', N'SCHEMA', [dbo], N'TABLE', [BuildVersion], N'COLUMN', [SystemInformationID];
+
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Version number of the database in 9.yy.mm.dd.00 format.', N'SCHEMA', [dbo], N'TABLE', [BuildVersion], N'COLUMN', [Database Version];
+
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Date and time the record was last updated.', N'SCHEMA', [dbo], N'TABLE', [BuildVersion], N'COLUMN', [VersionDate];
+
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Date and time the record was last updated.', N'SCHEMA', [dbo], N'TABLE', [BuildVersion], N'COLUMN', [ModifiedDate];

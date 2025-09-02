@@ -1,6 +1,6 @@
-SET QUOTED_IDENTIFIER ON 
+SET QUOTED_IDENTIFIER ON
 GO
-SET ANSI_NULLS ON 
+SET ANSI_NULLS ON
 GO
 CREATE VIEW [Person].[vAdditionalContactInfo]
 AS
@@ -50,9 +50,7 @@ OUTER APPLY [AdditionalContactInfo].nodes(
     /ci:AdditionalContactInfo') AS ContactInfo(ref)
 WHERE [AdditionalContactInfo] IS NOT NULL;
 GO
-SET QUOTED_IDENTIFIER OFF 
+SET QUOTED_IDENTIFIER OFF
 GO
-SET ANSI_NULLS OFF 
-GO
-
+SET ANSI_NULLS OFF
 GO

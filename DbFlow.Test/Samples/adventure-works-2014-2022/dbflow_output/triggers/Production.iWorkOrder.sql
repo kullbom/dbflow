@@ -51,5 +51,3 @@ GO
 
 ENABLE TRIGGER [Production].[iWorkOrder] ON [Production].[WorkOrder]
 GO
-
-GO

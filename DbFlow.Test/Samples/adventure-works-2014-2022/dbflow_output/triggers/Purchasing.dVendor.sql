@@ -52,5 +52,3 @@ GO
 
 ENABLE TRIGGER [Purchasing].[dVendor] ON [Purchasing].[Vendor]
 GO
-
-GO

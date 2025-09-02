@@ -78,5 +78,3 @@ GO
 
 ENABLE TRIGGER [Sales].[uSalesOrderHeader] ON [Sales].[SalesOrderHeader]
 GO
-
-GO

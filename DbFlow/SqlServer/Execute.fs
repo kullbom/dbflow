@@ -2,10 +2,12 @@
 
 open DbFlow
 open DbFlow.SqlServer.Schema
+open DbFlow.SqlServer.Scripts.Generate
 
 module Internal = 
-    let scriptTransaction (script : string) = 
+    let scriptTransaction (script : ScriptContent) = 
         script
+        |> ScriptContent.toString
         |> SqlParser.Batches.splitInSqlBatches 
         |> List.collect
             (fun sqlBatch ->
@@ -54,8 +56,8 @@ module Internal =
         // The drop scripts needs to be reverted since dependency works on the asumption that objects are created...
         dropScripts 
         |> List.fold 
-            (fun acc s -> scriptTransaction s.Content :: acc)
-            (createScripts |> List.map (fun s -> scriptTransaction s.Content))
+            (fun acc s -> scriptTransaction (ScriptContent.single s.Content) :: acc)
+            (createScripts |> List.map (fun s -> s.Content |> ScriptContent.single |> scriptTransaction))
         |> DbTr.sequence_ 
         |> DbTr.commit_ connection 
         ()
@@ -106,18 +108,19 @@ let readSchema logger (options : Options) connection =
 let clone logger (options : Options) (sourceDb : DatabaseSchema) (targetConnection : System.Data.IDbConnection) =
     let (settingsScripts, collectedScripts) = 
         Internal.collectScriptsFromSchema options 
-        |> Logger.logTime logger "DbFlow - collect scripts" sourceDb
+        |> Logger.logTime logger "Collect scripts" sourceDb
     
     let resolvedScripts =
         Dependent.resolveOrder (fun d -> d.Content) sourceDb.Dependencies
-        |> Logger.logTime logger "DbFlow - resolve scripts dependencies" collectedScripts
+        |> Logger.logTime logger "Resolve scripts dependencies" collectedScripts
 
+    // The "settings script" can not be run as part of the same transaction as the other scripts
     (fun () -> 
         settingsScripts
-        |> List.map (fun script -> Internal.scriptTransaction script.Content.Content)
+        |> List.map (fun script -> script.Content.Content |> Internal.scriptTransaction )
         |> DbTr.sequence_
         |> DbTr.exe targetConnection)
-    |> Logger.logTime logger "DbFlow - execute database setup scripts" ()
+    |> Logger.logTime logger "Execute database setup scripts" ()
 
     (fun () -> 
         //logger $"Executing script {script.directory_name}\\{script.filename}"
@@ -125,7 +128,7 @@ let clone logger (options : Options) (sourceDb : DatabaseSchema) (targetConnecti
         |> List.map (fun script -> Internal.scriptTransaction script.Content.Content) 
         |> DbTr.sequence_
         |> DbTr.commit_ targetConnection)
-    |> Logger.logTime logger "DbFlow - resolve and execute scripts" ()
+    |> Logger.logTime logger "Resolve and execute scripts" ()
 
 let cloneToLocal logger (options : Options) (sourceDb : DatabaseSchema) =
     let localDb = new LocalTempDb(logger)
@@ -147,7 +150,7 @@ let generateScriptFiles (opt : Options) (schema : DatabaseSchema) directory =
             then System.IO.Directory.CreateDirectory (subfolder) |> ignore
             
             let file = System.IO.Path.Combine(subfolder, script.Content.Filename)
-            System.IO.File.WriteAllText (file, script.Content.Content)
+            System.IO.File.WriteAllText (file, script.Content.Content |> ScriptContent.toString)
             ())
     if System.IO.Directory.Exists directory
     then System.IO.Directory.Delete(directory,true)
@@ -169,7 +172,7 @@ let performDbUpgrade logger connectionStr scriptFolder =
     let updateTransaction =
         (fun () -> 
             scripts
-            |> List.map Internal.scriptTransaction
+            |> List.map (ScriptContent.single >> Internal.scriptTransaction)
             |> DbTr.sequence_)
         |> Logger.logTime logger "Upgrade - Prepare transaction" ()
             

@@ -48,5 +48,3 @@ GO
 
 ENABLE TRIGGER [SalesLT].[iduSalesOrderDetail] ON [SalesLT].[SalesOrderDetail]
 GO
-
-GO
