@@ -669,72 +669,79 @@ let generateUserDefinedTypeScript (types : Map<int, Datatype>) (opt : Options) (
     |> UserDefinedTypeDefinition
 
 
-let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
+let generateScripts (opt : Options) (schema : DatabaseSchema) f seed =
     let db = schema
-    let dataForFolder subfolderName (nameFn : 'a -> string) f (xs : 'a list) =
-        if xs |> List.isEmpty |> not 
-        then
-            for x in xs do
-                let (isDatabaseDefinition, script) =
-                    let (isDatabaseDefinition, priority, containsObjects, dependsOn, script) =
-                        match f opt x with
-                        | DatabaseDefinition script -> true, -1, [], [], script
-                        | SchemaDefinition script -> false, 1, [],[], script
-                        | UserDefinedTypeDefinition script -> false, 2,  [],[], script
-                        | ObjectDefinitions x -> false, 3, x.Contains, x.DependsOn, x.Script
-                        | XmlSchemaCollectionDefinition script -> false, 4, [], [], script
-                    isDatabaseDefinition,
-                    {
-                        Contains = Set.ofList containsObjects
-                        DependsOn = Set.ofList dependsOn
-                        Priority = priority
-                        
-                        Content  = { 
-                            Subdirectory = match subfolderName with "" -> None | s -> Some s; 
-                            Filename = nameFn x; 
-                            Content = script
+    let dataForFolder subfolderName (xs : 'a list) (nameFn : 'a -> string) generator acc =
+        match xs with
+        | [] -> acc
+        | _ -> 
+            xs 
+            |> List.fold 
+                (fun acc' x -> 
+                    let (isDatabaseDefinition, script) =
+                        let (isDatabaseDefinition, priority, containsObjects, dependsOn, script) =
+                            match generator opt x with
+                            | DatabaseDefinition script -> true, -1, [], [], script
+                            | SchemaDefinition script -> false, 1, [],[], script
+                            | UserDefinedTypeDefinition script -> false, 2,  [],[], script
+                            | ObjectDefinitions x -> false, 3, x.Contains, x.DependsOn, x.Script
+                            | XmlSchemaCollectionDefinition script -> false, 4, [], [], script
+                        isDatabaseDefinition,
+                        {
+                            Contains = Set.ofList containsObjects
+                            DependsOn = Set.ofList dependsOn
+                            Priority = priority
+                            
+                            Content  = { 
+                                Subdirectory = match subfolderName with "" -> None | s -> Some s; 
+                                Filename = nameFn x; 
+                                Content = script
+                            }
                         }
-                    }
-                scriptConsumer isDatabaseDefinition script
+                    f acc' isDatabaseDefinition script)
+                acc
     
     let allTypes = 
         db.Types
         |> List.map (fun t -> t.UserTypeId, t)
         |> Map.ofList
     
-    [db]
-    |> dataForFolder "" (fun s -> $"props.sql") generateSettingsScript
+    seed    
+    |> dataForFolder "" [db] (fun s -> $"props.sql") generateSettingsScript  
 
-    db.Schemas |> List.filter (fun s -> not s.IsSystemSchema)
-    |> dataForFolder "schemas" (fun s -> $"{s.Name}.sql") generateSchemaScript
+    |> dataForFolder "schemas" 
+        (db.Schemas |> List.filter (fun s -> not s.IsSystemSchema))
+        (fun s -> $"{s.Name}.sql") generateSchemaScript
 
-    db.Types
-    |> List.filter (fun t -> match t.DatatypeSpec with UserDefined -> true | _ -> false)
-    |> dataForFolder "user_defined_types" (fun t -> objectFilename t.Schema.Name t.Name) 
+    |> dataForFolder "user_defined_types"  
+        (db.Types |> List.filter (fun t -> match t.DatatypeSpec with UserDefined -> true | _ -> false))
+        (fun t -> objectFilename t.Schema.Name t.Name)
         (generateUserDefinedTypeScript allTypes)
 
-    db.Types
-    |> List.choose (fun t -> match t.DatatypeSpec with TableType o -> Some (t, Map.find o.ObjectId db.TableTypes) | _ -> None)
-    |> dataForFolder "table_types" (fun (ty, tt) -> $"TYPE_{tt.Name}.sql") 
+    |> dataForFolder "table_types" 
+        (db.Types |> List.choose (fun t -> match t.DatatypeSpec with TableType o -> Some (t, Map.find o.ObjectId db.TableTypes) | _ -> None))
+        (fun (ty, tt) -> $"TYPE_{tt.Name}.sql") 
         (generateTableTypeScript allTypes db.Properties)
 
-    db.Tables 
-    |> dataForFolder "tables" (fun t -> objectFilename t.Schema.Name t.Name) 
+    |> dataForFolder "tables" 
+        db.Tables
+        (fun t -> objectFilename t.Schema.Name t.Name) 
         (generateTableScript allTypes db.Properties)
-    
-    db.Views
-    |> dataForFolder "views" (fun v -> objectFilename v.Schema.Name v.Name) generateViewScript
-    db.Views 
-    |> List.collect 
-        (fun v -> 
-            v.Indexes 
-            |> Array.choose 
-                (fun i -> 
-                    match i.Name, getIndexDefinitionStr opt $"[{v.Schema.Name}].[{v.Name}]" true i with 
-                    | Some n, Some def -> Some (n, v, i, def) 
-                    | _ -> None) 
-            |> Array.toList) 
-    |> dataForFolder "views" (fun (name,_view,_index,_def) -> $"{name}.sql") 
+    // Views
+    |> dataForFolder "views" db.Views (fun v -> objectFilename v.Schema.Name v.Name) generateViewScript
+    // View indexes
+    |> dataForFolder "views" 
+        (db.Views 
+         |> List.collect 
+            (fun v -> 
+                v.Indexes 
+                |> Array.choose 
+                    (fun i -> 
+                        match i.Name, getIndexDefinitionStr opt $"[{v.Schema.Name}].[{v.Name}]" true i with 
+                        | Some n, Some def -> Some (n, v, i, def) 
+                        | _ -> None) 
+                |> Array.toList))
+        (fun (name,_view,_index,_def) -> $"{name}.sql") 
         (fun _o (_name,view,index,def)-> 
             ScriptContent.empty
             |>+ def
@@ -751,37 +758,44 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) scriptConsumer =
                         Script = sc'
                     |})
     
-    db.Procedures |> List.filter  (fun p -> p.Object.ObjectType <> ObjectType.SqlStoredProcedure)
-    |> dataForFolder "functions" (fun p -> objectFilename p.Object.Schema.Name p.Name) generateProcedureScript
+    |> dataForFolder "functions" 
+        (db.Procedures |> List.filter  (fun p -> p.Object.ObjectType <> ObjectType.SqlStoredProcedure))
+        (fun p -> objectFilename p.Object.Schema.Name p.Name) generateProcedureScript
 
-    db.Tables 
-    |> List.choose 
-        (fun t -> 
-            match t.CheckConstraints |> Array.filter (fun cc -> not cc.IsSystemNamed) with 
-            | [||] -> None 
-            | ccs -> Some (t.Schema.Name, t.Name, t.Object.ObjectId, ccs))
-    |> dataForFolder "check_constraints" (fun (sn, tn, _, _) -> objectFilename sn tn) generateCheckConstraintsScript
+    |> dataForFolder "check_constraints" 
+        (db.Tables 
+        |> List.choose 
+            (fun t -> 
+                match t.CheckConstraints |> Array.filter (fun cc -> not cc.IsSystemNamed) with 
+                | [||] -> None 
+                | ccs -> Some (t.Schema.Name, t.Name, t.Object.ObjectId, ccs)))
+        (fun (sn, tn, _, _) -> objectFilename sn tn) generateCheckConstraintsScript
 
+    |> dataForFolder "defaults" 
+        (db.Tables |> List.choose (fun t -> match t.DefaultConstraints with [||] -> None | dcs -> Some (t, dcs)))
+        (fun (t, _) -> objectFilename t.Schema.Name t.Name) generateDefaultConstraintsScript
 
-    db.Tables |> List.choose (fun t -> match t.DefaultConstraints with [||] -> None | dcs -> Some (t, dcs))
-    |> dataForFolder "defaults" (fun (t, _) -> objectFilename t.Schema.Name t.Name) generateDefaultConstraintsScript
+    |> dataForFolder "triggers" 
+        (db.Tables |> List.collect (fun t -> t.Triggers |> Array.toList))
+        (fun tr -> objectFilename tr.Object.Schema.Name tr.Name) generateTriggerScript
 
-    db.Tables 
-    |> List.collect (fun t -> t.Triggers |> Array.toList)
-    |> dataForFolder "triggers" (fun tr -> objectFilename tr.Object.Schema.Name tr.Name) generateTriggerScript
+    |> dataForFolder "foreign_keys" 
+        (db.Tables |> List.choose (fun t -> match t.ForeignKeys with [||] -> None | fks -> Some (t, fks)))
+        (fun (t, _) -> objectFilename t.Schema.Name t.Name) generateForeignKeysScript
 
-    db.Tables |> List.choose (fun t -> match t.ForeignKeys with [||] -> None | fks -> Some (t, fks))
-    |> dataForFolder "foreign_keys" (fun (t, _) -> objectFilename t.Schema.Name t.Name) generateForeignKeysScript
+    |> dataForFolder "procedures" 
+        (db.Procedures |> List.filter  (fun p -> p.Object.ObjectType = ObjectType.SqlStoredProcedure))
+        (fun p -> objectFilename p.Object.Schema.Name p.Name) generateProcedureScript
 
-    db.Procedures |> List.filter  (fun p -> p.Object.ObjectType = ObjectType.SqlStoredProcedure)
-    |> dataForFolder "procedures" (fun p -> objectFilename p.Object.Schema.Name p.Name) generateProcedureScript
+    |> dataForFolder "synonyms" 
+        db.Synonyms
+        (fun s -> objectFilename s.Object.Schema.Name s.Object.Name) generateSynonymScript
 
-    db.Synonyms
-    |> dataForFolder "synonyms" (fun s -> objectFilename s.Object.Schema.Name s.Object.Name) generateSynonymScript
+    |> dataForFolder "xmlschemacollections" 
+        db.XmlSchemaCollections
+        (fun s -> objectFilename s.Schema.Name s.Name) generateXmlSchemaCollectionScript
 
-    db.XmlSchemaCollections
-    |> dataForFolder "xmlschemacollections" (fun s -> objectFilename s.Schema.Name s.Name) generateXmlSchemaCollectionScript
-
-    db.Sequences
-    |> dataForFolder "sequences" (fun s -> objectFilename s.Object.Schema.Name s.Object.Name) generateSequenceScript    
+    |> dataForFolder "sequences" 
+        db.Sequences
+        (fun s -> objectFilename s.Object.Schema.Name s.Object.Name) generateSequenceScript    
 

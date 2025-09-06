@@ -1,5 +1,3 @@
-ALTER TABLE [SalesLT].[Product] WITH CHECK ADD CONSTRAINT [CK_Product_StandardCost] CHECK ([StandardCost]>=(0.00))
-GO
 ALTER TABLE [SalesLT].[Product] WITH CHECK ADD CONSTRAINT [CK_Product_ListPrice] CHECK ([ListPrice]>=(0.00))
 GO
 
@@ -14,4 +12,6 @@ ALTER TABLE [SalesLT].[Product] WITH CHECK ADD CONSTRAINT [CK_Product_SellEndDat
 GO
 
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Check constraint [SellEndDate] >= [SellStartDate] OR [SellEndDate] IS NULL', N'SCHEMA', [SalesLT], N'TABLE', [Product], N'CONSTRAINT', [CK_Product_SellEndDate];
+GO
+ALTER TABLE [SalesLT].[Product] WITH CHECK ADD CONSTRAINT [CK_Product_StandardCost] CHECK ([StandardCost]>=(0.00))
 GO

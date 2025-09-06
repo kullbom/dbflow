@@ -63,15 +63,12 @@ module Internal =
         ()
 
     let collectScriptsFromSchema (options : Options) (sourceDb : DatabaseSchema) =
-        let mutable settingsScripts = []
-        let mutable scripts = []
-        
         Scripts.Generate.generateScripts options sourceDb
-            (fun isDatabaseSettings script -> 
+            (fun (settingsScripts, scripts) isDatabaseSettings script -> 
                 if isDatabaseSettings 
-                then settingsScripts <- script :: settingsScripts 
-                else scripts <- script :: scripts)
-        settingsScripts, scripts
+                then script :: settingsScripts, scripts 
+                else settingsScripts, script :: scripts)
+            ([],[])
 
     let collectScriptsFromFolder (scriptsFolder : string)=
         let stripName =
@@ -92,6 +89,7 @@ module Internal =
 
 /// Read the schema of a database given a connection
 let readSchema logger (options : Options) connection =
+    // Ensure the current user has enough privileges to access the schema
     DbTr.reader "SELECT IS_ROLEMEMBER('db_ddladmin') CanRead" []
         (fun acc r -> (Readers.readInt32 "CanRead" r = 1) :: acc) []
     |> DbTr.commit_ connection
@@ -117,13 +115,12 @@ let clone logger (options : Options) (sourceDb : DatabaseSchema) (targetConnecti
     // The "settings script" can not be run as part of the same transaction as the other scripts
     (fun () -> 
         settingsScripts
-        |> List.map (fun script -> script.Content.Content |> Internal.scriptTransaction )
+        |> List.map (fun script -> Internal.scriptTransaction script.Content.Content)
         |> DbTr.sequence_
         |> DbTr.exe targetConnection)
     |> Logger.logTime logger "Execute database setup scripts" ()
 
     (fun () -> 
-        //logger $"Executing script {script.directory_name}\\{script.filename}"
         resolvedScripts
         |> List.map (fun script -> Internal.scriptTransaction script.Content.Content) 
         |> DbTr.sequence_
@@ -141,7 +138,7 @@ let cloneToLocal logger (options : Options) (sourceDb : DatabaseSchema) =
 let generateScriptFiles (opt : Options) (schema : DatabaseSchema) directory =
     let tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), (System.Guid.NewGuid ()).ToString().Replace("-", ""))
     Scripts.Generate.generateScripts opt schema
-        (fun _isDatabaseSettings script ->
+        (fun () _isDatabaseSettings script ->
             let subfolder = 
                 match script.Content.Subdirectory with
                 | Some sDir -> System.IO.Path.Combine(tempDir, sDir)
@@ -152,6 +149,8 @@ let generateScriptFiles (opt : Options) (schema : DatabaseSchema) directory =
             let file = System.IO.Path.Combine(subfolder, script.Content.Filename)
             System.IO.File.WriteAllText (file, script.Content.Content |> ScriptContent.toString)
             ())
+        ()
+
     if System.IO.Directory.Exists directory
     then System.IO.Directory.Delete(directory,true)
 

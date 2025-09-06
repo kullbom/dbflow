@@ -1,6 +1,6 @@
 DECLARE @DB VARCHAR(255)
 SET @DB = DB_NAME()
-EXEC dbo.sp_dbcmptlevel @DB, 130
+EXEC dbo.sp_dbcmptlevel @DB, 150
 EXEC('ALTER DATABASE [' + @DB + '] COLLATE SQL_Latin1_General_CP1_CI_AS')
 EXEC('ALTER DATABASE [' + @DB + '] SET AUTO_CLOSE ON')
 EXEC('ALTER DATABASE [' + @DB + '] SET AUTO_SHRINK OFF')
