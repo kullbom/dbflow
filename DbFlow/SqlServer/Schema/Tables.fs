@@ -12,15 +12,12 @@ type TableType = {
   
     Columns : Column array
     Indexes : Index array
-    //mutable triggers : TRIGGER array
     
     ForeignKeys : ForeignKey array
     ReferencedForeignKeys : ForeignKey array
 
     CheckConstraints : CheckConstraint array
     DefaultConstraints : DefaultConstraint array
-
-    //XProperties : Map<string, string>
 }
 
 module TableType = 
@@ -81,15 +78,15 @@ module Table =
                     Name = readString "table_name" r
                     Object = RCMap.pick objectId objects
                     
-                    Columns = match RCMap.tryPick objectId columns with Some cs -> cs | None -> [||]
-                    Indexes = match RCMap.tryPick objectId indexes with Some ixs -> ixs | None -> [||]
-                    Triggers = match RCMap.tryPick objectId triggers with Some trs -> trs | None -> [||]
+                    Columns = RCMap.tryPick objectId columns |> Option.escape [||]
+                    Indexes = RCMap.tryPick objectId indexes |> Option.escape [||]
+                    Triggers = RCMap.tryPick objectId triggers |> Option.escape [||]
 
-                    ForeignKeys = match RCMap.tryPick objectId foreignKeys with Some trs -> trs | None -> [||]
-                    ReferencedForeignKeys = match RCMap.tryPick objectId referencedForeignKeys with Some trs -> trs | None -> [||]
+                    ForeignKeys = RCMap.tryPick objectId foreignKeys |> Option.escape [||]
+                    ReferencedForeignKeys = RCMap.tryPick objectId referencedForeignKeys |> Option.escape [||]
 
-                    CheckConstraints = match RCMap.tryPick objectId checkConstraints with Some ccs -> ccs | None -> [||] 
-                    DefaultConstraints = match RCMap.tryPick objectId defaultConstraints with Some dcs -> dcs | None -> [||]
+                    CheckConstraints = RCMap.tryPick objectId checkConstraints |> Option.escape [||] 
+                    DefaultConstraints = RCMap.tryPick objectId defaultConstraints |> Option.escape [||]
 
                     XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, objectId, 0) xProperties
                 } :: acc)

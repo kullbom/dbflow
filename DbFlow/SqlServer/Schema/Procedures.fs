@@ -97,8 +97,8 @@ module Procedure =
                         Object = object
                         Name = o.Name
 
-                        Parameters = match RCMap.tryPick objectId parameters with Some ps -> ps | None -> [||]
-                        Columns = match RCMap.tryPick objectId columns with Some cs -> cs | None -> [||]
+                        Parameters = RCMap.tryPick objectId parameters |> Option.escape [||]
+                        Columns = RCMap.tryPick objectId columns |> Option.escape [||]
                         OrigDefinition = origDefinition
                         Definition = 
                             SqlParser.SqlDefinitions.updateProcedureDefinition 
