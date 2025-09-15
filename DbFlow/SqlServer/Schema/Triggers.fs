@@ -69,7 +69,7 @@ module Trigger =
                     let sqlModule = RCMap.pick object_id sql_modules
                     sqlModule.Definition |> String.trim
                 let updated_trigger_definition = 
-                    SqlParser.SqlDefinitions.updateTriggerDefinition 
+                    SqlParser.SqlDefinitions.updatedTriggerDefinition 
                         $"[{object.Schema.Name}].[{name}]" $"[{parent.Schema.Name}].[{parent.Name}]"
                         trigger_definition
                 {

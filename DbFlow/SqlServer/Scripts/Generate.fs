@@ -94,19 +94,12 @@ module XProperties =
                         ["N'SCHEMA'", $"[{p.Object.Schema.Name}]"; $"N'{pType}'", $"[{p.Name}]"]
                         sc'))
 
-    let constraint' (schemaName : string) (tableName : string) constraintName xProperties sc =
+    let constraint' (parent : OBJECT) constraintName xProperties sc =
         sc
         |> ScriptContent.surround [] ["GO"]
             (collectXProps xProperties 
-                ["N'SCHEMA'", $"[{schemaName}]"; "N'TABLE'", $"[{tableName}]"; "N'CONSTRAINT'", $"[{constraintName}]"])
+                ["N'SCHEMA'", $"[{parent.Schema.Name}]"; "N'TABLE'", $"[{parent.Name}]"; "N'CONSTRAINT'", $"[{constraintName}]"])
                 
-    let foreignKey (t : Table) (fk : ForeignKey) = constraint' t.Schema.Name t.Name fk.Name fk.XProperties 
-    
-    let checkConstraint (schemaName : string) (tableName : string) (cc : CheckConstraint) = 
-        constraint' schemaName tableName cc.Object.Name cc.XProperties
-    
-    let defaultConstraint (schemaName : string) (tableName : string) (dc : DefaultConstraint) = 
-        constraint' schemaName tableName dc.Object.Name dc.XProperties 
             
     let trigger (tr : Trigger) =
         collectXProps tr.XProperties
@@ -478,12 +471,11 @@ let generateViewScript (opt : Options) (view : View)=
     |> fun sc -> ObjectDefinitions {| Contains = [view.Object.ObjectId]; DependsOn = []; Script = sc |}
 
 
-let generateCheckConstraintsScript (opt : Options) 
-                            (schemaName : string, tableName : string, table_object_id : int, ccs : CheckConstraint array) =
+let generateCheckConstraintsScript (opt : Options) (table : Table, table_object_id : int, ccs : CheckConstraint array) =
     ccs
     |> Array.fold 
         (fun (sc', objectIds) cc ->
-            let tableFullname = $"[{schemaName}].[{tableName}]"
+            let tableFullname = Table.fullName table
             if cc.IsSystemNamed
             then sc' |>+ $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK {cc.Definition}"
             else 
@@ -495,7 +487,7 @@ let generateCheckConstraintsScript (opt : Options)
                     else id)
             |>+ "GO"
             
-            |> XProperties.checkConstraint schemaName tableName cc,
+            |> XProperties.constraint' table.Object cc.Object.Name cc.XProperties,
 
             cc.Object.ObjectId :: objectIds)
         (ScriptContent.empty, [])
@@ -515,7 +507,7 @@ let generateDefaultConstraintsScript (opt : Options) (table : Table, dcs : Defau
                  else $"ALTER TABLE {tableName} ADD CONSTRAINT [{dc.Object.Name}] DEFAULT {dc.Definition} FOR [{dc.Column.Name}]")
             |>+ "GO"
 
-            |> XProperties.defaultConstraint table.Schema.Name table.Name dc,
+            |> XProperties.constraint' table.Object dc.Object.Name dc.XProperties,
             
             dc.Object.ObjectId :: objectIds)
         (ScriptContent.empty, [])
@@ -551,7 +543,7 @@ let generateForeignKeysScript (opt : Options) (table : Table, fks : ForeignKey a
                 |>+ ""
                 |>+ "GO"
 
-                |> XProperties.foreignKey table fk,
+                |> XProperties.constraint' table.Object fk.Object.Name fk.XProperties,
 
                 fk.Object.ObjectId :: object_ids,
                 fk.Parent.ObjectId :: fk.Referenced.ObjectId :: depends_on)
@@ -768,8 +760,8 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) f seed =
             (fun t -> 
                 match t.CheckConstraints |> Array.filter (fun cc -> not cc.IsSystemNamed) with 
                 | [||] -> None 
-                | ccs -> Some (t.Schema.Name, t.Name, t.Object.ObjectId, ccs)))
-        (fun (sn, tn, _, _) -> objectFilename sn tn) generateCheckConstraintsScript
+                | ccs -> Some (t, t.Object.ObjectId, ccs)))
+        (fun (t, _, _) -> objectFilename t.Schema.Name t.Name) generateCheckConstraintsScript
 
     |> dataForFolder "defaults" 
         (db.Tables |> List.choose (fun t -> match t.DefaultConstraints with [||] -> None | dcs -> Some (t, dcs)))

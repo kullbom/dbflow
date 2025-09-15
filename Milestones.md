@@ -89,5 +89,5 @@
 [ ] Data import from files
 [ ] Support for importing data from another database - following keys and copy data recursivly ...?
 [ ] Data export to files
-
+[ ] Support for "synking data" between databases (think: option between OnlyInsert and Upsert)
  

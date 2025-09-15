@@ -168,6 +168,8 @@ type OBJECT = {
 }
 
 module OBJECT = 
+    let fullName (o : OBJECT) = $"[{o.Schema.Name}].[{o.Name}]"
+    
     let readAll schemas connection =
         DbTr.reader
             "SELECT 

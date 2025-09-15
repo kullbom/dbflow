@@ -101,7 +101,7 @@ module Procedure =
                         Columns = RCMap.tryPick objectId columns |> Option.escape [||]
                         OrigDefinition = origDefinition
                         Definition = 
-                            SqlParser.SqlDefinitions.updateProcedureDefinition 
+                            SqlParser.SqlDefinitions.updatedProcedureDefinition 
                                 $"[{object.Schema.Name}].[{object.Name}]" 
                                 definingToken origDefinition
 

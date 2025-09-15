@@ -66,32 +66,33 @@ type Table = {
 
 module Table = 
     let fullName (t : Table) = $"[{t.Schema.Name}].[{t.Name}]"
-    
+
     let readAll schemas objects columns indexes triggers foreignKeys referencedForeignKeys checkConstraints defaultConstraints xProperties connection =
-        DbTr.reader 
-            "SELECT t.name table_name, t.object_id, t.schema_id FROM sys.tables t" 
+        objects
+        |> RCMap.fold
+            (fun acc _ _ (o : OBJECT) -> 
+                match o.ObjectType with
+                | ObjectType.UserTable -> 
+                    let objectId = o.ObjectId
+                    {
+                        Schema = o.Schema
+                        Name = o.Name
+                        Object = o
+                        
+                        Columns = RCMap.tryPick objectId columns |> Option.escape [||]
+                        Indexes = RCMap.tryPick objectId indexes |> Option.escape [||]
+                        Triggers = RCMap.tryPick objectId triggers |> Option.escape [||]
+
+                        ForeignKeys = RCMap.tryPick objectId foreignKeys |> Option.escape [||]
+                        ReferencedForeignKeys = RCMap.tryPick objectId referencedForeignKeys |> Option.escape [||]
+
+                        CheckConstraints = RCMap.tryPick objectId checkConstraints |> Option.escape [||] 
+                        DefaultConstraints = RCMap.tryPick objectId defaultConstraints |> Option.escape [||]
+
+                        XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, objectId, 0) xProperties
+                    } :: acc
+                | _ -> acc)
             []
-            (fun acc r -> 
-                let objectId = readInt32 "object_id" r
-                {
-                    Schema = RCMap.pick (readInt32 "schema_id" r) schemas
-                    Name = readString "table_name" r
-                    Object = RCMap.pick objectId objects
-                    
-                    Columns = RCMap.tryPick objectId columns |> Option.escape [||]
-                    Indexes = RCMap.tryPick objectId indexes |> Option.escape [||]
-                    Triggers = RCMap.tryPick objectId triggers |> Option.escape [||]
-
-                    ForeignKeys = RCMap.tryPick objectId foreignKeys |> Option.escape [||]
-                    ReferencedForeignKeys = RCMap.tryPick objectId referencedForeignKeys |> Option.escape [||]
-
-                    CheckConstraints = RCMap.tryPick objectId checkConstraints |> Option.escape [||] 
-                    DefaultConstraints = RCMap.tryPick objectId defaultConstraints |> Option.escape [||]
-
-                    XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, objectId, 0) xProperties
-                } :: acc)
-            []
-        |> DbTr.commit_ connection
         |> List.sortBy (fun t -> t.Schema.Name, t.Name)
 
 
@@ -112,30 +113,32 @@ type View = {
 }
 
 module View = 
+    let fullName (v : View) = $"[{v.Schema.Name}].[{v.Name}]"
+    
     let readAll schemas objects columns indexes triggers (sql_modules : RCMap<int, SqlModule>) xProperties connection =
-        DbTr.reader
-            "SELECT v.name view_name, v.object_id, v.schema_id
-             FROM sys.views v"
-            []
-            (fun acc r -> 
-                let objectId = readInt32 "object_id" r
-                {
-                    Schema = RCMap.pick (readInt32 "schema_id" r) schemas
-                    Name = readString "view_name" r
-                    Object = RCMap.pick objectId objects
-                    
-                    Definition = 
-                        let sqlModule = RCMap.pick objectId sql_modules
-                        sqlModule.Definition |> String.trim
+        objects
+        |> RCMap.fold
+            (fun acc _ _ (o : OBJECT) -> 
+                match o.ObjectType with
+                | ObjectType.View -> 
+                    let objectId = o.ObjectId
+                    {
+                        Schema = o.Schema
+                        Name = o.Name
+                        Object = o
+                        
+                        Definition = 
+                            let sqlModule = RCMap.pick objectId sql_modules
+                            sqlModule.Definition |> String.trim
 
-                    Columns = RCMap.tryPick objectId columns |> Option.escape [||]
-                    Indexes = RCMap.tryPick objectId indexes |> Option.escape [||]
-                    Triggers = RCMap.tryPick objectId triggers |> Option.escape [||]
+                        Columns = RCMap.tryPick objectId columns |> Option.escape [||]
+                        Indexes = RCMap.tryPick objectId indexes |> Option.escape [||]
+                        Triggers = RCMap.tryPick objectId triggers |> Option.escape [||]
 
-                    XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, objectId, 0) xProperties
-                } :: acc)
+                        XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, objectId, 0) xProperties
+                    } :: acc
+                |_ -> acc)
             []
-        |> DbTr.commit_ connection
         |> List.sortBy (fun v -> v.Schema.Name, v.Name)
 
     
