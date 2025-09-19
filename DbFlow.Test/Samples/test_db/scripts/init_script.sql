@@ -87,6 +87,24 @@ CREATE TYPE [dbo].[IntList] AS TABLE (
 EXEC sys.sp_addextendedproperty @name=N'Foobar2', @value=N'The value 456' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TYPE', @level1name=N'IntList'
 GO
 
+-- Keys -----------------------------------------------------------------------
+
+CREATE TABLE TableA (
+	Id INT NOT NULL PRIMARY KEY
+)
+
+CREATE TABLE TableB (
+	Id INT NOT NULL PRIMARY KEY,
+	AId INT NOT NULL
+)
+
+ALTER TABLE TableB ADD CONSTRAINT [DC_TableB_AId] DEFAULT (0) FOR [AId]
+
+ALTER TABLE TableB WITH CHECK ADD CONSTRAINT [FK_TableB_TableA]
+   FOREIGN KEY(AId) REFERENCES TableA (Id)
+
+ALTER TABLE TableB NOCHECK CONSTRAINT [FK_TableB_TableA]
+
 
 -- SYNONYMS -------------------------------------------------------------------
 

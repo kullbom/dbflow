@@ -219,7 +219,7 @@ AS BEGIN
         let pName = "Bar"
         let expected = 
             input.Replace("orig_trigger_name", tName).Replace("ns.orig_parent_name", pName)
-        Assert.Equal(expected, SqlDefinitions.updateTriggerDefinition tName pName input)
+        Assert.Equal(expected, SqlDefinitions.updatedTriggerDefinition tName pName input)
 
 
     [<Fact>]

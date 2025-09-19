@@ -118,8 +118,15 @@ type CompareGen = CompareGenCase
                        |> CompareGen.Collect (x0.AllowRowLocks, x1.AllowRowLocks) ("AllowRowLocks" :: path)
                        |> CompareGen.Collect (x0.AllowPageLocks, x1.AllowPageLocks) ("AllowPageLocks" :: path)
                        |> Compare.collectOption x0.Filter x1.Filter CompareGen.Collect ("Filter" :: path)
+                       |> Compare.collectOption x0.XmlIndexSecondaryType x1.XmlIndexSecondaryType CompareGen.Collect ("XmlIndexSecondaryType" :: path)
                        |> Compare.collectArray x0.Columns x1.Columns SortOrder.orderBy ElementId.elementId CompareGen.Collect ("Columns" :: path)
                        |> Compare.xProperties (x0.XProperties, x1.XProperties) ("XProperties" :: path)
+
+        static member Collect (x0 : XmlIndexSecondaryType, x1 : XmlIndexSecondaryType) =
+                    fun path diffs ->
+                       diffs
+                       |> CompareGen.Collect (x0.PrimaryIndexName, x1.PrimaryIndexName) ("PrimaryIndexName" :: path)
+                       |> CompareGen.Collect (x0.SecondaryType, x1.SecondaryType) ("SecondaryType" :: path)
 
         static member Collect (x0 : IndexColumn, x1 : IndexColumn) =
                     fun path diffs ->

@@ -62,7 +62,7 @@ module CodeSearch =
     
 
 module Batches =
-    let rec private findNewline (s : string) i stopAt =
+    let rec private findNextNewline (s : string) i stopAt =
         if i = stopAt 
         then -1
         else
@@ -72,9 +72,9 @@ module Batches =
                 if i < stopAt - 1 && s.[i+1] = '\n' 
                 then i + 2
                 else i + 1
-            | _ -> findNewline s (i + 1) stopAt
+            | _ -> findNextNewline s (i + 1) stopAt
     
-    // 1. Rewrite this as a one-pass solution looking for the beginning of the three blocks ...
+    // 1. Rewrite this as a one-pass solution looking for the beginning of the three blocks ... (see splitInSqlBatches)
     let collectSqlCommentsAndStrings (script : string) =
         let blocks = System.Collections.Generic.Dictionary<_,_>()
         let inline addBlock s e = blocks.Add (s, e)
@@ -87,14 +87,17 @@ module Batches =
             then ()
             else 
                 match script.[i] with
+                // Line comments
                 | '-' when safeIsChar (i + 1) '-' ->
-                    match findNewline script (i + 2) sLen with
+                    match findNextNewline script (i + 2) sLen with
                     | -1 -> addBlock i sLen
                     | e -> addBlock i e; collect e
+                // Block comments
                 | '/' when safeIsChar (i + 1) '*' ->
                     match script.IndexOf("*/", i + 2) with
                     | -1 -> addBlock i sLen
                     | e -> addBlock i (e + 2); collect (e + 2)
+                // Strings
                 | '\'' ->
                     match script.IndexOf("'", i + 1) with
                     | -1 -> addBlock i script.Length
@@ -105,9 +108,7 @@ module Batches =
 
     // Split a script in batches on "GO"-statements ...
 
-    let splitInSqlBatches (script' : string) =
-        let script = script'
-        
+    let splitInSqlBatches (script : string) =
         let sLen = script.Length
 
         let inline safeIsChar i c = i < sLen &&  c = script.[i]
@@ -120,7 +121,7 @@ module Batches =
                 match script.[i] with
                 // Find line comments
                 | '-' when safeIsChar (i + 1) '-' ->
-                    match findNewline script (i + 2) sLen with
+                    match findNextNewline script (i + 2) sLen with
                     | -1 -> acc, from
                     | e -> collect acc true from e
                 // Find block comments
@@ -163,6 +164,8 @@ module Batches =
 
 
 module SqlDefinitions =
+    // The stored definition of triggers and procedures (and views) get out of sync if the objects are
+    // renamed (with sp_rename). These parsers try to change the name to be up to date.
 
     open CodeSearch
 (* Example:
@@ -170,16 +173,16 @@ CREATE TRIGGER tr_Brftgyhr
 ON dbo.Message  AFTER INSERT 
 AS BEGIN
 *)
-    let updateTriggerDefinition name parentName definition =
-        let skip = Batches.collectSqlCommentsAndStrings definition
+    let updatedTriggerDefinition name parentName definition =
+        let skipThese = Batches.collectSqlCommentsAndStrings definition
         
-        let (_ , i0) = findFromSkipping [isStr "CREATE"; isWS] skip definition 0
-        let (_ , i1) = findFromSkipping [isWS; isStr "TRIGGER"; isWS] skip definition (i0 - 1)
-        let (n0, i2) = findFromSkipping [isNotWS] skip definition i1
-        let (n1, i3) = findFromSkipping [isWS] skip definition i2
-        let (_ , i4) = findFromSkipping [isWS; isStr "ON"; isWS] skip definition (i3 - 1)
-        let (p0, i5) = findFromSkipping [isNotWS] skip definition i4
-        let (p1, _ ) = findFromSkipping [isWS] skip definition i5
+        let (_ , i0) = findFromSkipping [isStr "CREATE"; isWS] skipThese definition 0
+        let (_ , i1) = findFromSkipping [isWS; isStr "TRIGGER"; isWS] skipThese definition (i0 - 1)
+        let (n0, i2) = findFromSkipping [isNotWS] skipThese definition i1
+        let (n1, i3) = findFromSkipping [isWS] skipThese definition i2
+        let (_ , i4) = findFromSkipping [isWS; isStr "ON"; isWS] skipThese definition (i3 - 1)
+        let (p0, i5) = findFromSkipping [isNotWS] skipThese definition i4
+        let (p1, _ ) = findFromSkipping [isWS] skipThese definition i5
 
         if p1 = -1
         then failwithf "Could not parse trigger definition for %s" name
@@ -197,7 +200,7 @@ CREATE PROCEDURE [dbo].[GetAllFoobars]
 	@xyzId int
 AS
 BEGIN*)
-    let updateProcedureDefinition procName definingToken definition =
+    let updatedProcedureDefinition procName definingToken definition =
         let skip = Batches.collectSqlCommentsAndStrings definition
         
         let (_ , i0) = findFromSkipping [isStr "CREATE"; isWS] skip definition 0

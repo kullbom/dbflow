@@ -76,5 +76,3 @@ GO
 
 ENABLE TRIGGER [Purchasing].[uPurchaseOrderDetail] ON [Purchasing].[PurchaseOrderDetail]
 GO
-
-GO

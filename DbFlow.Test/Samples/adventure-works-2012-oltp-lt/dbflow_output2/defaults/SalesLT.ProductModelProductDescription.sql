@@ -4,5 +4,4 @@ ALTER TABLE [SalesLT].[ProductModelProductDescription] ADD CONSTRAINT [DF_Produc
 GO
 
 EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Default constraint value of GETDATE()', N'SCHEMA', [SalesLT], N'TABLE', [ProductModelProductDescription], N'CONSTRAINT', [DF_ProductModelProductDescription_ModifiedDate];
-
 GO

@@ -11,17 +11,18 @@ module Common =
                 
     let testDbFlowRoundtrip logger options sourceSchema sourceScriptFolder destScriptFolder =
         use localDb =
+            Logger.infoWithTime "Clone db (start)" logger 
             Execute.cloneToLocal (Logger.decorate (fun m -> $"  {m}") logger) options  
-            |> Logger.logTime logger "DbFlow - clone db" sourceSchema
+            |> Logger.logTime logger "Clone db" sourceSchema
 
         let cloneSchema = 
             use connection = new SqlConnection(localDb.ConnectionString)
             connection.Open()
             Execute.readSchema Logger.dummy options
-            |> Logger.logTime logger "DbFlow - load clone" connection
+            |> Logger.logTime logger "Load clone" connection
 
         Execute.generateScriptFiles options cloneSchema
-        |> Logger.logTime logger "DbFlow - generate scripts (of clone)" destScriptFolder 
+        |> Logger.logTime logger "Generate scripts (of clone)" destScriptFolder 
 
         Helpers.compareScriptFolders logger sourceScriptFolder 
         |> Logger.logTime logger "Compare scripts (source vs. clone)"destScriptFolder
@@ -43,10 +44,10 @@ module Common =
                 
                 let dbSchema = 
                     Execute.readSchema Logger.dummy options
-                    |> Logger.logTime logger "DbFlow - load model" connection
+                    |> Logger.logTime logger "Load schema" connection
 
                 Execute.generateScriptFiles options dbSchema 
-                |> Logger.logTime logger "DbFlow - generate scripts" dbFlowOutputDir 
+                |> Logger.logTime logger "Generate scripts" dbFlowOutputDir 
 
                 // Test DbFlow "roundtrip"
                 testDbFlowRoundtrip logger options dbSchema dbFlowOutputDir dbFlowOutputDir2

@@ -45,5 +45,3 @@ GO
 
 ENABLE TRIGGER [Purchasing].[uPurchaseOrderHeader] ON [Purchasing].[PurchaseOrderHeader]
 GO
-
-GO

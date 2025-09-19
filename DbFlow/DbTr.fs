@@ -98,6 +98,7 @@ module DbTr =
     let readSet cmdText parameters f =
         reader cmdText parameters (fun s r -> Set.add (f r) s) Set.empty
 
+    /// Commit a transaction
     let commit (c : IDbConnection) (i : System.Data.IsolationLevel) (DbTr t) =
         let tr = c.BeginTransaction(i)
         let mutable success = false
@@ -110,8 +111,10 @@ module DbTr =
             if not success
             then tr.Rollback ()
         
+    /// Commit a transaction with isolation level READ COMMITED
     let commit_ c t = commit c System.Data.IsolationLevel.ReadCommitted t
 
+    /// Execute a transaction {t} without an actual database transaction
     let exe (c : IDbConnection) (DbTr t) =
         t { Connection = c; Transaction = None }
 

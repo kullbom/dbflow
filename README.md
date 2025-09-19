@@ -8,14 +8,15 @@ The current version of DbFlow can be used for
 - clone an existing database to a local copy that can be used for unit testing or other
 - (Experimental) Copy data from one database to another (resolving and copying dependant data as well)
 
+**NuGet:** [https://www.nuget.org/packages/DbFlow/](https://www.nuget.org/packages/DbFlow/)
+**Repo:** [https://github.com/kullbom/dbflow](https://github.com/kullbom/dbflow)
+
 ### DbFlow supports
 
 - Microsoft Sql Server
 
 ### Known bugs/limitation
 
-- Disabled keys **is not** yet supprted 
-- Disabled default constraints **is not** yet supported 
 - Does **not** consider `ANSI PADDING` of individual columns
 - XML indexes **is not** yet fully supported 
 

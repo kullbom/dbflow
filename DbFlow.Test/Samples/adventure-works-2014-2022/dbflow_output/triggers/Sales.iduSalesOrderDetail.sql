@@ -93,5 +93,3 @@ GO
 
 ENABLE TRIGGER [Sales].[iduSalesOrderDetail] ON [Sales].[SalesOrderDetail]
 GO
-
-GO

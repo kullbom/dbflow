@@ -52,5 +52,3 @@ GO
 
 ENABLE TRIGGER [Production].[uWorkOrder] ON [Production].[WorkOrder]
 GO
-
-GO

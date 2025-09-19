@@ -44,5 +44,3 @@ GO
 
 ENABLE TRIGGER [Person].[iuPerson] ON [Person].[Person]
 GO
-
-GO

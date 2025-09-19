@@ -2,10 +2,12 @@
 
 open DbFlow
 open DbFlow.SqlServer.Schema
+open DbFlow.SqlServer.Scripts.Generate
 
 module Internal = 
-    let scriptTransaction (script : string) = 
+    let scriptTransaction (script : ScriptContent) = 
         script
+        |> ScriptContent.toString
         |> SqlParser.Batches.splitInSqlBatches 
         |> List.collect
             (fun sqlBatch ->
@@ -54,22 +56,19 @@ module Internal =
         // The drop scripts needs to be reverted since dependency works on the asumption that objects are created...
         dropScripts 
         |> List.fold 
-            (fun acc s -> scriptTransaction s.Content :: acc)
-            (createScripts |> List.map (fun s -> scriptTransaction s.Content))
+            (fun acc s -> scriptTransaction (ScriptContent.single s.Content) :: acc)
+            (createScripts |> List.map (fun s -> s.Content |> ScriptContent.single |> scriptTransaction))
         |> DbTr.sequence_ 
         |> DbTr.commit_ connection 
         ()
 
     let collectScriptsFromSchema (options : Options) (sourceDb : DatabaseSchema) =
-        let mutable settingsScripts = []
-        let mutable scripts = []
-        
         Scripts.Generate.generateScripts options sourceDb
-            (fun isDatabaseSettings script -> 
+            (fun (settingsScripts, scripts) isDatabaseSettings script -> 
                 if isDatabaseSettings 
-                then settingsScripts <- script :: settingsScripts 
-                else scripts <- script :: scripts)
-        settingsScripts, scripts
+                then script :: settingsScripts, scripts 
+                else settingsScripts, script :: scripts)
+            ([],[])
 
     let collectScriptsFromFolder (scriptsFolder : string)=
         let stripName =
@@ -90,6 +89,7 @@ module Internal =
 
 /// Read the schema of a database given a connection
 let readSchema logger (options : Options) connection =
+    // Ensure the current user has enough privileges to access the schema
     DbTr.reader "SELECT IS_ROLEMEMBER('db_ddladmin') CanRead" []
         (fun acc r -> (Readers.readInt32 "CanRead" r = 1) :: acc) []
     |> DbTr.commit_ connection
@@ -106,26 +106,26 @@ let readSchema logger (options : Options) connection =
 let clone logger (options : Options) (sourceDb : DatabaseSchema) (targetConnection : System.Data.IDbConnection) =
     let (settingsScripts, collectedScripts) = 
         Internal.collectScriptsFromSchema options 
-        |> Logger.logTime logger "DbFlow - collect scripts" sourceDb
+        |> Logger.logTime logger "Collect scripts" sourceDb
     
     let resolvedScripts =
         Dependent.resolveOrder (fun d -> d.Content) sourceDb.Dependencies
-        |> Logger.logTime logger "DbFlow - resolve scripts dependencies" collectedScripts
+        |> Logger.logTime logger "Resolve scripts dependencies" collectedScripts
 
+    // The "settings script" can not be run as part of the same transaction as the other scripts
     (fun () -> 
         settingsScripts
         |> List.map (fun script -> Internal.scriptTransaction script.Content.Content)
         |> DbTr.sequence_
         |> DbTr.exe targetConnection)
-    |> Logger.logTime logger "DbFlow - execute database setup scripts" ()
+    |> Logger.logTime logger "Execute database setup scripts" ()
 
     (fun () -> 
-        //logger $"Executing script {script.directory_name}\\{script.filename}"
         resolvedScripts
         |> List.map (fun script -> Internal.scriptTransaction script.Content.Content) 
         |> DbTr.sequence_
         |> DbTr.commit_ targetConnection)
-    |> Logger.logTime logger "DbFlow - resolve and execute scripts" ()
+    |> Logger.logTime logger "Resolve and execute scripts" ()
 
 let cloneToLocal logger (options : Options) (sourceDb : DatabaseSchema) =
     let localDb = new LocalTempDb(logger)
@@ -138,7 +138,7 @@ let cloneToLocal logger (options : Options) (sourceDb : DatabaseSchema) =
 let generateScriptFiles (opt : Options) (schema : DatabaseSchema) directory =
     let tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), (System.Guid.NewGuid ()).ToString().Replace("-", ""))
     Scripts.Generate.generateScripts opt schema
-        (fun _isDatabaseSettings script ->
+        (fun () _isDatabaseSettings script ->
             let subfolder = 
                 match script.Content.Subdirectory with
                 | Some sDir -> System.IO.Path.Combine(tempDir, sDir)
@@ -147,8 +147,10 @@ let generateScriptFiles (opt : Options) (schema : DatabaseSchema) directory =
             then System.IO.Directory.CreateDirectory (subfolder) |> ignore
             
             let file = System.IO.Path.Combine(subfolder, script.Content.Filename)
-            System.IO.File.WriteAllText (file, script.Content.Content)
+            System.IO.File.WriteAllText (file, script.Content.Content |> ScriptContent.toString)
             ())
+        ()
+
     if System.IO.Directory.Exists directory
     then System.IO.Directory.Delete(directory,true)
 
@@ -169,7 +171,7 @@ let performDbUpgrade logger connectionStr scriptFolder =
     let updateTransaction =
         (fun () -> 
             scripts
-            |> List.map Internal.scriptTransaction
+            |> List.map (ScriptContent.single >> Internal.scriptTransaction)
             |> DbTr.sequence_)
         |> Logger.logTime logger "Upgrade - Prepare transaction" ()
             

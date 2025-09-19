@@ -35,7 +35,6 @@ module private LocalTempDb =
 
                 OPEN    KillCursor
 
-                -- Grab the first SPID
                 FETCH   NEXT
                 FROM    KillCursor
                 INTO    @Spid
@@ -46,7 +45,6 @@ module private LocalTempDb =
 
                         EXEC    (@ExecSQL)
 
-                        -- Pull the next SPID
                         FETCH   NEXT 
                         FROM    KillCursor 
                         INTO    @Spid  
@@ -91,13 +89,13 @@ type LocalTempDb(logger) =
             connection.Open()
             // Removing all users before detaching is a huge speed up...
             (fun () -> LocalTempDb.killAllUsers dbName |> DbTr.exe connection)
-            |> Logger.logTime logger "kill all users" ()
+            |> Logger.logTime logger "Kill all users" ()
             
             (fun () -> LocalTempDb.takeOffline dbName |> DbTr.exe connection)
-            |> Logger.logTime logger "take db offline" ()
+            |> Logger.logTime logger "Take db offline" ()
             
             (fun () -> LocalTempDb.detach dbName |> DbTr.exe connection)
-            |> Logger.logTime logger "detach db" ()
+            |> Logger.logTime logger "Detach db" ()
             
             File.Delete(dbFile)
             File.Delete(logFile)

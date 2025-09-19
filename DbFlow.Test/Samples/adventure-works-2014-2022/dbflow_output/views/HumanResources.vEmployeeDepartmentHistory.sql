@@ -1,6 +1,6 @@
-SET QUOTED_IDENTIFIER ON 
+SET QUOTED_IDENTIFIER ON
 GO
-SET ANSI_NULLS ON 
+SET ANSI_NULLS ON
 GO
 CREATE VIEW [HumanResources].[vEmployeeDepartmentHistory]
 AS
@@ -26,9 +26,7 @@ FROM [HumanResources].[Employee] e
     INNER JOIN [HumanResources].[Shift] s
     ON s.[ShiftID] = edh.[ShiftID];
 GO
-SET QUOTED_IDENTIFIER OFF 
+SET QUOTED_IDENTIFIER OFF
 GO
-SET ANSI_NULLS OFF 
-GO
-
+SET ANSI_NULLS OFF
 GO

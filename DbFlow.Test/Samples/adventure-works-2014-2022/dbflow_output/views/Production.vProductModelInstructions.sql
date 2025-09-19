@@ -1,6 +1,6 @@
-SET QUOTED_IDENTIFIER ON 
+SET QUOTED_IDENTIFIER ON
 GO
-SET ANSI_NULLS ON 
+SET ANSI_NULLS ON
 GO
 CREATE VIEW [Production].[vProductModelInstructions]
 AS
@@ -23,9 +23,7 @@ CROSS APPLY [Instructions].nodes(N'declare default element namespace "http://sch
 CROSS APPLY [MfgInstructions].ref.nodes('declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelManuInstructions";
     step') Steps(ref);
 GO
-SET QUOTED_IDENTIFIER OFF 
+SET QUOTED_IDENTIFIER OFF
 GO
-SET ANSI_NULLS OFF 
-GO
-
+SET ANSI_NULLS OFF
 GO
