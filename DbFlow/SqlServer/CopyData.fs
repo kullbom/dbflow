@@ -6,8 +6,12 @@ open DbFlow.SqlServer.Schema
 open DbFlow.Readers
 
 open Microsoft.Data.SqlClient
-//open SqLucid
 
+type CopyMethod = 
+    /// Plain insert of all source rows to target. Conflicts will fail with exception.
+    | InsertCopy 
+    /// Insert missing rows and updates existing rows. Slower. 
+    | UpsertCopy
 
 type DataKey = obj array
 
@@ -45,24 +49,34 @@ module Internal =
             bc.WriteToServer dataTable
             bc.RowsCopied)
     
-    let dataRefToTempTable (dataRef : DataReference) =
-        let tempTableName = $"{System.Guid.NewGuid()}".Replace("-", "")
+    let createTempTable (allTypes : Map<int, Datatype>) tempTableName (columns : Column array) = 
         let columnDefs = 
-            dataRef.KeyColumns 
+            columns 
             |> Array.joinBy 
                 ",\r\n" 
                 (fun c -> 
                     let dataType = c.Datatype
-                    let typeStr = Schema.Datatype.typeStr dataType
-                    $"{c.Name} {typeStr}")
-        let createTempTable = DbTr.nonQuery $"CREATE TABLE #{tempTableName} ({columnDefs});" []
-        let insertKeys = dataRefToTempTable' $"#{tempTableName}" dataRef
+                    let nullStr = if c.Datatype.Parameter.IsNullable then "NULL" else "NOT NULL"
+                    let typeStr = 
+                        match dataType.DatatypeSpec with
+                        // Temp tables can not contain user defined types
+                        | UserDefined ->  
+                            let baseType = allTypes |> Map.find (int dataType.SystemTypeId)
+                            Schema.Datatype.typeStr' baseType.Name baseType.DatatypeSpec dataType.Parameter
+                        | _ ->  Schema.Datatype.typeStr dataType
+                    $"{c.Name} {typeStr} {nullStr}")
+        DbTr.nonQuery $"CREATE TABLE #{tempTableName} ({columnDefs});" []
+        
+    let dataRefToTempTable allTypes (dataRef : DataReference) =
+        let tempTableName = $"{System.Guid.NewGuid()}".Replace("-", "")
+        let createTempTableTr = createTempTable allTypes tempTableName dataRef.KeyColumns
+        let insertKeysTr = dataRefToTempTable' $"#{tempTableName}" dataRef
     
-        DbTr.zip createTempTable insertKeys
+        DbTr.zip createTempTableTr insertKeysTr
         |> DbTr.map (fun (_, nCopied) -> nCopied, tempTableName)
         
     
-    let readTableKeys (logger : Logger) (columns : Schema.Column array) (dataRef : DataReference) : DbTr<DataKey list> =
+    let readTableKeys (logger : Logger) allTypes (columns : Schema.Column array) (dataRef : DataReference) : DbTr<DataKey list> =
         let tableName = $"[{dataRef.Table.Schema.Name}].[{dataRef.Table.Name}]"
         let columnsStr = columns |> Array.joinBy ", " (fun c -> $"source.[{c.Name}]")
         let joinCondition = 
@@ -72,7 +86,7 @@ module Internal =
             columns 
             |> Array.joinBy " AND " (fun c -> $"source.[{c.Name}] IS NOT NULL")
             |> function "" -> "" | c -> $"\r\nWHERE {c}"
-        dataRefToTempTable dataRef
+        dataRefToTempTable allTypes dataRef
         |> DbTr.bind
             (fun (_nCopied, tempTableName) ->
                 let cmdText = 
@@ -82,38 +96,103 @@ module Internal =
                 DbTr.readList cmdText []
                     (fun r -> columns |> Array.map (fun c -> readObject c.Name r)))
     
-    let copyTableData' (dataRef : DataReference) (sourceConnection : System.Data.IDbConnection) (targetConnection : System.Data.IDbConnection) =
-        let tableName = $"[{dataRef.Table.Schema.Name}].[{dataRef.Table.Name}]"
-        let allColumnsStr = dataRef.Table.Columns |> Array.joinBy ", " (fun c -> $"source.[{c.Name}]")
+    let copyTableData'' allTypes (dataRef : DataReference) (onSource : DbTr<'a> -> 'a) (targetTableName : string) (onTarget : DbTr<int> -> 'a) =
+        let sourceTableName = $"[{dataRef.Table.Schema.Name}].[{dataRef.Table.Name}]"
+        let allColumns = 
+            // Exclude computed columns
+            dataRef.Table.Columns |> Array.filter (fun c -> c.ComputedDefinition.IsNone)
+        let allColumnsStr = allColumns |> Array.joinBy ", " (fun c -> $"source.[{c.Name}]")
         let joinCondition = 
             dataRef.KeyColumns 
             |> Array.joinBy " AND " (fun c -> $"source.[{c.Name}] = keys.[{c.Name}]")
-        dataRefToTempTable dataRef
+        dataRefToTempTable allTypes dataRef
         |> DbTr.bind
             (fun (_nCopied, tempTableName) ->
                 DbTr.reader'
                     $"SELECT {allColumnsStr}
                       FROM #{tempTableName} keys
-                      INNER JOIN {tableName} source ON {joinCondition}"
+                      INNER JOIN {sourceTableName} source ON {joinCondition}"
                     []
                     (fun dataReader ->            
-                        // Ensure SET ANSI_NULLS ON 
-                        DbTr.nonQuery "SET ANSI_NULLS ON" [] |> DbTr.exe targetConnection
-                        DbTr.nonQuery "SET QUOTED_IDENTIFIER ON" [] |> DbTr.exe targetConnection
-    
                         // Now use the reader to pass data to the bulk insert 
-                        use bc = new SqlBulkCopy(targetConnection :?> SqlConnection, bulkOptions, null) // NOT part of the source transaction
-                        bc.DestinationTableName <- tableName
-                        bc.BulkCopyTimeout <- 60 * 60 
+                        // NOT part of the source transaction
+                        let bulkInsertTransaction =
+                            DbTr (fun c ->
+                                let dbTransaction =
+                                    match c.Transaction with
+                                    | None -> null 
+                                    | Some tr -> tr :?> SqlTransaction
+                                use bc = new SqlBulkCopy(c.Connection :?> SqlConnection, bulkOptions, dbTransaction)
+                                bc.DestinationTableName <- targetTableName
+                                bc.BulkCopyTimeout <- 60 * 60 
     
-                        for c in dataRef.Table.Columns do
-                            bc.ColumnMappings.Add (c.Name, c.Name) |> ignore
+                                for c in allColumns do
+                                    bc.ColumnMappings.Add (c.Name, c.Name) |> ignore
     
-                        bc.WriteToServer dataReader
-                        bc.RowsCopied))
-        |> DbTr.commit_ sourceConnection
+                                bc.WriteToServer dataReader
+                                bc.RowsCopied)
+                        bulkInsertTransaction 
+                        |> onTarget))
+        |> onSource
     
-    let rec collectDataRefs (logger : Logger) indent collected allTables (dataRef : DataReference) (sourceConnection : System.Data.IDbConnection) =
+    let copyTableData' allTypes (dataRef : DataReference) (copyMethod : CopyMethod) (sourceConnection : System.Data.IDbConnection) (targetConnection : System.Data.IDbConnection) =
+        match copyMethod with
+        | InsertCopy ->
+            // Plain insert to the target table
+            let targetTableName = $"[{dataRef.Table.Schema.Name}].[{dataRef.Table.Name}]"
+            // Ensure SET ANSI_NULLS ON 
+            DbTr.nonQuery "SET ANSI_NULLS ON" [] |> DbTr.exe targetConnection
+            DbTr.nonQuery "SET QUOTED_IDENTIFIER ON" [] |> DbTr.exe targetConnection
+            copyTableData'' allTypes dataRef (DbTr.commit_ sourceConnection) targetTableName (DbTr.commit_ targetConnection)
+        | UpsertCopy ->
+            // Upsert
+            let targetTableName = $"[{dataRef.Table.Schema.Name}].[{dataRef.Table.Name}]"
+            let tempTableName = $"{System.Guid.NewGuid()}".Replace("-", "")
+            copyTableData'' allTypes dataRef 
+                (DbTr.commit_ sourceConnection)
+                tempTableName
+                (fun copyTr -> 
+                    DbTr.builder {
+                        // 1. Create temp table
+                        let columns = 
+                            // Exclude computed columns
+                            dataRef.Table.Columns |> Array.filter (fun c -> c.ComputedDefinition.IsNone)
+                        do! createTempTable allTypes tempTableName columns
+                        // 2. Copy to temp table
+                        let! nRowsCopied = copyTr
+                        // 3. Update existing rows
+                        let keyColumns = dataRef.KeyColumns |> Array.map (fun c -> c.Name) |> Set.ofArray
+                        let joinCondition =
+                            dataRef.KeyColumns
+                            |> Array.joinBy " AND " (fun c -> $"temp.[{c.Name}] = target.[{c.Name}]") 
+                        let setColumnsTarget = 
+                            columns 
+                            |> Array.filter (fun c -> not <| Set.contains c.Name keyColumns)
+                            |> Array.joinBy ", " (fun c -> $"[{c.Name}] = temp.[{c.Name}]")
+                        do! DbTr.nonQuery 
+                                $"UPDATE target SET {setColumnsTarget}
+                                  FROM #{tempTableName} temp
+                                  INNER JOIN {targetTableName} target ON {joinCondition}"
+                                []
+                        // 4. Insert new rows
+                        let allColumnsTarget = columns |> Array.joinBy ", " (fun c -> $"[{c.Name}]")
+                        let allColumnsSelect = columns |> Array.joinBy ", " (fun c -> $"temp.[{c.Name}]")
+                        do! DbTr.nonQuery 
+                                $"SET IDENTITY_INSERT {targetTableName} ON;
+                                  
+                                  INSERT INTO {targetTableName} ({allColumnsTarget})
+                                  SELECT {allColumnsSelect} 
+                                  FROM #{tempTableName} temp
+                                  LEFT OUTER JOIN {targetTableName} target ON {joinCondition}
+                                  WHERE target.[{dataRef.KeyColumns.[0].Name}] IS NULL
+                                  
+                                  SET IDENTITY_INSERT {targetTableName} OFF;"
+                                []
+                        return nRowsCopied
+                    }
+                    |> DbTr.commit_ targetConnection)
+    
+    let rec collectDataRefs (logger : Logger) allTypes indent collected allTables (dataRef : DataReference) (sourceConnection : System.Data.IDbConnection) =
         let table = dataRef.Table
         table.ForeignKeys
         |> Array.fold 
@@ -122,7 +201,7 @@ module Internal =
                 let sw = System.Diagnostics.Stopwatch ()
                 sw.Start ()
                 let dataKeys' = 
-                    readTableKeys logger fkColumns dataRef
+                    readTableKeys logger allTypes fkColumns dataRef
                     |> DbTr.commit_ sourceConnection
                 let dataKeys = dataKeys' |> List.distinct
                 
@@ -138,11 +217,11 @@ module Internal =
                             KeyColumns = fk.Columns |> Array.map (fun c -> c.ReferencedColumn)
                             DataKeys = dataKeys
                         }
-                    collectDataRefs logger (indent + "   ") collected' allTables fkDataRef sourceConnection)
+                    collectDataRefs logger allTypes (indent + "   ") collected' allTables fkDataRef sourceConnection)
             (dataRef :: collected)
         
 /// Copies all data referenced by {origDataRef} from one database to another
-let copyData (logger : Logger) (schema : Schema.DatabaseSchema) (origDataRef : DataReference) (sourceConnection : System.Data.IDbConnection) (targetConnection : System.Data.IDbConnection) =
+let copyData (logger : Logger) (schema : Schema.DatabaseSchema) (origDataRef : DataReference) copyMethod (sourceConnection : System.Data.IDbConnection) (targetConnection : System.Data.IDbConnection) =
     let allTables =
         schema.Tables
         |> List.map (fun t -> t.Object.ObjectId, t)
@@ -152,10 +231,15 @@ let copyData (logger : Logger) (schema : Schema.DatabaseSchema) (origDataRef : D
             | Some t -> t
             | None -> failwith $"Table with object_id {object_id} not found in schema."
     
+    let allTypes = 
+        schema.Types
+        |> List.map (fun t -> t.UserTypeId, t)
+        |> Map.ofList
+
     // Collect all data that needs to be copied following foreign keys of the tables
     logger.info $"Collect data dependencies of {Table.fullName origDataRef.Table}..."
     let allDataRefs =
-        Internal.collectDataRefs logger "   " [] allTables origDataRef sourceConnection
+        Internal.collectDataRefs logger allTypes "   " [] allTables origDataRef sourceConnection
     
     logger.info $"Resolving order dependency of {allDataRefs.Length} set(s) of data..."
     let dependentDataRefs = 
@@ -193,7 +277,7 @@ let copyData (logger : Logger) (schema : Schema.DatabaseSchema) (origDataRef : D
             |> List.distinct
         let dataRef = { Id = "Syntetic"; Table = df0.Table; KeyColumns = df0.KeyColumns; DataKeys = allDataKeys } 
         logger.info $"Copy {allDataKeys.Length} rows from {Schema.Table.fullName dataRef.Table} ..."
-        let n = Internal.copyTableData' dataRef sourceConnection targetConnection
+        let n = Internal.copyTableData' allTypes dataRef copyMethod sourceConnection targetConnection
         logger.info $"Copied {n} rows from {Table.fullName dataRef.Table} in {sw.ElapsedMilliseconds} ms"
 
 
