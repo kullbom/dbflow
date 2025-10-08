@@ -52,9 +52,10 @@
 [x] Add support for disabled keys
 [x] `generateScripts` should be implemented as a "fold"
 
-## Version X
+## Version 0.5.0
 
 [x] Support for "synking data" between databases (new option argument to copyData: Insert/Upsert)
+[x] Add option to not include compatibility level when cloning database
 
 ## Version 1.0.0
 
