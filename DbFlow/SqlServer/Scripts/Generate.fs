@@ -12,15 +12,15 @@ module ScriptContent =
     let empty = ScriptContent []
     let single s = ScriptContent [s]
 
-    let addLine line (ScriptContent lines) = ScriptContent (line :: lines)
+    let addLines lines (sc : ScriptContent) = lines |> List.fold (|>+) sc 
 
     /// Scripts added (by {f}) are surrounded by the {before}- and {after}-clauses. If nothing is added by {f} nothing is surrounded. 
     let surround before after f sc =
-        let sc' = before |> List.fold (|>+) sc
+        let sc' = addLines before sc
         let sc'' = f sc'
-        if sc' = sc''
+        if sc' = sc'' // If the result of {f} is the same as the input the original script is returned
         then sc
-        else after |> List.fold (|>+) sc''
+        else addLines after sc''
 
     // ScriptContent should be some more suitable data structure ...?
     let toString (ScriptContent lines) =
@@ -61,7 +61,7 @@ module XProperties =
     let collectXProps (xProperties : Map<string, string>) keysAndValues sc =
         xProps xProperties keysAndValues 
             (fun (isFirst, sc') xp -> 
-                false, ScriptContent.addLine xp (if isFirst then ScriptContent.addLine "" sc' else sc'))
+                false, (if isFirst then sc' |>+ "" else sc') |>+ xp)
             (true, sc)
         |> snd
     
@@ -195,7 +195,7 @@ let generateSettingsScript (opt : Options) (schema : DatabaseSchema) =
     ScriptContent.empty
     |>+ "DECLARE @DB VARCHAR(255)"
     |>+ "SET @DB = DB_NAME()"
-    |>+ $"EXEC dbo.sp_dbcmptlevel @DB, {s.compatibility_level}"
+    |>+ (if opt.SkipCompatibilityLevel then "" else $"EXEC dbo.sp_dbcmptlevel @DB, {s.compatibility_level}")
     |>+ $"EXEC('ALTER DATABASE [' + @DB + '] COLLATE {s.collation_name}')"
     |>+ $"EXEC('ALTER DATABASE [' + @DB + '] SET AUTO_CLOSE {onOff s.is_auto_close_on}')"
     |>+ $"EXEC('ALTER DATABASE [' + @DB + '] SET AUTO_SHRINK {onOff s.is_auto_shrink_on}')"
@@ -412,12 +412,11 @@ let generateTableScript' (opt : Options) ds allTypes isTableType parentName colu
                 let indexStr = getIndexDefinitionStr opt parentName false index
                 match indexStr with
                 | Some s -> 
-                    sc'' 
-                    |>+ s
-                    |> match index.IsDisabled, index.Name with
-                        | true, Some iName -> 
-                            ScriptContent.addLine $"ALTER INDEX {iName} ON {parentName} DISABLE"
-                        | _ -> id
+                    let sc''' = sc'' |>+ s
+                    match index.IsDisabled, index.Name with
+                    | true, Some iName -> 
+                        sc''' |>+ $"ALTER INDEX {iName} ON {parentName} DISABLE"
+                    | _ -> sc'''
                 | None -> sc'')
             sc'
     |>+ ""
@@ -480,11 +479,12 @@ let generateCheckConstraintsScript (opt : Options) (table : Table, table_object_
             then sc' |>+ $"ALTER TABLE {tableFullname} WITH CHECK ADD CHECK {cc.Definition}"
             else 
                 let trustClause = if cc.IsNotTrusted then "NOCHECK" else "CHECK" 
-                sc' 
-                |>+ $"ALTER TABLE {tableFullname} WITH {trustClause} ADD CONSTRAINT [{cc.Object.Name}] CHECK {cc.Definition}"
-                |> (if cc.IsDisabled
-                    then ScriptContent.addLine $"ALTER TABLE {tableFullname} NOCHECK CONSTRAINT [{cc.Object.Name}]"
-                    else id)
+                let sc'' = 
+                    sc' 
+                    |>+ $"ALTER TABLE {tableFullname} WITH {trustClause} ADD CONSTRAINT [{cc.Object.Name}] CHECK {cc.Definition}"
+                if cc.IsDisabled
+                then sc'' |>+ $"ALTER TABLE {tableFullname} NOCHECK CONSTRAINT [{cc.Object.Name}]"
+                else sc''
             |>+ "GO"
             
             |> XProperties.constraint' table.Object cc.Object.Name cc.XProperties,
@@ -526,20 +526,23 @@ let generateForeignKeysScript (opt : Options) (table : Table, fks : ForeignKey a
                 sc
                 |>+ $"ALTER TABLE [{table.Schema.Name}].[{table.Name}] WITH CHECK ADD {name}"
                 |>+ $"   FOREIGN KEY({columnsStr}) REFERENCES [{fk.Referenced.Schema.Name}].[{fk.Referenced.Name}] ({refColumnsStr})"
-                |> match fk.UpdateReferentialAction with
-                    | ReferentialAction.NoAction -> id
-                    | ReferentialAction.Cascade -> ScriptContent.addLine "   ON UPDATE CASCADE"
-                    | ReferentialAction.SetNull -> ScriptContent.addLine "   ON UPDATE SET NULL"
-                    | ReferentialAction.SetDefault -> ScriptContent.addLine "   ON UPDATE SET DEFAULT"
-                |> match fk.DeleteReferentialAction with
-                    | ReferentialAction.NoAction -> id 
-                    | ReferentialAction.Cascade -> ScriptContent.addLine "   ON DELETE CASCADE"
-                    | ReferentialAction.SetNull -> ScriptContent.addLine "   ON DELETE SET NULL"
-                    | ReferentialAction.SetDefault -> ScriptContent.addLine "   ON DELETE SET DEFAULT"
+                |> fun sc' -> 
+                    match fk.UpdateReferentialAction with
+                    | ReferentialAction.NoAction -> sc'
+                    | ReferentialAction.Cascade -> sc' |>+ "   ON UPDATE CASCADE"
+                    | ReferentialAction.SetNull -> sc' |>+ "   ON UPDATE SET NULL"
+                    | ReferentialAction.SetDefault -> sc' |>+ "   ON UPDATE SET DEFAULT"
+                |> fun sc' -> 
+                    match fk.DeleteReferentialAction with
+                    | ReferentialAction.NoAction -> sc' 
+                    | ReferentialAction.Cascade -> sc' |>+ "   ON DELETE CASCADE"
+                    | ReferentialAction.SetNull -> sc' |>+ "   ON DELETE SET NULL"
+                    | ReferentialAction.SetDefault -> sc' |>+ "   ON DELETE SET DEFAULT"
                 
-                |> if fk.IsDisabled 
-                   then ScriptContent.addLine $"ALTER TABLE [{table.Schema.Name}].[{table.Name}] NOCHECK {name}"
-                   else id
+                |> fun sc' ->
+                    if fk.IsDisabled 
+                    then sc' |>+ $"ALTER TABLE [{table.Schema.Name}].[{table.Name}] NOCHECK {name}"
+                    else sc'
                 |>+ ""
                 |>+ "GO"
 

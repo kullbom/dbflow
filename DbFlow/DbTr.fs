@@ -119,7 +119,13 @@ module DbTr =
         t { Connection = c; Transaction = None }
 
         
+    type CompExprBuilder() =
+        member inline b.Return (x)        = ret x
+        member inline b.Bind (p, rest)    = p |> bind rest
+        member inline b.Let (p, rest)     = rest p
+        member inline b.ReturnFrom (expr) = expr
         
+    let builder = new CompExprBuilder()
     
 
 

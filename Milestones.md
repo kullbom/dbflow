@@ -47,10 +47,15 @@
 [x] Make sure that key constraints is handled correct
 [x] "LocalTempDatabase" does not match its module (...and make the module private?)
 
-## Version X
+## Version 0.4.0
 
 [x] Add support for disabled keys
 [x] `generateScripts` should be implemented as a "fold"
+
+## Version 0.5.0
+
+[x] Support for "synking data" between databases (new option argument to copyData: Insert/Upsert)
+[x] Add option to not include compatibility level when cloning database
 
 ## Version 1.0.0
 
@@ -87,7 +92,5 @@
 [ ] Support for CLR types and functions...
 [ ] Support for running and storing db statistics (Incl. TOP-usage)
 [ ] Data import from files
-[ ] Support for importing data from another database - following keys and copy data recursivly ...?
 [ ] Data export to files
-[ ] Support for "synking data" between databases (think: option between OnlyInsert and Upsert)
  
