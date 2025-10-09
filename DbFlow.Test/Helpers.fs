@@ -120,9 +120,16 @@ module Helpers =
         Logger.infoWithTime $"New local db: {localDbConnectionString}" logger
         f localDbConnectionString
 
-    let withLocalDbFromScripts logger scriptFolder f =
+    let withLocalDbFromScripts logger initScript scriptFolder f =
         withLocalDb logger
             (fun connectionStr ->
+                match initScript with
+                | None -> ()
+                | Some s -> 
+                    use dbConn = new SqlConnection(connectionStr)
+                    dbConn.Open ()
+                    DbTr.nonQuery s [] |> DbTr.exe dbConn
+                    SqlConnection.ClearPool dbConn
                 Execute.performDbUpgrade logger connectionStr scriptFolder
 
                 f connectionStr)

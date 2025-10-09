@@ -3,6 +3,7 @@
 open DbFlow
 open DbFlow.SqlServer.Schema
 open DbFlow.SqlServer.Scripts.Generate
+open Microsoft.Data.SqlClient
 
 module Internal = 
     let scriptTransaction (script : ScriptContent) = 
@@ -103,7 +104,7 @@ let readSchema logger (options : Options) connection =
     DatabaseSchema.read logger options connection
 
 /// Clone a schema into a database given a target connection
-let clone logger (options : Options) (sourceDb : DatabaseSchema) (targetConnection : System.Data.IDbConnection) =
+let clone logger (options : Options) (sourceDb : DatabaseSchema) (targetConnection : SqlConnection) =
     let (settingsScripts, collectedScripts) = 
         Internal.collectScriptsFromSchema options 
         |> Logger.logTime logger "Collect scripts" sourceDb
@@ -126,6 +127,8 @@ let clone logger (options : Options) (sourceDb : DatabaseSchema) (targetConnecti
         |> DbTr.sequence_
         |> DbTr.commit_ targetConnection)
     |> Logger.logTime logger "Resolve and execute scripts" ()
+
+    SqlConnection.ClearPool targetConnection
 
 let cloneToLocal logger (options : Options) (sourceDb : DatabaseSchema) =
     let localDb = new LocalTempDb(logger)

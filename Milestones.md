@@ -57,6 +57,10 @@
 [x] Support for "synking data" between databases (new option argument to copyData: Insert/Upsert)
 [x] Add option to not include compatibility level when cloning database
 
+## Version 0.5.1
+
+[x] There is a bug that makes the connection corrupt sometimes after cloning  
+
 ## Version 1.0.0
 
 [ ] There is a problem with XML indexes... see failing test for "AdventureWorks 2014-2022"" - or search for "[XMLPATH_Person_Demographics]"
