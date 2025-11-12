@@ -719,11 +719,14 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) f seed =
         (generateTableTypeScript allTypes db.Properties)
 
     |> dataForFolder "tables" 
-        db.Tables
+        (db.Tables |> List.filter (fun t -> not t.Schema.IsSystemSchema))
         (fun t -> objectFilename t.Schema.Name t.Name) 
         (generateTableScript allTypes db.Properties)
     // Views
-    |> dataForFolder "views" db.Views (fun v -> objectFilename v.Schema.Name v.Name) generateViewScript
+    |> dataForFolder "views" 
+        (db.Views |> List.filter (fun v -> not v.Schema.IsSystemSchema)) 
+        (fun v -> objectFilename v.Schema.Name v.Name) 
+        generateViewScript
     // View indexes
     |> dataForFolder "views" 
         (db.Views 
@@ -754,7 +757,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) f seed =
                     |})
     
     |> dataForFolder "functions" 
-        (db.Procedures |> List.filter  (fun p -> p.Object.ObjectType <> ObjectType.SqlStoredProcedure))
+        (db.Procedures |> List.filter  (fun p -> not p.Object.Schema.IsSystemSchema && (p.Object.ObjectType <> ObjectType.SqlStoredProcedure)))
         (fun p -> objectFilename p.Object.Schema.Name p.Name) generateProcedureScript
 
     |> dataForFolder "check_constraints" 
@@ -779,7 +782,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) f seed =
         (fun (t, _) -> objectFilename t.Schema.Name t.Name) generateForeignKeysScript
 
     |> dataForFolder "procedures" 
-        (db.Procedures |> List.filter  (fun p -> p.Object.ObjectType = ObjectType.SqlStoredProcedure))
+        (db.Procedures |> List.filter  (fun p -> not p.Object.Schema.IsSystemSchema && (p.Object.ObjectType = ObjectType.SqlStoredProcedure)))
         (fun p -> objectFilename p.Object.Schema.Name p.Name) generateProcedureScript
 
     |> dataForFolder "synonyms" 
