@@ -110,6 +110,8 @@ module Rule =
                             $"{errStr}" |> Error)
         }
 
+    // TODO: Add rule(s?) to disallow system named contraints, keys and indexes ...
+
     let ALL (exclusions : RuleExclusion) =
         let exclusions' = { exclusions with Objects = Set.add { schema = "dbo"; name = "SchemaVersions" } exclusions.Objects }
         [
