@@ -38,6 +38,9 @@ module Schema =
         let sysSchemas = ["dbo"; "guest"; "sys"; "INFORMATION_SCHEMA"] |> Set.ofList
         fun name id -> id >= 16384 || Set.contains name sysSchemas
 
+    let includeSchemaInScripts (s : Schema) = not s.IsSystemSchema
+    let includeObjectsInScripts (s : Schema) = s.Name = "dbo" || not s.IsSystemSchema
+
     let readAll xProperties connection =
         DbTr.reader 
             "SELECT s.name schema_name, s.schema_id, p.name principal_name FROM sys.schemas s

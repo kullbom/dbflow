@@ -174,7 +174,7 @@ let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes 
                 then " ROWGUIDCOL "
                 else ""
             let typeStr = 
-                Datatype.typeStr column.Datatype
+                Datatype.typeStr opt column.Datatype
             $"{typeStr}{collateStr}{maskedStr} {nullStr}{identityStr}{checkStr}{rowGuidStr}"
     $"[{column.Name}] {columnDefStr}"
 
@@ -496,7 +496,6 @@ let generateCheckConstraintsScript (opt : Options) (table : Table, table_object_
 
 let generateDefaultConstraintsScript (opt : Options) (table : Table, dcs : DefaultConstraint array) =
     dcs 
-    |> Array.sortBy (fun dc -> dc.Object.ObjectId)
     |> Array.fold
         (fun (sc, objectIds) dc ->
             let tableName = Table.fullName table
@@ -624,7 +623,7 @@ CREATE SEQUENCE [schema_name . ] sequence_name
 
 let generateSequenceScript (opt : Options) (s : Sequence) =
     let name = $"[{s.Object.Schema.Name}].[{s.Object.Name}]"
-    let typeStr = Datatype.typeStr s.Datatype
+    let typeStr = Datatype.typeStr opt s.Datatype
     let startWith = match s.SequenceDefinition.StartValue with Some v -> $" START WITH {v}" | None -> ""
     let incrementBy = $" INCREMENT BY {s.SequenceDefinition.Increment}"
     let minValue = match s.SequenceDefinition.MinimumValue with Some v -> $" MINVALUE {v}" | None -> " NO MINVALUE"
@@ -652,7 +651,7 @@ CREATE TYPE [ schema_name. ] type_name
 let generateUserDefinedTypeScript (types : Map<int, Datatype>) (opt : Options) (t : Datatype) =
     let tDef =
         let baseType = types |> Map.find (int t.SystemTypeId)
-        Datatype.typeStr' baseType.Name baseType.DatatypeSpec t.Parameter
+        Datatype.typeStr' opt baseType.Name baseType.DatatypeSpec t.Parameter
     let nullStr = if t.Parameter.IsNullable then "NULL" else "NOT NULL"
     
     ScriptContent.empty
@@ -705,7 +704,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) f seed =
     |> dataForFolder "" [db] (fun s -> $"props.sql") generateSettingsScript  
 
     |> dataForFolder "schemas" 
-        (db.Schemas |> List.filter (fun s -> not s.IsSystemSchema))
+        (db.Schemas |> List.filter Schema.includeSchemaInScripts)
         (fun s -> $"{s.Name}.sql") generateSchemaScript
 
     |> dataForFolder "user_defined_types"  
@@ -719,11 +718,14 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) f seed =
         (generateTableTypeScript allTypes db.Properties)
 
     |> dataForFolder "tables" 
-        db.Tables
+        (db.Tables |> List.filter (fun t -> Schema.includeObjectsInScripts t.Schema))
         (fun t -> objectFilename t.Schema.Name t.Name) 
         (generateTableScript allTypes db.Properties)
     // Views
-    |> dataForFolder "views" db.Views (fun v -> objectFilename v.Schema.Name v.Name) generateViewScript
+    |> dataForFolder "views" 
+        (db.Views |> List.filter (fun v -> Schema.includeObjectsInScripts v.Schema)) 
+        (fun v -> objectFilename v.Schema.Name v.Name) 
+        generateViewScript
     // View indexes
     |> dataForFolder "views" 
         (db.Views 
@@ -754,7 +756,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) f seed =
                     |})
     
     |> dataForFolder "functions" 
-        (db.Procedures |> List.filter  (fun p -> p.Object.ObjectType <> ObjectType.SqlStoredProcedure))
+        (db.Procedures |> List.filter  (fun p -> Schema.includeObjectsInScripts p.Object.Schema && (p.Object.ObjectType <> ObjectType.SqlStoredProcedure)))
         (fun p -> objectFilename p.Object.Schema.Name p.Name) generateProcedureScript
 
     |> dataForFolder "check_constraints" 
@@ -767,7 +769,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) f seed =
         (fun (t, _, _) -> objectFilename t.Schema.Name t.Name) generateCheckConstraintsScript
 
     |> dataForFolder "defaults" 
-        (db.Tables |> List.choose (fun t -> match t.DefaultConstraints with [||] -> None | dcs -> Some (t, dcs)))
+        (db.Tables |> List.choose (fun t -> match Schema.includeObjectsInScripts t.Schema, t.DefaultConstraints with _, [||] | false, _ -> None | true, dcs -> Some (t, dcs)))
         (fun (t, _) -> objectFilename t.Schema.Name t.Name) generateDefaultConstraintsScript
 
     |> dataForFolder "triggers" 
@@ -775,11 +777,11 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) f seed =
         (fun tr -> objectFilename tr.Object.Schema.Name tr.Name) generateTriggerScript
 
     |> dataForFolder "foreign_keys" 
-        (db.Tables |> List.choose (fun t -> match t.ForeignKeys with [||] -> None | fks -> Some (t, fks)))
+        (db.Tables |> List.choose (fun t -> match Schema.includeObjectsInScripts t.Schema, t.ForeignKeys with _, [||] | false, _ -> None | true, fks -> Some (t, fks)))
         (fun (t, _) -> objectFilename t.Schema.Name t.Name) generateForeignKeysScript
 
     |> dataForFolder "procedures" 
-        (db.Procedures |> List.filter  (fun p -> p.Object.ObjectType = ObjectType.SqlStoredProcedure))
+        (db.Procedures |> List.filter  (fun p -> Schema.includeObjectsInScripts p.Object.Schema && (p.Object.ObjectType = ObjectType.SqlStoredProcedure)))
         (fun p -> objectFilename p.Object.Schema.Name p.Name) generateProcedureScript
 
     |> dataForFolder "synonyms" 

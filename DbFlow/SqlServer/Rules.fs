@@ -21,7 +21,7 @@ module RuleExclusion =
         |> fun (columns, objects) ->
             { Columns = columns; Objects = objects }
 
-type Rule = { Title : string; Description : string; CheckRule : Schema.DatabaseSchema -> Result<unit, string> }
+type Rule = { Title : string; Description : string; Reference : string option; CheckRule : Schema.DatabaseSchema -> Result<unit, string> }
 
 
 module Helpers =
@@ -48,8 +48,9 @@ module Helpers =
 module Rule =
     let ``DATETIME2 - not DATETIME`` exclude = 
         { 
-            Title = "DATETIME2 - not DATETIME"
-            Description = "DATETIME2 should be prefered over DATETIME."
+            Title = "`DATETIME2` - not `DATETIME`"
+            Description = "`DATETIME2` should be prefered over `DATETIME`."
+            Reference = None
             CheckRule = 
                 (fun db ->
                     Helpers.foldAllColumns exclude db
@@ -70,6 +71,7 @@ module Rule =
         { 
             Title = "Postfix datetime with 'Utc'"
             Description = "Postfix datetime columns with 'Utc' removes the ambiguity of what is actually stored."
+            Reference = None
             CheckRule = 
                 (fun db ->
                     Helpers.foldAllColumns exclude db
@@ -91,8 +93,8 @@ module Rule =
     let ``No ansi padding OFF - THIS IS PROBABLY NOT HOW TO DO IT...`` exclude = 
         { 
             Title = "No ansi padding OFF"
-            Description = "SET ANSI_PADDING OFF, and the ANSI_PADDING OFF database option, are deprecated.
-See: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-ansi-padding-transact-sql?view=sql-server-ver17"
+            Description = "SET ANSI_PADDING OFF, and the ANSI_PADDING OFF database option, are deprecated."
+            Reference = Some "https://learn.microsoft.com/en-us/sql/t-sql/statements/set-ansi-padding-transact-sql?view=sql-server-ver17"
             CheckRule = 
                 (fun db ->
                     Helpers.foldAllColumns exclude db
@@ -107,6 +109,8 @@ See: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-ansi-padding-tra
                             let errStr = System.String.Join(", ", errors |> List.toArray) 
                             $"{errStr}" |> Error)
         }
+
+    // TODO: Add rule(s?) to disallow system named contraints, keys and indexes ...
 
     let ALL (exclusions : RuleExclusion) =
         let exclusions' = { exclusions with Objects = Set.add { schema = "dbo"; name = "SchemaVersions" } exclusions.Objects }

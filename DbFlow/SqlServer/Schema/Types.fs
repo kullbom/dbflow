@@ -55,8 +55,8 @@ type Datatype = {
 }
 
 module Datatype =
-    let typeStr' (dtName : string) (typeSpec : DatatypeSpec) (p : DatatypeParameter)=
-        let formatTypeName (tName : string) = tName.ToUpperInvariant () 
+    let typeStr' (options : Options) (dtName : string) (typeSpec : DatatypeSpec) (p : DatatypeParameter)=
+        let formatTypeName = options.TypenameFormatter 
         let plain tName =
             $"[{formatTypeName tName}]"
         let withSize tName size divisor = 
@@ -87,8 +87,8 @@ module Datatype =
 
         | _ -> plain dtName
 
-    let typeStr (dt : Datatype) =
-        typeStr' dt.Name dt.DatatypeSpec dt.Parameter
+    let typeStr (options : Options) (dt : Datatype) =
+        typeStr' options dt.Name dt.DatatypeSpec dt.Parameter
 
     let createSystemDataType sys_type_name =
         match sys_type_name with 

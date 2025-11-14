@@ -64,7 +64,7 @@ type ``Test suite`` (outputHelper:ITestOutputHelper) =
     [<Theory>]
     [<InlineData("test_db")>]
     member x.SampleDbs(db : string) = 
-        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true }
+        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true; TypenameFormatter = Options.defaultTypenameFormatter }
         Common.fullTestSuite logger options (Rule.ALL RuleExclusion.none) samplesFolder db
 
     // AdventureWorks in different versions - the scripts are modified to be compatible with DbUp
@@ -75,11 +75,16 @@ type ``Test suite`` (outputHelper:ITestOutputHelper) =
     [<InlineData("2012-oltp-lt")>]
     [<InlineData("2014-2022")>]
     member x.AdventureWorks (ver : string) =
-        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true }
+        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true; TypenameFormatter = Options.defaultTypenameFormatter }
         Common.fullTestSuite logger options [] samplesFolder ("adventure-works-" + ver)
 
 
 
+module RegressionDirectory =
+    let dbflow_regression_directory = 
+        let dbflow_regression_directory' = __SOURCE_DIRECTORY__ + "\\..\\..\dbflow-regression\\"
+        System.IO.Path.GetFullPath (dbflow_regression_directory')
+    
 // This test looks for "regression" database definitions in the directory "dbflow-regression" (in the same directory as the repo)
 // If such a directory is found it expects all subdirectories of that to represesent a database to test.
 // A database directory should contain a folder "scripts" containing scripts that define the database
@@ -87,18 +92,65 @@ type ``Regression`` (outputHelper:ITestOutputHelper) =
     let logger = Logger.create outputHelper.WriteLine
     
     static member dbflow_regression_data = 
-            let dbflow_regression_directory' = __SOURCE_DIRECTORY__ + "\\..\\..\dbflow-regression\\"
-            let dbflow_regression_directory = System.IO.Path.GetFullPath (dbflow_regression_directory')
-            if System.IO.Directory.Exists (dbflow_regression_directory)
-            then System.IO.Directory.GetDirectories (dbflow_regression_directory)
+            if System.IO.Directory.Exists (RegressionDirectory.dbflow_regression_directory)
+            then System.IO.Directory.GetDirectories (RegressionDirectory.dbflow_regression_directory)
             else [||]
             |> Seq.choose (fun dir -> 
                 let dirName = dir.Substring(dir.LastIndexOf("\\") + 1) 
                 if dirName.StartsWith(".")
                 then None
-                else Some [| dirName |> box; dbflow_regression_directory |> box |])
+                else Some [| dirName |> box |])
 
     [<Xunit.Theory; Xunit.MemberData("dbflow_regression_data")>]
-    member x.``Test suite`` (db : string, directory : string) = 
-        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true }
-        Common.fullTestSuite logger options [] directory db
+    member x.``Test suite`` (db : string) = 
+        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true; TypenameFormatter = Options.defaultTypenameFormatter }
+        Common.fullTestSuite logger options [] RegressionDirectory.dbflow_regression_directory db
+
+
+type ``SqlLocalDb_exe`` (outputHelper:ITestOutputHelper) = 
+    let logger = Logger.create outputHelper.WriteLine
+
+    let cmd' output s =
+        let proc = new System.Diagnostics.Process()
+        let startInfo = new System.Diagnostics.ProcessStartInfo()
+        startInfo.WindowStyle <- System.Diagnostics.ProcessWindowStyle.Hidden
+        startInfo.FileName <- "cmd.exe"
+        startInfo.Arguments <- "/C " + s
+        startInfo.RedirectStandardInput <- true
+        startInfo.RedirectStandardOutput <- true
+        proc.StartInfo <- startInfo
+        if proc.Start ()
+        then
+            proc.StandardInput.Flush ()
+            proc.StandardInput.Close ()
+            proc.WaitForExit ()
+            proc.StandardOutput.ReadToEnd () |> output
+            true
+        else
+            output (sprintf "ERROR: Could not start %s" s)
+            false
+
+    let cmd output f = Printf.kprintf (cmd' output) f
+
+    //[<Fact>]
+    member _.``Scripts from SqlLocalDb`` () =
+        let dbName = "foobar"
+        let dbConnStr = $"Server=(localdb)\{dbName};Integrated Security=true;"
+        let outputFolder = __SOURCE_DIRECTORY__ + "\\SqlLocalDbTest\\"
+
+        if cmd outputHelper.WriteLine "SqlLocalDB.exe create \"%s\" -s" dbName 
+        then
+            let options = Options.Default
+            let schema = 
+                use dbConn = new Microsoft.Data.SqlClient.SqlConnection (dbConnStr)
+                dbConn.Open ()
+                SqlServer.Execute.readSchema logger options dbConn
+
+            SqlServer.Execute.generateScriptFiles options schema outputFolder
+
+            if cmd outputHelper.WriteLine "SqlLocalDB.exe stop \"%s\"" dbName 
+            then 
+                cmd outputHelper.WriteLine "SqlLocalDB.exe delete \"%s\"" dbName
+                |> ignore<bool> 
+        
+        

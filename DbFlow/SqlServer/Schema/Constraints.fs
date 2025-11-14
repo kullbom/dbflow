@@ -41,13 +41,20 @@ module DefaultConstraint =
             []
         |> DbTr.commit_ connection
 
+    let stableOrder (dc : DefaultConstraint) =
+        if dc.IsSystemNamed 
+        then 
+            let name' = dc.Object.Name.[0..dc.Object.Name.LastIndexOf '_']
+            sprintf "%s%s" name' dc.Column.Name
+        else dc.Object.Name
+
     let readAll objects columns ms_descriptions connection =
         let defaultConstraints' = readAll' objects columns ms_descriptions connection
         defaultConstraints'
-        |> List.groupBy (fun cc -> cc.Parent.ObjectId)
+        |> List.groupBy (fun dc -> dc.Parent.ObjectId)
         |> List.fold 
-            (fun m (object_id, trs) -> 
-                Map.add object_id (trs |> List.toArray) m)
+            (fun m (object_id, dcs) -> 
+                Map.add object_id (dcs |> List.sortBy stableOrder |> List.toArray) m)
             Map.empty
         |> RCMap.ofMap
         
@@ -105,14 +112,21 @@ module CheckConstraint =
             []
         |> DbTr.commit_ connection
             
+    let stableOrder (cc : CheckConstraint) =
+        if cc.IsSystemNamed 
+        then 
+            let name' = cc.Object.Name.[0..cc.Object.Name.LastIndexOf '_']
+            let column' = match cc.Column with Some c -> c.Name | None -> "_"
+            sprintf "%s%s%s" name' column' cc.Definition
+        else cc.Object.Name
 
     let readAll objects columns xProperties connection =
         let checkConstraints' = readAll' objects columns xProperties connection
         checkConstraints'
         |> List.groupBy (fun cc -> cc.Parent.ObjectId)
         |> List.fold 
-            (fun m (object_id, trs) -> 
-                Map.add object_id (trs |> List.toArray) m)
+            (fun m (object_id, ccs) -> 
+                Map.add object_id (ccs |> List.sortBy stableOrder |> List.toArray) m)
             Map.empty
         |> RCMap.ofMap
         

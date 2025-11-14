@@ -92,8 +92,8 @@ type Tests (outputHelper : ITestOutputHelper) =
                     use testDbConn = new SqlConnection (testConnStr)
                     testDbConn.Open ()
                     
-                    CopyData.copyData logger dbSchema dataRef CopyData.CopyMethod.InsertCopy testDbConn localDbConn
-                    CopyData.copyData logger dbSchema dataRef CopyData.CopyMethod.UpsertCopy testDbConn localDbConn
+                    CopyData.copyData logger options dbSchema dataRef CopyData.CopyMethod.InsertCopy testDbConn localDbConn
+                    CopyData.copyData logger options dbSchema dataRef CopyData.CopyMethod.UpsertCopy testDbConn localDbConn
                 ())
     
         ()

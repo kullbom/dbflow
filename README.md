@@ -1,14 +1,16 @@
 # DbFlow
 
-DbFlow is a tool with the ambition to help in all stages of developing, testing and releasing databases.
+DbFlow is a tool with the ambition to help in all stages of developing, testing and deploying databases.
 
 The current version of DbFlow can be used for 
 
-- generate complete scripts for a database schema that can be used for improved version control	
-- clone an existing database to a local copy that can be used for unit testing or other
-- (Experimental) Copy data from one database to another (resolving and copying dependant data as well)
+- **generate complete scripts** for a database schema that can be used for (as an example) improved version control
+- **clone the schema** of an existing database to another (resolving dependencies for correct order)
+- create a **temporary local database** that can be used for unit testing or similar
+- *Experimental:** **Copy data** from one database to another (resolving and copying dependant data as well)
 
 **NuGet:** [https://www.nuget.org/packages/DbFlow/](https://www.nuget.org/packages/DbFlow/)
+
 **Repo:** [https://github.com/kullbom/dbflow](https://github.com/kullbom/dbflow)
 
 ### DbFlow supports
@@ -22,10 +24,11 @@ The current version of DbFlow can be used for
 
 ### Planned features:
 
-- Improved support for copying data
+- Improved support for copying data 
+    - Ignore/transform specific data
 - Replace the need for DbUp
 - Generate documentation 
-- Support for PostgreSql 
+- Support for PostgreSql
 
 ## Examples 
 
@@ -100,3 +103,4 @@ var schema = Execute.readSchema(logger, options, sourceConnection);
 
 Execute.generateScriptFiles(options, schema, destinationDirectory);
 ```
+
