@@ -67,6 +67,11 @@
 
 [x] There is a bug that makes the connection corrupt sometimes after cloning  
 
+## Version 0.6.0
+
+[x] Don't generate objects (tables, views, etc) from system schemas other then "dbo"
+[x] Add option to control formatting of typenames
+
 ## Version 1.0.0
 
 [ ] Instead of generating failing XML scripts: output warning and "scripts" with comments that it is not yet supported. 

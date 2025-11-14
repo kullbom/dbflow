@@ -100,8 +100,8 @@ module ForeignKey =
                     IsDisabled = readBool "is_disabled" r
                     IsSystemNamed = readBool "is_system_named" r
 
-                    DeleteReferentialAction = toReferentialAction (readByte "delete_referential_action" r)
-                    UpdateReferentialAction = toReferentialAction (readByte "update_referential_action" r)
+                    DeleteReferentialAction = r |> readByte "delete_referential_action" |> toReferentialAction
+                    UpdateReferentialAction = r |> readByte "update_referential_action" |> toReferentialAction
 
                     Columns = match RCMap.tryPick object_id fkColumns with Some cs -> cs | None -> [||]
 

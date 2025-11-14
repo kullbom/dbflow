@@ -49,7 +49,7 @@ module Internal =
             bc.WriteToServer dataTable
             bc.RowsCopied)
     
-    let createTempTable (allTypes : Map<int, Datatype>) tempTableName (columns : Column array) = 
+    let createTempTable (options : Options) (allTypes : Map<int, Datatype>) tempTableName (columns : Column array) = 
         let columnDefs = 
             columns 
             |> Array.joinBy 
@@ -62,21 +62,21 @@ module Internal =
                         // Temp tables can not contain user defined types
                         | UserDefined ->  
                             let baseType = allTypes |> Map.find (int dataType.SystemTypeId)
-                            Schema.Datatype.typeStr' baseType.Name baseType.DatatypeSpec dataType.Parameter
-                        | _ ->  Schema.Datatype.typeStr dataType
+                            Schema.Datatype.typeStr' options baseType.Name baseType.DatatypeSpec dataType.Parameter
+                        | _ ->  Schema.Datatype.typeStr options dataType
                     $"{c.Name} {typeStr} {nullStr}")
         DbTr.nonQuery $"CREATE TABLE #{tempTableName} ({columnDefs});" []
         
-    let dataRefToTempTable allTypes (dataRef : DataReference) =
+    let dataRefToTempTable (options : Options) allTypes (dataRef : DataReference) =
         let tempTableName = $"{System.Guid.NewGuid()}".Replace("-", "")
-        let createTempTableTr = createTempTable allTypes tempTableName dataRef.KeyColumns
+        let createTempTableTr = createTempTable options allTypes tempTableName dataRef.KeyColumns
         let insertKeysTr = dataRefToTempTable' $"#{tempTableName}" dataRef
     
         DbTr.zip createTempTableTr insertKeysTr
         |> DbTr.map (fun (_, nCopied) -> nCopied, tempTableName)
         
     
-    let readTableKeys (logger : Logger) allTypes (columns : Schema.Column array) (dataRef : DataReference) : DbTr<DataKey list> =
+    let readTableKeys (logger : Logger) (options : Options) allTypes (columns : Schema.Column array) (dataRef : DataReference) : DbTr<DataKey list> =
         let tableName = $"[{dataRef.Table.Schema.Name}].[{dataRef.Table.Name}]"
         let columnsStr = columns |> Array.joinBy ", " (fun c -> $"source.[{c.Name}]")
         let joinCondition = 
@@ -86,7 +86,7 @@ module Internal =
             columns 
             |> Array.joinBy " AND " (fun c -> $"source.[{c.Name}] IS NOT NULL")
             |> function "" -> "" | c -> $"\r\nWHERE {c}"
-        dataRefToTempTable allTypes dataRef
+        dataRefToTempTable options allTypes dataRef
         |> DbTr.bind
             (fun (_nCopied, tempTableName) ->
                 let cmdText = 
@@ -96,7 +96,7 @@ module Internal =
                 DbTr.readList cmdText []
                     (fun r -> columns |> Array.map (fun c -> readObject c.Name r)))
     
-    let copyTableData'' allTypes (dataRef : DataReference) (onSource : DbTr<'a> -> 'a) (targetTableName : string) (onTarget : DbTr<int> -> 'a) =
+    let copyTableData'' (options : Options) allTypes (dataRef : DataReference) (onSource : DbTr<'a> -> 'a) (targetTableName : string) (onTarget : DbTr<int> -> 'a) =
         let sourceTableName = $"[{dataRef.Table.Schema.Name}].[{dataRef.Table.Name}]"
         let allColumns = 
             // Exclude computed columns
@@ -105,7 +105,7 @@ module Internal =
         let joinCondition = 
             dataRef.KeyColumns 
             |> Array.joinBy " AND " (fun c -> $"source.[{c.Name}] = keys.[{c.Name}]")
-        dataRefToTempTable allTypes dataRef
+        dataRefToTempTable options allTypes dataRef
         |> DbTr.bind
             (fun (_nCopied, tempTableName) ->
                 DbTr.reader'
@@ -135,7 +135,7 @@ module Internal =
                         |> onTarget))
         |> onSource
     
-    let copyTableData' allTypes (dataRef : DataReference) (copyMethod : CopyMethod) (sourceConnection : System.Data.IDbConnection) (targetConnection : System.Data.IDbConnection) =
+    let copyTableData' (options : Options) allTypes (dataRef : DataReference) (copyMethod : CopyMethod) (sourceConnection : System.Data.IDbConnection) (targetConnection : System.Data.IDbConnection) =
         match copyMethod with
         | InsertCopy ->
             // Plain insert to the target table
@@ -143,12 +143,12 @@ module Internal =
             // Ensure SET ANSI_NULLS ON 
             DbTr.nonQuery "SET ANSI_NULLS ON" [] |> DbTr.exe targetConnection
             DbTr.nonQuery "SET QUOTED_IDENTIFIER ON" [] |> DbTr.exe targetConnection
-            copyTableData'' allTypes dataRef (DbTr.commit_ sourceConnection) targetTableName (DbTr.commit_ targetConnection)
+            copyTableData'' options allTypes dataRef (DbTr.commit_ sourceConnection) targetTableName (DbTr.commit_ targetConnection)
         | UpsertCopy ->
             // Upsert
             let targetTableName = $"[{dataRef.Table.Schema.Name}].[{dataRef.Table.Name}]"
             let tempTableName = $"{System.Guid.NewGuid()}".Replace("-", "")
-            copyTableData'' allTypes dataRef 
+            copyTableData'' options allTypes dataRef 
                 (DbTr.commit_ sourceConnection)
                 tempTableName
                 (fun copyTr -> 
@@ -157,7 +157,7 @@ module Internal =
                         let columns = 
                             // Exclude computed columns
                             dataRef.Table.Columns |> Array.filter (fun c -> c.ComputedDefinition.IsNone)
-                        do! createTempTable allTypes tempTableName columns
+                        do! createTempTable options allTypes tempTableName columns
                         // 2. Copy to temp table
                         let! nRowsCopied = copyTr
                         // 3. Update existing rows
@@ -192,7 +192,7 @@ module Internal =
                     }
                     |> DbTr.commit_ targetConnection)
     
-    let rec collectDataRefs (logger : Logger) allTypes indent collected allTables (dataRef : DataReference) (sourceConnection : System.Data.IDbConnection) =
+    let rec collectDataRefs (logger : Logger) (options : Options) allTypes indent collected allTables (dataRef : DataReference) (sourceConnection : System.Data.IDbConnection) =
         let table = dataRef.Table
         table.ForeignKeys
         |> Array.fold 
@@ -201,7 +201,7 @@ module Internal =
                 let sw = System.Diagnostics.Stopwatch ()
                 sw.Start ()
                 let dataKeys' = 
-                    readTableKeys logger allTypes fkColumns dataRef
+                    readTableKeys logger options allTypes fkColumns dataRef
                     |> DbTr.commit_ sourceConnection
                 let dataKeys = dataKeys' |> List.distinct
                 
@@ -217,11 +217,11 @@ module Internal =
                             KeyColumns = fk.Columns |> Array.map (fun c -> c.ReferencedColumn)
                             DataKeys = dataKeys
                         }
-                    collectDataRefs logger allTypes (indent + "   ") collected' allTables fkDataRef sourceConnection)
+                    collectDataRefs logger options allTypes (indent + "   ") collected' allTables fkDataRef sourceConnection)
             (dataRef :: collected)
         
 /// Copies all data referenced by {origDataRef} from one database to another
-let copyData (logger : Logger) (schema : Schema.DatabaseSchema) (origDataRef : DataReference) copyMethod (sourceConnection : System.Data.IDbConnection) (targetConnection : System.Data.IDbConnection) =
+let copyData (logger : Logger) (options : Options) (schema : Schema.DatabaseSchema) (origDataRef : DataReference) copyMethod (sourceConnection : System.Data.IDbConnection) (targetConnection : System.Data.IDbConnection) =
     let allTables =
         schema.Tables
         |> List.map (fun t -> t.Object.ObjectId, t)
@@ -239,7 +239,7 @@ let copyData (logger : Logger) (schema : Schema.DatabaseSchema) (origDataRef : D
     // Collect all data that needs to be copied following foreign keys of the tables
     logger.info $"Collect data dependencies of {Table.fullName origDataRef.Table}..."
     let allDataRefs =
-        Internal.collectDataRefs logger allTypes "   " [] allTables origDataRef sourceConnection
+        Internal.collectDataRefs logger options allTypes "   " [] allTables origDataRef sourceConnection
     
     logger.info $"Resolving order dependency of {allDataRefs.Length} set(s) of data..."
     let dependentDataRefs = 
@@ -277,7 +277,7 @@ let copyData (logger : Logger) (schema : Schema.DatabaseSchema) (origDataRef : D
             |> List.distinct
         let dataRef = { Id = "Syntetic"; Table = df0.Table; KeyColumns = df0.KeyColumns; DataKeys = allDataKeys } 
         logger.info $"Copy {allDataKeys.Length} rows from {Schema.Table.fullName dataRef.Table} ..."
-        let n = Internal.copyTableData' allTypes dataRef copyMethod sourceConnection targetConnection
+        let n = Internal.copyTableData' options allTypes dataRef copyMethod sourceConnection targetConnection
         logger.info $"Copied {n} rows from {Table.fullName dataRef.Table} in {sw.ElapsedMilliseconds} ms"
 
 

@@ -18,6 +18,7 @@ module String =
 /// A reference counting map - used to ensure that all objects are referenced/used
 type RCMap<'key, 'data when 'key : comparison> = { mutable Map : Map<'key, int * 'data> }
 
+/// A reference counting map - used to ensure that all objects are referenced/used
 module RCMap =
     let ofMap m = { Map = Map.map (fun _ v -> 0, v) m }
 

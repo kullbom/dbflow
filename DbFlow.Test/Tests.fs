@@ -64,7 +64,7 @@ type ``Test suite`` (outputHelper:ITestOutputHelper) =
     [<Theory>]
     [<InlineData("test_db")>]
     member x.SampleDbs(db : string) = 
-        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true }
+        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true; TypenameFormatter = Options.defaultTypenameFormatter }
         Common.fullTestSuite logger options (Rule.ALL RuleExclusion.none) samplesFolder db
 
     // AdventureWorks in different versions - the scripts are modified to be compatible with DbUp
@@ -75,7 +75,7 @@ type ``Test suite`` (outputHelper:ITestOutputHelper) =
     [<InlineData("2012-oltp-lt")>]
     [<InlineData("2014-2022")>]
     member x.AdventureWorks (ver : string) =
-        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true }
+        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true; TypenameFormatter = Options.defaultTypenameFormatter }
         Common.fullTestSuite logger options [] samplesFolder ("adventure-works-" + ver)
 
 
@@ -103,7 +103,7 @@ type ``Regression`` (outputHelper:ITestOutputHelper) =
 
     [<Xunit.Theory; Xunit.MemberData("dbflow_regression_data")>]
     member x.``Test suite`` (db : string) = 
-        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true }
+        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true; TypenameFormatter = Options.defaultTypenameFormatter }
         Common.fullTestSuite logger options [] RegressionDirectory.dbflow_regression_directory db
 
 

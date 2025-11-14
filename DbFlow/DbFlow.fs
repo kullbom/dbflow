@@ -4,8 +4,10 @@
 type Options = {
     BypassReferenceChecksOnLoad : bool
     SkipCompatibilityLevel : bool
+    TypenameFormatter : string -> string
 }
 
 module Options =
-    let Default = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = false }
+    let defaultTypenameFormatter (s : string) = s.ToUpperInvariant()
+    let Default = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = false; TypenameFormatter = defaultTypenameFormatter }
 
