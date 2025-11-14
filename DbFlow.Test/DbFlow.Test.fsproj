@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<Compile Include="Examples.fs" />
 	<None Include="Samples\**\*.*" />
+	<Compile Include="Examples.fs" />
 	
 	<Compile Include="Helpers.fs" />
 	

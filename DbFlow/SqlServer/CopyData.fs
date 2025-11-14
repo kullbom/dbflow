@@ -281,7 +281,7 @@ let copyData (logger : Logger) (schema : Schema.DatabaseSchema) (origDataRef : D
         logger.info $"Copied {n} rows from {Table.fullName dataRef.Table} in {sw.ElapsedMilliseconds} ms"
 
 
-/// Creates a DataReference for TOP {topN} rows of the given table (by the primary key)  
+/// Creates a DataReference for TOP {topN} rows (by the primary key) of the given table   
 let TopN (table : Schema.Table) (topN : int) =
     let pk = 
         table.Indexes |> Array.tryFind (fun ix -> ix.IsPrimaryKey)

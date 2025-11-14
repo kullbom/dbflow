@@ -32,6 +32,12 @@
 [x] Add support for disabled triggers
 [x] Add support for disabled indexes
 [x] Add support for disabled check constraints
+[x] Ensure that the db user has suitable privileges before readSchema (IS_ROLEMEMBER ('db_ddladmin'))
+[x] BUG: Named defaults is generated wrong - see [DF_TestTable01_ColWithNamedDefault]
+[x] Add some kind of db-compare (to find more bugs)
+[x] Add test that uses db-compare (on clones) for all regression suites 
+[x] Index "FILLFACTOR" is not part of the generated scripts - and generates error when clones are compared.
+[x] The tests sometimes fail when run in parallell - might be the shared folders...?
 
 ## Version 0.2.0(-beta) - 2025-08-23
 
@@ -63,6 +69,7 @@
 
 ## Version 1.0.0
 
+[ ] Instead of generating failing XML scripts: output warning and "scripts" with comments that it is not yet supported. 
 [ ] There is a problem with XML indexes... see failing test for "AdventureWorks 2014-2022"" - or search for "[XMLPATH_Person_Demographics]"
 [ ] Investigate/play with improved interface to connections
     [ ] a Union like Connection | ConnectionStr | ConnectionFactory... ?
@@ -70,20 +77,15 @@
     [ ] (Basic) Support for specific data (not only TopN)
     [ ] Consider some kind of support for exclusion and/or modification of cloned data (to be able to avoid certain data and anonymize)
 [ ] Add a case in test_db to illustrate problem with XML indexes
-[x] Ensure that the db user has suitable privileges before readSchema (IS_ROLEMEMBER ('db_ddladmin'))
 [ ] Go through all the meta data SELECTs and make sure to pick up everything (primary for the comparision)
 [ ] Add interface to find a specific table, view etc. from schema+name or similar
 [ ] Consider adding concepts 
     [ ] "key" (a tuple of columns?)
     [ ] "value" (a concrete sql value of a specific type?)
 [ ] Add test for triggers, procedures and views that has changed name (with `sp_rename`)...
-[x] BUG: Named defaults is generated wrong - see [DF_TestTable01_ColWithNamedDefault]
-[x] Add some kind of db-compare (to find more bugs)
-[x] Add test that uses db-compare (on clones) for all regression suites 
-[x] Index "FILLFACTOR" is not part of the generated scripts - and generates error when clones are compared.
-[x] The tests sometimes fail when run in parallell - might be the shared folders...?
 [ ] DbFlow should track executed update scripts like DbUp do
 [ ] It should be possible to configure DbFlow to be compatible with DbUp (use table dbo.SchemaVersion) 
+[ ] Add option to disable triggers (in copy data) "BEGIN TRAN;DISABLE TRIGGER ALL ON %s{formatTblId tableId};%s{sql};ENABLE TRIGGER ALL ON %s{formatTblId tableId};COMMIT"
 
 ## Some upcoming version?
 
@@ -97,4 +99,15 @@
 [ ] Support for running and storing db statistics (Incl. TOP-usage)
 [ ] Data import from files
 [ ] Data export to files
+[ ] CLI version (to replace need to schemazen) - should support `COPY_SCHEMA`, `COPY_DATA`, `DIFF_SCHEMA` and `SYNC_DATA` 
+    [ ] Option to generate scripts (for copy, sync, diff and clone?) instead of running
+    [ ] Accept a file with column specifications for copy and sync
+    [ ] Option to estimate data size and time for copy and sync
+    [ ] Documentation on how to setup "schema compare" for dbup-projects
  
+## Namechange?
+
+- "DbStructura"? 
+- "DbSchemata"?
+- "Skemo" / "DbSkemo" (esperanto for schema)
+- "Fluo" / "DbFluo" (esperanto for flow) 
