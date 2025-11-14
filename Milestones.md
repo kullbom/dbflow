@@ -71,6 +71,7 @@
 
 [x] Don't generate objects (tables, views, etc) from system schemas other then "dbo"
 [x] Add option to control formatting of typenames
+[x] Order of scripts for foreign keys, check constraint and default constraints is not stable 
 
 ## Version 1.0.0
 

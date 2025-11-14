@@ -496,7 +496,6 @@ let generateCheckConstraintsScript (opt : Options) (table : Table, table_object_
 
 let generateDefaultConstraintsScript (opt : Options) (table : Table, dcs : DefaultConstraint array) =
     dcs 
-    |> Array.sortBy (fun dc -> dc.Object.ObjectId)
     |> Array.fold
         (fun (sc, objectIds) dc ->
             let tableName = Table.fullName table
@@ -770,7 +769,7 @@ let generateScripts (opt : Options) (schema : DatabaseSchema) f seed =
         (fun (t, _, _) -> objectFilename t.Schema.Name t.Name) generateCheckConstraintsScript
 
     |> dataForFolder "defaults" 
-        (db.Tables |> List.choose (fun t -> match t.DefaultConstraints with [||] -> None | dcs -> Some (t, dcs)))
+        (db.Tables |> List.choose (fun t -> match Schema.includeObjectsInScripts t.Schema, t.DefaultConstraints with _, [||] | false, _ -> None | true, dcs -> Some (t, dcs)))
         (fun (t, _) -> objectFilename t.Schema.Name t.Name) generateDefaultConstraintsScript
 
     |> dataForFolder "triggers" 

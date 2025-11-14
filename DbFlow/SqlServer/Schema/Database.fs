@@ -148,7 +148,7 @@ module DatabaseSchema =
         let views = 
             View.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules xProperties
             |> Logger.logTime logger "VIEW" connection
-            |> List.filter (fun v -> not v.Schema.IsSystemSchema)
+            |> List.filter (fun v -> Schema.includeObjectsInScripts v.Schema)
         
         views, dependencies
 

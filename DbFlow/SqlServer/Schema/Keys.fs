@@ -110,13 +110,21 @@ module ForeignKey =
             []
         |> DbTr.commit_ connection
             
+    let stableOrder (fk : ForeignKey) =
+        if fk.IsSystemNamed 
+        then 
+            let name' = fk.Name.[0..fk.Name.LastIndexOf '_']
+            let parentColumns = fk.Columns |> Array.joinBy "," (fun c -> c.ParentColumn.Name) 
+            let refColumns = fk.Columns |> Array.joinBy "," (fun c -> c.ReferencedColumn.Name)
+            sprintf "%s%s%s%s" name' fk.Referenced.Name parentColumns refColumns
+        else fk.Name
 
     let readAll objects fkColumns xProperties connection =
         let foreignKeys' = readAll' objects fkColumns xProperties connection
         let foreignKeysByParent =
             foreignKeys'
             |> List.groupBy (fun fk -> fk.Parent.ObjectId)
-            |> List.map (fun (parent_id, fks) -> parent_id, fks |> List.sortBy (fun fk -> fk.KeyIndexId) |> List.toArray)
+            |> List.map (fun (parent_id, fks) -> parent_id, fks |> List.sortBy stableOrder |> List.toArray)
             |> Map.ofList
             |> RCMap.ofMap
         let foreignKeysByReferenced =
