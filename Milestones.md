@@ -73,8 +73,13 @@
 [x] Add option to control formatting of typenames
 [x] Order of scripts for foreign keys, check constraint and default constraints is not stable 
 
+## Version 0.6.1
+
+[x] Add support for .Net 10
+
 ## Version 1.0.0
 
+[ ] Investigate how I can stop recreating the indexes - main reason is the principle (the tool should only require read access) but it could also take time (indexed views) 
 [ ] Instead of generating failing XML scripts: output warning and "scripts" with comments that it is not yet supported. 
 [ ] There is a problem with XML indexes... see failing test for "AdventureWorks 2014-2022"" - or search for "[XMLPATH_Person_Demographics]"
 [ ] Investigate/play with improved interface to connections

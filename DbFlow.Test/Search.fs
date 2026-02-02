@@ -1,14 +1,13 @@
 ﻿namespace DbFlow.Tests.Units
 
 open Xunit
-open Xunit.Abstractions
 
 open DbFlow
 open DbFlow.SqlParser
 open DbFlow.SqlParser.CodeSearch
 
-type BatchParsing (outputHelper:ITestOutputHelper) = 
-    let logger = Logger.create outputHelper.WriteLine
+type BatchParsing () = 
+    let logger = Logger.create System.Console.Out.WriteLine
 
     [<Fact>]
     member x.``Sql batches 01`` () =
@@ -204,8 +203,8 @@ GO
         Assert.True ((expected, actual) ||> List.forall2 (=), "Not the expected result from 'splitInSqlBatches'")
         ()
 
-type DefinitionParsing (outputHelper:ITestOutputHelper) = 
-    let logger = Logger.create outputHelper.WriteLine
+type DefinitionParsing () = 
+    let logger = Logger.create System.Console.Out.WriteLine
 
     [<Fact>]
     member x.``Trigger``() =

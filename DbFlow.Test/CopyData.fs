@@ -6,14 +6,12 @@ open DbFlow
 open DbFlow.SqlServer
 
 open Microsoft.Data.SqlClient
-open Xunit.Abstractions
 
-
-type Tests (outputHelper : ITestOutputHelper) = 
+type Tests () = 
     [<Fact>]
     let ``Clone db`` () =
         let silentLogger = Logger.create ignore
-        let logger = Logger.create outputHelper.WriteLine
+        let logger = Logger.create System.Console.Out.WriteLine
         let options = Options.Default 
     
         let dbFolder = __SOURCE_DIRECTORY__ + "\\Samples\\test_db\\scripts"
@@ -52,7 +50,7 @@ type Tests (outputHelper : ITestOutputHelper) =
     [<Fact>]
     let ``Copy data`` () =
         let silentLogger = Logger.create ignore
-        let logger = Logger.create outputHelper.WriteLine
+        let logger = Logger.create System.Console.Out.WriteLine
         let options = Options.Default 
     
         let dbFolder = __SOURCE_DIRECTORY__ + "\\Samples\\adventure-works-2012-oltp-lt\\scripts"
