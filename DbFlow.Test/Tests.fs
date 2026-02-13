@@ -79,10 +79,12 @@ type ``Test suite`` () =
 
 
 
-module RegressionDirectory =
+module RegressionConstants =
     let dbflow_regression_directory = 
         let dbflow_regression_directory' = __SOURCE_DIRECTORY__ + "\\..\\..\dbflow-regression\\"
         System.IO.Path.GetFullPath (dbflow_regression_directory')
+    
+    let markerForNoRegressions = "<<<No regressions found>>>"
     
 // This test looks for "regression" database definitions in the directory "dbflow-regression" (in the same directory as the repo)
 // If such a directory is found it expects all subdirectories of that to represesent a database to test.
@@ -90,20 +92,27 @@ module RegressionDirectory =
 type ``Regression`` () = 
     let logger = Logger.create System.Console.Out.WriteLine
     
+
     static member dbflow_regression_data = 
-            if System.IO.Directory.Exists (RegressionDirectory.dbflow_regression_directory)
-            then System.IO.Directory.GetDirectories (RegressionDirectory.dbflow_regression_directory)
+            if System.IO.Directory.Exists (RegressionConstants.dbflow_regression_directory)
+            then System.IO.Directory.GetDirectories (RegressionConstants.dbflow_regression_directory)
             else [||]
-            |> Seq.choose (fun dir -> 
+            |> Array.choose (fun dir -> 
                 let dirName = dir.Substring(dir.LastIndexOf("\\") + 1) 
                 if dirName.StartsWith(".")
                 then None
                 else Some [| dirName |> box |])
+            |> function
+                | [||] -> [| [| RegressionConstants.markerForNoRegressions |> box |] |]
+                | arr -> arr
 
     [<Xunit.Theory; Xunit.MemberData("dbflow_regression_data")>]
     member x.``Test suite`` (db : string) = 
-        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true; TypenameFormatter = Options.defaultTypenameFormatter }
-        Common.fullTestSuite logger options [] RegressionDirectory.dbflow_regression_directory db
+        if db = RegressionConstants.markerForNoRegressions
+        then ()
+        else 
+            let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true; TypenameFormatter = Options.defaultTypenameFormatter }
+            Common.fullTestSuite logger options [] RegressionConstants.dbflow_regression_directory db
 
 
 type ``SqlLocalDb_exe`` () = 
