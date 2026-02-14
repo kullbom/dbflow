@@ -73,6 +73,14 @@
 [x] Add option to control formatting of typenames
 [x] Order of scripts for foreign keys, check constraint and default constraints is not stable 
 
+## Version 0.6.1
+
+[x] Add support for .Net 10
+
+## Version 0.x.x
+
+[ ] Investigate how I can stop recreating the indexes - main reason is the principle (the tool should only require read access) but it could also take time (indexed views) 
+
 ## Version 1.0.0
 
 [ ] Instead of generating failing XML scripts: output warning and "scripts" with comments that it is not yet supported. 

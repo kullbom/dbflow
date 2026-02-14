@@ -1,10 +1,9 @@
 ﻿module DbFlow.Tests.CodeGenerator
 
 open Xunit
-open Xunit.Abstractions
 
-type ``The code generator`` (outputHelper:ITestOutputHelper) = 
-    let logger s = outputHelper.WriteLine s
+type ``The code generator`` () = 
+    let logger (s : string) = System.Console.Out.WriteLine s
     
     [<Fact>]
     member x.``Generate comparison code`` () =
