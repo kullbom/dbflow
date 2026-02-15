@@ -1,4 +1,4 @@
-﻿namespace DbFlow
+﻿namespace DbFlow.SqlServer
 
 type ReadOptions = {
     CheckReferencesOnLoad : bool

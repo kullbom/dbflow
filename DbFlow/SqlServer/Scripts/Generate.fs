@@ -1,6 +1,7 @@
 ﻿module DbFlow.SqlServer.Scripts.Generate
 
 open DbFlow
+open DbFlow.SqlServer
 open DbFlow.SqlServer.Schema
 
 type ScriptContent = ScriptContent of string list

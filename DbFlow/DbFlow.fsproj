@@ -25,8 +25,8 @@
     <Compile Include="Utils.fs" />
     <Compile Include="SqlParser.fs" />
     <Compile Include="DbTr.fs" />
-    <Compile Include="DbFlow.fs" />
     <Compile Include="Dependent.fs" />
+    <Compile Include="SqlServer\DbFlow.fs" />
     <Compile Include="SqlServer\Schema\XProperties.fs" />
     <Compile Include="SqlServer\Schema\Objects.fs" />
     <Compile Include="SqlServer\Schema\Types.fs" />

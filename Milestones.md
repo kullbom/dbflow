@@ -77,35 +77,37 @@
 
 [x] Add support for .Net 10
 
-## Version 0.7.0
+## Version 0.7.0 - 2026-02-15
 
 [x] Investigate how I can stop recreating the indexes - main reason is the principle (the tool should only require read access) but it could also take time (indexed views) 
 [x] Replaced the drop and recreation of views with calls to `sp_refreshview`. 
 
-## Version 0.8.0
+## Version 0.8.0 - 2026-02-15
 
-[x] Make executing refresh view optional
+[x] Make executing refresh view optional (it only needed for comparision of two database schemas)
 [x] Only refresh view that are not schemabound
 
 ## Version 1.0.0
 
-[ ] Instead of generating failing XML scripts: output warning and "scripts" with comments that it is not yet supported. 
-[ ] There is a problem with XML indexes... see failing test for "AdventureWorks 2014-2022"" - or search for "[XMLPATH_Person_Demographics]"
-[ ] Investigate/play with improved interface to connections
-    [ ] a Union like Connection | ConnectionStr | ConnectionFactory... ?
+[ ] Investigate if sp_refreshsqlmodule can be used instead of manually rewriting the definitions of triggers (and sp_refreshview for views)
 [ ] Improved support for cloning/copy data
     [ ] (Basic) Support for specific data (not only TopN)
     [ ] Consider some kind of support for exclusion and/or modification of cloned data (to be able to avoid certain data and anonymize)
-[ ] Add a case in test_db to illustrate problem with XML indexes
+[ ] Investigate/play with improved interface to connections
+    [ ] a Union like Connection | ConnectionStr | ConnectionFactory... ?
 [ ] Go through all the meta data SELECTs and make sure to pick up everything (primary for the comparision)
 [ ] Add interface to find a specific table, view etc. from schema+name or similar
+[ ] DbFlow should track executed update scripts like DbUp do
+[ ] It should be possible to configure DbFlow to be compatible with DbUp (use table dbo.SchemaVersion) 
+[ ] Add option to disable triggers (in copy data) "BEGIN TRAN;DISABLE TRIGGER ALL ON %s{formatTblId tableId};%s{sql};ENABLE TRIGGER ALL ON %s{formatTblId tableId};COMMIT"
 [ ] Consider adding concepts 
     [ ] "key" (a tuple of columns?)
     [ ] "value" (a concrete sql value of a specific type?)
 [ ] Add test for triggers, procedures and views that has changed name (with `sp_rename`)...
-[ ] DbFlow should track executed update scripts like DbUp do
-[ ] It should be possible to configure DbFlow to be compatible with DbUp (use table dbo.SchemaVersion) 
-[ ] Add option to disable triggers (in copy data) "BEGIN TRAN;DISABLE TRIGGER ALL ON %s{formatTblId tableId};%s{sql};ENABLE TRIGGER ALL ON %s{formatTblId tableId};COMMIT"
+
+[ ] Instead of generating failing XML scripts: output warning and "scripts" with comments that it is not yet supported. 
+[ ] There is a problem with XML indexes... see failing test for "AdventureWorks 2014-2022"" - or search for "[XMLPATH_Person_Demographics]"
+[ ] Add a case in test_db to illustrate problem with XML indexes
 
 ## Some upcoming version?
 

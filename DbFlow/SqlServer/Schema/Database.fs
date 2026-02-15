@@ -1,6 +1,7 @@
 ﻿namespace DbFlow.SqlServer.Schema
 
 open DbFlow
+open DbFlow.SqlServer
 open DbFlow.Readers
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-databases-transact-sql?view=sql-server-ver17
