@@ -158,7 +158,7 @@ module DatabaseSchema =
         let fkColsByConstraint = ForeignKeycolumn.readAll objects columns |> Logger.logTime logger "FOREIGN_KEY_COLUMN" connection 
         let (foreignKeysByParent, foreignKeysByReferenced)  = 
             ForeignKey.readAll objects fkColsByConstraint xProperties 
-             |> Logger.logTime logger "FOREIGN_KEY" connection
+            |> Logger.logTime logger "FOREIGN_KEY" connection
         
         let indexesColumnsByIndex = IndexColumn.readAll objects columns |> Logger.logTime logger "INDEX_COLUMN" connection
         let indexesByParent = Index.readAll objects indexesColumnsByIndex xProperties |> Logger.logTime logger "INDEX" connection

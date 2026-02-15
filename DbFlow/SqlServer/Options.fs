@@ -2,10 +2,10 @@
 
 type ReadOptions = {
     CheckReferencesOnLoad : bool
-    RefreshViewMetadata : bool
+    RefreshSqlModulesMetadata : bool
 }
     with
-        static member Default = { CheckReferencesOnLoad = true; RefreshViewMetadata = false }
+        static member Default = { CheckReferencesOnLoad = true; RefreshSqlModulesMetadata = false }
 
 // Should have a better name - and should probably be specific for db vendor
 type ScriptOptions = {

@@ -183,10 +183,10 @@ AS BEGIN
         let (_ , i4) = findFromSkipping [isWS; isStr "ON"; isWS] skipThese definition (i3 - 1)
         let (p0, i5) = findFromSkipping [isNotWS] skipThese definition i4
         let (p1, _ ) = findFromSkipping [isWS] skipThese definition i5
-
+    
         if p1 = -1
         then failwithf "Could not parse trigger definition for %s" name
-
+    
         let newDefinition =
             definition.Substring(0, n0)
             + name
@@ -200,7 +200,7 @@ CREATE PROCEDURE [dbo].[GetAllFoobars]
 	@xyzId int
 AS
 BEGIN*)
-    let updatedProcedureDefinition procName definingToken definition =
+    let updatedProcedureDefinition procName definingToken definition = 
         let skip = Batches.collectSqlCommentsAndStrings definition
         
         let (_ , i0) = findFromSkipping [isStr "CREATE"; isWS] skip definition 0
@@ -210,7 +210,7 @@ BEGIN*)
         
         if n1 = -1
         then failwithf "Could not parse procedure definition for %s" procName
-
+    
         let newDefinition =
             definition.Substring(0, n0)
             + procName

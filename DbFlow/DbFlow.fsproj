@@ -5,7 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>DbFlow</Title>
-    <Version>0.8.0</Version>
+    <Version>0.9.0</Version>
     <Copyright>2025-2026 Johan Kullbom</Copyright>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>.net;f#;sql;mssqlserver</PackageTags>
@@ -15,9 +15,8 @@
     <RepositoryType>git</RepositoryType>
 	<Description>DbFlow is a library that helps with schema oriented database tasks</Description>
 	<PackageReleaseNotes>
-		- Separated options into ScriptOptions and ReadOptions. 
-		- Added option for refreshing view metadata. 
-		- Only refresh non schema bound views
+		- Changed from System.Data.IDbCommand etc. to System.Data.Common.DbCommand
+		- Added support for Async executeion of database queries
 	</PackageReleaseNotes>
   </PropertyGroup>
 
@@ -26,7 +25,7 @@
     <Compile Include="SqlParser.fs" />
     <Compile Include="DbTr.fs" />
     <Compile Include="Dependent.fs" />
-    <Compile Include="SqlServer\DbFlow.fs" />
+    <Compile Include="SqlServer\Options.fs" />
     <Compile Include="SqlServer\Schema\XProperties.fs" />
     <Compile Include="SqlServer\Schema\Objects.fs" />
     <Compile Include="SqlServer\Schema\Types.fs" />

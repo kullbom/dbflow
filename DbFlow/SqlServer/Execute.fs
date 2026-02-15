@@ -23,30 +23,24 @@ module Internal =
 
     // https://learn.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-refreshsqlmodule-transact-sql?view=sql-server-ver17
 
-    // Trigger definitions can also be out of sync ...
-    // - investigate if the updating of trigger and view definitions is really needed or if these could be used instead...
-
-    //let refreshSqlModuleMetadata logger connection =
-    //    
-    //
-    //    ()
-
-    // https://learn.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-refreshview-transact-sql?view=sql-server-ver17
-
-    let refreshViewMetadata logger connection =
+    let refreshSqlModuleMetadata logger connection =
+        let modules = SqlModule.readAll connection
+        // For now - only update views
+        // Functions can be refered to by check constraints and is then not possible to refresh ... :(
         DbTr.reader 
             "SELECT 
-                v.name AS ViewName,
-                SCHEMA_NAME(v.schema_id) AS SchemaName
-             FROM sys.views v
-             INNER JOIN sys.sql_modules m ON v.object_id = m.object_id
-             WHERE m.is_schema_bound = 0"
+                o.name AS ObjectName,
+                SCHEMA_NAME(o.schema_id) AS SchemaName
+             FROM sys.sql_modules m
+             INNER JOIN sys.objects o ON o.object_id = m.object_id
+             WHERE m.is_schema_bound = 0 
+               AND o.type = 'V '"
             []
             (fun acc r -> 
                 let refreshScript = 
-                    let viewName = Readers.readString "ViewName" r
+                    let objectName = Readers.readString "ObjectName" r
                     let schemaName = Readers.readString "SchemaName" r 
-                    $"EXECUTE sp_refreshview N'[{schemaName}].[{viewName}]'"
+                    $"EXECUTE sp_refreshsqlmodule N'[{schemaName}].[{objectName}]'"
                 refreshScript :: acc)
             []
         |> DbTr.commit_ connection
@@ -89,10 +83,10 @@ let readSchema logger (options : ReadOptions) connection =
         | [true] -> ()
         | r -> failwithf "Missing privileges to read schema" 
     
-    if options.RefreshViewMetadata
+    if options.RefreshSqlModulesMetadata
     then 
-        Internal.refreshViewMetadata logger 
-        |> Logger.logTime logger "Refresh view meta data" connection 
+        Internal.refreshSqlModuleMetadata logger 
+        |> Logger.logTime logger "Refresh meta data" connection 
 
     DatabaseSchema.read logger options connection
 

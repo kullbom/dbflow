@@ -104,6 +104,7 @@
     [ ] "key" (a tuple of columns?)
     [ ] "value" (a concrete sql value of a specific type?)
 [ ] Add test for triggers, procedures and views that has changed name (with `sp_rename`)...
+[ ] Add support for async IO
 
 [ ] Instead of generating failing XML scripts: output warning and "scripts" with comments that it is not yet supported. 
 [ ] There is a problem with XML indexes... see failing test for "AdventureWorks 2014-2022"" - or search for "[XMLPATH_Person_Demographics]"
@@ -133,3 +134,15 @@
 - "DbSchemata"?
 - "Skemo" / "DbSkemo" (esperanto for schema)
 - "Fluo" / "DbFluo" (esperanto for flow) 
+
+## Metadata?
+
+- Property on database to store dbflow version? Or a function that returns the version?
+- Table to store executed scripts (name, timestamp, hash, dbflow-version)
+- Table to store performance statistics
+- SP to compute and store performance statistics
+- Implement a "require consistency" as a prestep in "dbup functionality" 
+    1. Spin up a local db and apply all previously applied script to it.
+    2. Compare the schema of the local db to the target db. Fail on diff.
+    3. Apply the new script(s) to the target
+

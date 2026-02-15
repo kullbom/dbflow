@@ -106,7 +106,7 @@ type ``Regression`` () =
             
     [<Xunit.Theory; Xunit.MemberData("dbflow_regression_data")>]
     member x.``Test suite`` (db : string) = 
-        let readOptions = { ReadOptions.Default with CheckReferencesOnLoad = true; RefreshViewMetadata = true; }
+        let readOptions = { ReadOptions.Default with CheckReferencesOnLoad = true; RefreshSqlModulesMetadata = true; }
         let scriptOptions = { ScriptOptions.Default with SkipCompatibilityLevel = true; }
         Common.fullTestSuite logger readOptions scriptOptions [] RegressionConstants.dbflow_regression_directory db
 

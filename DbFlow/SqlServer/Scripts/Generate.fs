@@ -9,6 +9,7 @@ type ScriptContent = ScriptContent of string list
 /// Creates a new ScriptContent with a new line appended
 let (|>+) (ScriptContent lines) line = ScriptContent (line :: lines)
 
+/// ScriptContent is a script that you can append new lines to 
 module ScriptContent =
     let empty = ScriptContent []
     let single s = ScriptContent [s]

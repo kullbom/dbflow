@@ -28,26 +28,36 @@ module Internal =
     let bulkOptions = SqlBulkCopyOptions.CheckConstraints ||| SqlBulkCopyOptions.KeepIdentity
     
     let dataRefToTempTable' tableName (dataRef : DataReference) =
-        DbTr (fun ctx ->
+        let dataRefToTempTable'' writeToServer ctx =
             let tr = match ctx.Transaction with Some t -> t | None -> null
             use bc = new SqlBulkCopy(ctx.Connection :?> SqlConnection, bulkOptions, tr :?> SqlTransaction)
             bc.DestinationTableName <- tableName
             bc.BulkCopyTimeout <- 60 * 60 
-    
+
             for c in dataRef.KeyColumns do
                 bc.ColumnMappings.Add (c.Name, c.Name) |> ignore
-    
+
             use dataTable = new System.Data.DataTable()
             for c in dataRef.KeyColumns do
                 dataTable.Columns.Add(new System.Data.DataColumn(c.Name))
-    
+
             for d in dataRef.DataKeys do 
                 let dataRow = dataTable.NewRow()
                 dataRow.ItemArray <- d
                 dataTable.Rows.Add(dataRow)
-    
-            bc.WriteToServer dataTable
-            bc.RowsCopied)
+
+            writeToServer bc dataTable
+        DbTr.create
+            (dataRefToTempTable'' 
+                (fun bc dataTable ->
+                    bc.WriteToServer dataTable
+                    bc.RowsCopied))
+            (dataRefToTempTable'' 
+                (fun bc dataTable ->
+                    bc.WriteToServerAsync dataTable
+                    |> Task.toUnit
+                    |> Task.map (fun () -> bc.RowsCopied)))
+        
     
     let createTempTable (options : ScriptOptions) (allTypes : Map<int, Datatype>) tempTableName (columns : Column array) = 
         let columnDefs = 
@@ -117,7 +127,7 @@ module Internal =
                         // Now use the reader to pass data to the bulk insert 
                         // NOT part of the source transaction
                         let bulkInsertTransaction =
-                            DbTr (fun c ->
+                            let bulkInsertTransaction' c writeToServer =
                                 let dbTransaction =
                                     match c.Transaction with
                                     | None -> null 
@@ -125,17 +135,29 @@ module Internal =
                                 use bc = new SqlBulkCopy(c.Connection :?> SqlConnection, bulkOptions, dbTransaction)
                                 bc.DestinationTableName <- targetTableName
                                 bc.BulkCopyTimeout <- 60 * 60 
-    
+
                                 for c in allColumns do
                                     bc.ColumnMappings.Add (c.Name, c.Name) |> ignore
-    
-                                bc.WriteToServer dataReader
-                                bc.RowsCopied)
+
+                                writeToServer bc
+                            DbTr.create
+                                (fun c ->
+                                    bulkInsertTransaction' c 
+                                        (fun bc -> 
+                                            bc.WriteToServer dataReader
+                                            bc.RowsCopied))
+                                (fun c -> 
+                                    bulkInsertTransaction' c 
+                                        (fun bc -> 
+                                            bc.WriteToServerAsync dataReader
+                                            |> Task.toUnit
+                                            |> Task.map (fun () -> bc.RowsCopied)))
+                            
                         bulkInsertTransaction 
                         |> onTarget))
         |> onSource
     
-    let copyTableData' (options : ScriptOptions) allTypes (dataRef : DataReference) (copyMethod : CopyMethod) (sourceConnection : System.Data.IDbConnection) (targetConnection : System.Data.IDbConnection) =
+    let copyTableData' (options : ScriptOptions) allTypes (dataRef : DataReference) (copyMethod : CopyMethod) (sourceConnection : System.Data.Common.DbConnection) (targetConnection : System.Data.Common.DbConnection) =
         match copyMethod with
         | InsertCopy ->
             // Plain insert to the target table
@@ -192,7 +214,7 @@ module Internal =
                     }
                     |> DbTr.commit_ targetConnection)
     
-    let rec collectDataRefs (logger : Logger) (options : ScriptOptions) allTypes indent collected allTables (dataRef : DataReference) (sourceConnection : System.Data.IDbConnection) =
+    let rec collectDataRefs (logger : Logger) (options : ScriptOptions) allTypes indent collected allTables (dataRef : DataReference) (sourceConnection : System.Data.Common.DbConnection) =
         let table = dataRef.Table
         table.ForeignKeys
         |> Array.fold 
@@ -221,7 +243,7 @@ module Internal =
             (dataRef :: collected)
         
 /// Copies all data referenced by {origDataRef} from one database to another
-let copyData (logger : Logger) (options : ScriptOptions) (schema : Schema.DatabaseSchema) (origDataRef : DataReference) copyMethod (sourceConnection : System.Data.IDbConnection) (targetConnection : System.Data.IDbConnection) =
+let copyData (logger : Logger) (options : ScriptOptions) (schema : Schema.DatabaseSchema) (origDataRef : DataReference) copyMethod (sourceConnection : System.Data.Common.DbConnection) (targetConnection : System.Data.Common.DbConnection) =
     let allTables =
         schema.Tables
         |> List.map (fun t -> t.Object.ObjectId, t)
