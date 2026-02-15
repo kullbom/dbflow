@@ -8,19 +8,19 @@ open DbFlow.SqlServer
 
 module Common = 
                 
-    let testDbFlowRoundtrip logger options sourceSchema sourceScriptFolder destScriptFolder =
+    let testDbFlowRoundtrip logger readOptions scriptOptions sourceSchema sourceScriptFolder destScriptFolder =
         use localDb =
             Logger.infoWithTime "Clone db (start)" logger 
-            Execute.cloneToLocal (Logger.decorate (fun m -> $"  {m}") logger) options  
+            Execute.cloneToLocal (Logger.decorate (fun m -> $"  {m}") logger) scriptOptions  
             |> Logger.logTime logger "Clone db" sourceSchema
 
         let cloneSchema = 
             use connection = new SqlConnection(localDb.ConnectionString)
             connection.Open()
-            Execute.readSchema Logger.dummy options
+            Execute.readSchema Logger.dummy readOptions
             |> Logger.logTime logger "Load clone" connection
 
-        Execute.generateScriptFiles options cloneSchema
+        Execute.generateScriptFiles scriptOptions cloneSchema
         |> Logger.logTime logger "Generate scripts (of clone)" destScriptFolder 
 
         Helpers.compareScriptFolders logger sourceScriptFolder 
@@ -31,7 +31,7 @@ module Common =
         | diff -> Assert.Fail (sprintf "Schema is not same (%i differences)" diff.Length)
         
         
-    let fullTestSuite logger options rules directory (dbName : string) =
+    let fullTestSuite logger readOptions scriptOptions rules directory (dbName : string) =
         Helpers.withLocalDbFromScripts logger None (directory + $"{dbName}\\scripts")
             (fun connectionString ->
                 let dbFlowOutputDir = directory + $"{dbName}\\dbflow_output"
@@ -42,14 +42,14 @@ module Common =
                 connection.Open()
                 
                 let dbSchema = 
-                    Execute.readSchema Logger.dummy options
+                    Execute.readSchema Logger.dummy readOptions 
                     |> Logger.logTime logger "Load schema" connection
 
-                Execute.generateScriptFiles options dbSchema 
+                Execute.generateScriptFiles scriptOptions dbSchema 
                 |> Logger.logTime logger "Generate scripts" dbFlowOutputDir 
 
                 // Test DbFlow "roundtrip"
-                testDbFlowRoundtrip logger options dbSchema dbFlowOutputDir dbFlowOutputDir2
+                testDbFlowRoundtrip logger readOptions scriptOptions dbSchema dbFlowOutputDir dbFlowOutputDir2
 
                 for (rule : Rule) in rules do
                     match rule.CheckRule dbSchema with
@@ -63,8 +63,9 @@ type ``Test suite`` () =
     [<Theory>]
     [<InlineData("test_db")>]
     member x.SampleDbs(db : string) = 
-        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true; TypenameFormatter = Options.defaultTypenameFormatter }
-        Common.fullTestSuite logger options (Rule.ALL RuleExclusion.none) samplesFolder db
+        let readOptions = { ReadOptions.Default with CheckReferencesOnLoad = true; }
+        let scriptOptions = { ScriptOptions.Default with SkipCompatibilityLevel = true; }
+        Common.fullTestSuite logger readOptions scriptOptions (Rule.ALL RuleExclusion.none) samplesFolder db
 
     // AdventureWorks in different versions - the scripts are modified to be compatible with DbUp
     // source: https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure?view=sql-server-ver17&tabs=ssms
@@ -74,8 +75,9 @@ type ``Test suite`` () =
     [<InlineData("2012-oltp-lt")>]
     [<InlineData("2014-2022")>]
     member x.AdventureWorks (ver : string) =
-        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true; TypenameFormatter = Options.defaultTypenameFormatter }
-        Common.fullTestSuite logger options [] samplesFolder ("adventure-works-" + ver)
+        let readOptions = { ReadOptions.Default with CheckReferencesOnLoad = false; }
+        let scriptOptions = { ScriptOptions.Default with SkipCompatibilityLevel = true; }
+        Common.fullTestSuite logger readOptions scriptOptions [] samplesFolder ("adventure-works-" + ver)
 
 
 
@@ -93,9 +95,6 @@ module RegressionConstants =
             if dirName.StartsWith(".")
             then None
             else Some [| dirName |> box |])
-
-    
-    let markerForNoRegressions = "<<<No regressions found>>>"
     
 // This test looks for "regression" database definitions in the directory "dbflow-regression" (in the same directory as the repo)
 // If such a directory is found it expects all subdirectories of that to represesent a database to test.
@@ -107,11 +106,9 @@ type ``Regression`` () =
             
     [<Xunit.Theory; Xunit.MemberData("dbflow_regression_data")>]
     member x.``Test suite`` (db : string) = 
-        if db = RegressionConstants.markerForNoRegressions
-        then ()
-        else 
-            let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true; TypenameFormatter = Options.defaultTypenameFormatter }
-            Common.fullTestSuite logger options [] RegressionConstants.dbflow_regression_directory db
+        let readOptions = { ReadOptions.Default with CheckReferencesOnLoad = true; RefreshViewMetadata = true; }
+        let scriptOptions = { ScriptOptions.Default with SkipCompatibilityLevel = true; }
+        Common.fullTestSuite logger readOptions scriptOptions [] RegressionConstants.dbflow_regression_directory db
 
 
 type ``SqlLocalDb_exe`` () = 
@@ -147,13 +144,14 @@ type ``SqlLocalDb_exe`` () =
 
         if cmd System.Console.Out.WriteLine "SqlLocalDB.exe create \"%s\" -s" dbName 
         then
-            let options = Options.Default
+            let readOptions = ReadOptions.Default
+            let scriptOptions = ScriptOptions.Default
             let schema = 
                 use dbConn = new Microsoft.Data.SqlClient.SqlConnection (dbConnStr)
                 dbConn.Open ()
-                SqlServer.Execute.readSchema logger options dbConn
+                SqlServer.Execute.readSchema logger readOptions dbConn
 
-            SqlServer.Execute.generateScriptFiles options schema outputFolder
+            SqlServer.Execute.generateScriptFiles scriptOptions schema outputFolder
 
             if cmd System.Console.Out.WriteLine "SqlLocalDB.exe stop \"%s\"" dbName 
             then 

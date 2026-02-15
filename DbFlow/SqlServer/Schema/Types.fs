@@ -55,7 +55,7 @@ type Datatype = {
 }
 
 module Datatype =
-    let typeStr' (options : Options) (dtName : string) (typeSpec : DatatypeSpec) (p : DatatypeParameter)=
+    let typeStr' (options : ScriptOptions) (dtName : string) (typeSpec : DatatypeSpec) (p : DatatypeParameter)=
         let formatTypeName = options.TypenameFormatter 
         let plain tName =
             $"[{formatTypeName tName}]"
@@ -87,7 +87,7 @@ module Datatype =
 
         | _ -> plain dtName
 
-    let typeStr (options : Options) (dt : Datatype) =
+    let typeStr (options : ScriptOptions) (dt : Datatype) =
         typeStr' options dt.Name dt.DatatypeSpec dt.Parameter
 
     let createSystemDataType sys_type_name =

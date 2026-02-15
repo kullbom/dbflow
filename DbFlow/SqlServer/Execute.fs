@@ -22,28 +22,29 @@ module Internal =
         |> DbTr.sequence_
 
     let refreshViewMetadata logger options connection =
-        let objects = 
-            let xProperties = RCMap.ofMap Map.empty
-            let schemas = Schema.readAll xProperties connection
-            OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
+        let views = 
+            DbTr.reader 
+                "SELECT 
+                    v.name AS ViewName,
+                    SCHEMA_NAME(v.schema_id) AS SchemaName
+                 FROM sys.views v
+                 INNER JOIN sys.sql_modules m ON v.object_id = m.object_id
+                 WHERE m.is_schema_bound = 0"
+                []
+                (fun acc r -> {| ViewName = Readers.readString "ViewName" r; SchemaName = Readers.readString "SchemaName" r |} :: acc)
+                []
+            |> DbTr.commit_ connection
         
         // Execute refresh scripts
-        objects 
-        |> RCMap.fold 
-            (fun scripts _ _ (o : OBJECT) -> 
-                match o.ObjectType with
-                | ObjectType.View -> 
-                    let script =
-                        $"EXECUTE sp_refreshview N'[{o.Schema.Name}].[{o.Name}]'"
-                        |> ScriptContent.single |> scriptTransaction
-                    script :: scripts
-                | _ -> scripts
-                )
-            []
+        views 
+        |> List.map
+            (fun view -> 
+                $"EXECUTE sp_refreshview N'[{view.SchemaName}].[{view.ViewName}]'"
+                |> ScriptContent.single |> scriptTransaction)
         |> DbTr.sequence_ 
         |> DbTr.commit_ connection 
 
-    let collectScriptsFromSchema (options : Options) (sourceDb : DatabaseSchema) =
+    let collectScriptsFromSchema (options : ScriptOptions) (sourceDb : DatabaseSchema) =
         Scripts.Generate.generateScripts options sourceDb
             (fun (settingsScripts, scripts) isDatabaseSettings script -> 
                 if isDatabaseSettings 
@@ -69,7 +70,7 @@ module Internal =
         |> List.map snd
 
 /// Read the schema of a database given a connection
-let readSchema logger (options : Options) connection =
+let readSchema logger (options : ReadOptions) connection =
     // Ensure the current user has enough privileges to access the schema
     DbTr.reader "SELECT IS_ROLEMEMBER('db_ddladmin') CanRead" []
         (fun acc r -> (Readers.readInt32 "CanRead" r = 1) :: acc) []
@@ -78,13 +79,15 @@ let readSchema logger (options : Options) connection =
         | [true] -> ()
         | r -> failwithf "Missing privileges to read schema" 
     
-    Internal.refreshViewMetadata logger options 
-    |> Logger.logTime logger "Refresh view meta data" connection 
+    if options.RefreshViewMetadata
+    then 
+        Internal.refreshViewMetadata logger options 
+        |> Logger.logTime logger "Refresh view meta data" connection 
 
     DatabaseSchema.read logger options connection
 
 /// Clone a schema into a database given a target connection
-let clone logger (options : Options) (sourceDb : DatabaseSchema) (targetConnection : SqlConnection) =
+let clone logger (options : ScriptOptions) (sourceDb : DatabaseSchema) (targetConnection : SqlConnection) =
     let (settingsScripts, collectedScripts) = 
         Internal.collectScriptsFromSchema options 
         |> Logger.logTime logger "Collect scripts" sourceDb
@@ -110,7 +113,7 @@ let clone logger (options : Options) (sourceDb : DatabaseSchema) (targetConnecti
 
     SqlConnection.ClearPool targetConnection
 
-let cloneToLocal logger (options : Options) (sourceDb : DatabaseSchema) =
+let cloneToLocal logger (options : ScriptOptions) (sourceDb : DatabaseSchema) =
     let localDb = new LocalTempDb(logger)
     use conn = new Microsoft.Data.SqlClient.SqlConnection(localDb.ConnectionString)
     conn.Open ()
@@ -118,7 +121,7 @@ let cloneToLocal logger (options : Options) (sourceDb : DatabaseSchema) =
     localDb
 
 /// Generate scripts of a schema to a folder structure
-let generateScriptFiles (opt : Options) (schema : DatabaseSchema) directory =
+let generateScriptFiles (opt : ScriptOptions) (schema : DatabaseSchema) directory =
     let tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), (System.Guid.NewGuid ()).ToString().Replace("-", ""))
     Scripts.Generate.generateScripts opt schema
         (fun () _isDatabaseSettings script ->

@@ -139,7 +139,7 @@ module XProperties =
         collectXProps xProps  ["N'SCHEMA'", $"[{s.Name}]"; "N'TYPE'", $"[{typeName}]";]
 
         
-let columnDefinitionStr (opt : Options) (dbProps : DatabaseProperties) allTypes isTableType (columnInlineDefaults : Map<int, DefaultConstraint>) (column : Column) =
+let columnDefinitionStr (opt : ScriptOptions) (dbProps : DatabaseProperties) allTypes isTableType (columnInlineDefaults : Map<int, DefaultConstraint>) (column : Column) =
     let columnDefStr =
         match column.ComputedDefinition with
         | Some computed ->
@@ -183,7 +183,7 @@ let separateBy f xs =
     |> Array.fold (fun (xs, ys) x -> if f x then x :: xs, ys else xs, x :: ys) ([], [])
     |> fun (xs, ys) -> xs |> List.rev |> List.toArray, ys |> List.rev |> List.toArray
     
-let generateSettingsScript (opt : Options) (schema : DatabaseSchema) =
+let generateSettingsScript (opt : ScriptOptions) (schema : DatabaseSchema) =
     let s = schema.Properties
     let onOff isSet = if isSet then "ON" else "OFF"
     let recoveryModel = match s.recovery_model with 1uy -> "FULL" | 2uy -> "BULK_LOGGED" | 3uy -> "SIMPLE" | rm -> failwithf "Unknown recovery model %i" rm
@@ -228,7 +228,7 @@ let generateSettingsScript (opt : Options) (schema : DatabaseSchema) =
     |> DatabaseDefinition
 
 
-let generateSchemaScript (opt : Options) (schema : Schema) =
+let generateSchemaScript (opt : ScriptOptions) (schema : Schema) =
     ScriptContent.empty
     |>+ $"CREATE SCHEMA [{schema.Name}] AUTHORIZATION [{schema.PrincipalName}]"
     |>+ "GO"
@@ -264,7 +264,7 @@ let indexWithSettings parentIsView (index : Index) =
     |> Array.joinBy ", " id
     |> function "" -> "" | s -> $"\r\n    WITH( {s} )"
 
-let primaryKeyStr (opt : Options) isTableType (pk : Index) =
+let primaryKeyStr (opt : ScriptOptions) isTableType (pk : Index) =
     let pkName = 
         match pk.Name with Some n -> n | None -> failwithf "Can not handle PK without name"
     let clusteredStr = 
@@ -278,7 +278,7 @@ let primaryKeyStr (opt : Options) isTableType (pk : Index) =
     then $"PRIMARY KEY {clusteredStr} ({pkColumnsStr}){withSettings}"
     else $"CONSTRAINT [{pkName}] PRIMARY KEY {clusteredStr} ({pkColumnsStr}){withSettings}"
         
-let uniqueKeyStr (opt : Options) (i : Index) =
+let uniqueKeyStr (opt : ScriptOptions) (i : Index) =
     let iName = 
         match i.Name with Some n -> n | None -> failwithf "Can not handle UNIQUE CONSTRAINTS without name"
     let clusteredStr = 
@@ -291,7 +291,7 @@ let uniqueKeyStr (opt : Options) (i : Index) =
     then $"CONSTRAINT [{iName}] UNIQUE {clusteredStr} ({indexColumnsStr})"
     else $"UNIQUE {clusteredStr} ({indexColumnsStr})"
 
-let generateStandardIndexScript (opt : Options) (index : Index) (parentName : string) parentIsView (indexName : string) (indexTypeStr : string) =
+let generateStandardIndexScript (opt : ScriptOptions) (index : Index) (parentName : string) parentIsView (indexName : string) (indexTypeStr : string) =
     let (includeColumns, keyColumns) =
         separateBy (fun c -> c.IsIncludedColumn) index.Columns
 
@@ -313,7 +313,7 @@ let generateStandardIndexScript (opt : Options) (index : Index) (parentName : st
 
     $"CREATE {indexTypeStr} INDEX [{indexName}] ON {parentName} ({keyColumnsStr}){includeStr}{filterStr}{withSettings}"
 
-let generateXMLIndexScript (opt : Options) (index : Index) (parentName : string) parentIsView (indexName : string) =
+let generateXMLIndexScript (opt : ScriptOptions) (index : Index) (parentName : string) parentIsView (indexName : string) =
     let (includeColumns, keyColumns) =
         separateBy (fun c -> c.IsIncludedColumn) index.Columns
 
@@ -335,7 +335,7 @@ let objectFilename (schema_name :string) (object_name : string) =
     | _ -> $"{schema_name}.{object_name}.sql"
 
     
-let getIndexDefinitionStr (opt : Options) parentName parentIsView (index : Index) =
+let getIndexDefinitionStr (opt : ScriptOptions) parentName parentIsView (index : Index) =
     match index.Name, index.IsUnique, index.IndexType with
     | Some n, false, IndexType.Clustered -> 
         Some <| generateStandardIndexScript opt index parentName parentIsView n "CLUSTERED"
@@ -352,7 +352,7 @@ let getIndexDefinitionStr (opt : Options) parentName parentIsView (index : Index
     | iType -> 
         failwithf "Unhandled index type %A" iType
 
-let addTableBody (opt : Options) ds allTypes isTableType columns tableInlineIndexes tableInlineChecks columnInlineDefaults sc =
+let addTableBody (opt : ScriptOptions) ds allTypes isTableType columns tableInlineIndexes tableInlineChecks columnInlineDefaults sc =
     commaSeparated "   " columns (columnDefinitionStr opt ds allTypes isTableType columnInlineDefaults) sc
     |> ScriptContent.surround [""] []
         (fun sc' -> 
@@ -372,7 +372,7 @@ let addTableBody (opt : Options) ds allTypes isTableType columns tableInlineInde
                     sc'))
 
                 
-let generateTableScript' (opt : Options) ds allTypes isTableType parentName columns indexes checkConstraints (defaultConstraints : DefaultConstraint array) sc =
+let generateTableScript' (opt : ScriptOptions) ds allTypes isTableType parentName columns indexes checkConstraints (defaultConstraints : DefaultConstraint array) sc =
     let (tableInlineIndexes, standaloneIndexes) =
         indexes
         |> Array.fold 
@@ -429,7 +429,7 @@ let generateTableScript' (opt : Options) ds allTypes isTableType parentName colu
         |> (fun acc -> columnInlineDefaults |> Map.fold (fun acc' _ dc -> dc.Object.ObjectId :: acc') acc)
     
 
-let generateTableScript allTypes ds (opt : Options) (t : Table) =
+let generateTableScript allTypes ds (opt : ScriptOptions) (t : Table) =
     let tableName = Table.fullName t
     ScriptContent.empty
     |>+ $"CREATE TABLE {tableName} ("
@@ -440,7 +440,7 @@ let generateTableScript allTypes ds (opt : Options) (t : Table) =
 
         ObjectDefinitions {| Contains = t.Object.ObjectId :: objectIds; DependsOn = []; Script = sc'|})
 
-let generateTableTypeScript allTypes ds (opt : Options) (ty : Datatype, tt : TableType) =
+let generateTableTypeScript allTypes ds (opt : ScriptOptions) (ty : Datatype, tt : TableType) =
     let tName = $"[{tt.Schema.Name}].[{tt.Name}]"
     ScriptContent.empty
     |>+ $"CREATE TYPE {tName} AS TABLE ("
@@ -452,7 +452,7 @@ let generateTableTypeScript allTypes ds (opt : Options) (ty : Datatype, tt : Tab
         ObjectDefinitions {| Contains = tt.Object.ObjectId :: objectIds; DependsOn = []; Script = sc' |}
 
 
-let generateViewScript (opt : Options) (view : View)=
+let generateViewScript (opt : ScriptOptions) (view : View)=
     ScriptContent.empty
     |>+ "SET QUOTED_IDENTIFIER ON"
     |>+ "GO"
@@ -470,7 +470,7 @@ let generateViewScript (opt : Options) (view : View)=
     |> fun sc -> ObjectDefinitions {| Contains = [view.Object.ObjectId]; DependsOn = []; Script = sc |}
 
 
-let generateCheckConstraintsScript (opt : Options) (table : Table, table_object_id : int, ccs : CheckConstraint array) =
+let generateCheckConstraintsScript (opt : ScriptOptions) (table : Table, table_object_id : int, ccs : CheckConstraint array) =
     ccs
     |> Array.fold 
         (fun (sc', objectIds) cc ->
@@ -494,7 +494,7 @@ let generateCheckConstraintsScript (opt : Options) (table : Table, table_object_
     |> fun (sc', objectIds) -> 
         ObjectDefinitions {| Contains = objectIds; DependsOn = [table_object_id]; Script = sc' |}
 
-let generateDefaultConstraintsScript (opt : Options) (table : Table, dcs : DefaultConstraint array) =
+let generateDefaultConstraintsScript (opt : ScriptOptions) (table : Table, dcs : DefaultConstraint array) =
     dcs 
     |> Array.fold
         (fun (sc, objectIds) dc ->
@@ -513,7 +513,7 @@ let generateDefaultConstraintsScript (opt : Options) (table : Table, dcs : Defau
     |> fun (sc, objectIds) -> 
         ObjectDefinitions {| Contains = objectIds; DependsOn = [table.Object.ObjectId]; Script = sc |}
 
-let generateForeignKeysScript (opt : Options) (table : Table, fks : ForeignKey array) =
+let generateForeignKeysScript (opt : ScriptOptions) (table : Table, fks : ForeignKey array) =
     let (sc, object_ids, depends_on) =
         fks
         |> Array.fold 
@@ -552,7 +552,7 @@ let generateForeignKeysScript (opt : Options) (table : Table, fks : ForeignKey a
             (ScriptContent.empty, [], [])
     ObjectDefinitions {| Contains = object_ids; DependsOn = depends_on; Script = sc |}
 
-let generateTriggerScript (opt : Options) (tr : Trigger) =
+let generateTriggerScript (opt : ScriptOptions) (tr : Trigger) =
     ScriptContent.empty
     |>+ "SET QUOTED_IDENTIFIER ON "
     |>+ "GO"
@@ -575,7 +575,7 @@ let generateTriggerScript (opt : Options) (tr : Trigger) =
         ObjectDefinitions {| Contains = [tr.Object.ObjectId]; DependsOn = [tr.Parent.ObjectId]; Script = sc |}
     
 
-let generateProcedureScript (opt : Options) (p : Procedure) =
+let generateProcedureScript (opt : ScriptOptions) (p : Procedure) =
     ScriptContent.empty
     |>+ "SET QUOTED_IDENTIFIER ON "
     |>+ "GO"
@@ -592,14 +592,14 @@ let generateProcedureScript (opt : Options) (p : Procedure) =
 
     |> fun sc -> ObjectDefinitions {| Contains = [p.Object.ObjectId]; DependsOn = []; Script = sc |}
 
-let generateSynonymScript (opt : Options) (synonym : Synonym) =
+let generateSynonymScript (opt : ScriptOptions) (synonym : Synonym) =
     ScriptContent.empty
     |>+ $"CREATE SYNONYM [{synonym.Object.Schema.Name}].[{synonym.Object.Name}] FOR {synonym.BaseObjectName}"
     |>+ "GO"
     |> fun sc -> ObjectDefinitions {| Contains = [synonym.Object.ObjectId]; DependsOn = []; Script = sc |}
 
 
-let generateXmlSchemaCollectionScript (opt : Options) (s : XmlSchemaCollection) =
+let generateXmlSchemaCollectionScript (opt : ScriptOptions) (s : XmlSchemaCollection) =
     let name = $"[{s.Schema.Name}].[{s.Name}]"
     ScriptContent.empty
     |>+ $"CREATE XML SCHEMA COLLECTION {name} AS N'{s.Definition}'"
@@ -621,7 +621,7 @@ CREATE SEQUENCE [schema_name . ] sequence_name
     [ ; ]  
 *)
 
-let generateSequenceScript (opt : Options) (s : Sequence) =
+let generateSequenceScript (opt : ScriptOptions) (s : Sequence) =
     let name = $"[{s.Object.Schema.Name}].[{s.Object.Name}]"
     let typeStr = Datatype.typeStr opt s.Datatype
     let startWith = match s.SequenceDefinition.StartValue with Some v -> $" START WITH {v}" | None -> ""
@@ -648,7 +648,7 @@ CREATE TYPE [ schema_name. ] type_name
 } [ ; ]
 *)
 
-let generateUserDefinedTypeScript (types : Map<int, Datatype>) (opt : Options) (t : Datatype) =
+let generateUserDefinedTypeScript (types : Map<int, Datatype>) (opt : ScriptOptions) (t : Datatype) =
     let tDef =
         let baseType = types |> Map.find (int t.SystemTypeId)
         Datatype.typeStr' opt baseType.Name baseType.DatatypeSpec t.Parameter
@@ -663,7 +663,7 @@ let generateUserDefinedTypeScript (types : Map<int, Datatype>) (opt : Options) (
     |> UserDefinedTypeDefinition
 
 
-let generateScripts (opt : Options) (schema : DatabaseSchema) f seed =
+let generateScripts (opt : ScriptOptions) (schema : DatabaseSchema) f seed =
     let db = schema
     let dataForFolder subfolderName (xs : 'a list) (nameFn : 'a -> string) generator acc =
         match xs with

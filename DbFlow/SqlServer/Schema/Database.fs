@@ -128,7 +128,7 @@ type DatabaseSchema = {
 }
 
 module DatabaseSchema =
-    let read logger (options : Options) connection =
+    let read logger (options : ReadOptions) connection =
         let xProperties = XProperty.readAll |> Logger.logTime logger "XProperties" connection
         let dependencies = Dependency.readAll |> Logger.logTime logger "Dependencies" connection
         
@@ -190,7 +190,7 @@ module DatabaseSchema =
             | unused -> failwith $"{id} not mapped for {unused}" 
 
         // Verify that all objects are "picked" (referenced) by something
-        if not options.BypassReferenceChecksOnLoad
+        if options.CheckReferencesOnLoad
         then
             xProperties |> checkUnused "xProperties" (fun _ -> false)
             columnsByObject |> checkUnused "columns" (fun _ -> false)

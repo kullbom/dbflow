@@ -5,8 +5,6 @@ module ``To clone a database:`` =
     open DbFlow
     open DbFlow.SqlServer
     
-    let options = Options.Default
-    
     let logger = Logger.dummy
     
     let srcConnectionStr = "<...>"
@@ -15,19 +13,17 @@ module ``To clone a database:`` =
     let dbSchema = 
         use connection = new SqlConnection(srcConnectionStr)
         connection.Open()
-        Execute.readSchema logger options connection
+        Execute.readSchema logger ReadOptions.Default connection
     
     (use connection = new SqlConnection(dstConnectionStr)
      connection.Open()
-     Execute.clone logger options dbSchema connection)
+     Execute.clone logger ScriptOptions.Default dbSchema connection)
 
 
 module ``To generate scripts from a database:`` =
     open Microsoft.Data.SqlClient
     open DbFlow
     open DbFlow.SqlServer
-    
-    let options = Options.Default
     
     let logger = Logger.dummy
 
@@ -37,7 +33,7 @@ module ``To generate scripts from a database:`` =
     let dbSchema = 
         use connection = new SqlConnection(srcConnectionStr)
         connection.Open()
-        Execute.readSchema logger options connection
+        Execute.readSchema logger ReadOptions.Default connection
     
-    Execute.generateScriptFiles options dbSchema dstDirectory   
+    Execute.generateScriptFiles ScriptOptions.Default dbSchema dstDirectory   
 

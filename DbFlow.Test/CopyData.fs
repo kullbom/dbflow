@@ -12,7 +12,8 @@ type Tests () =
     let ``Clone db`` () =
         let silentLogger = Logger.create ignore
         let logger = Logger.create System.Console.Out.WriteLine
-        let options = Options.Default 
+        let readOptions = ReadOptions.Default 
+        let scriptOptions = ScriptOptions.Default 
     
         let dbFolder = __SOURCE_DIRECTORY__ + "\\Samples\\test_db\\scripts"
         let initScript =
@@ -23,7 +24,7 @@ type Tests () =
                 let dbSchema =
                     use testDbConn = new SqlConnection (testConnStr)
                     testDbConn.Open ()
-                    Execute.readSchema silentLogger options 
+                    Execute.readSchema silentLogger readOptions 
                     |> Logger.logTime logger "read schema" testDbConn 
     
                 use localDb = new LocalTempDb(silentLogger)
@@ -32,7 +33,7 @@ type Tests () =
                     use localDbConn = new SqlConnection (localDb.ConnectionString)
                     localDbConn.Open ()
                         
-                    Execute.clone silentLogger options dbSchema
+                    Execute.clone silentLogger scriptOptions dbSchema
                     |> Logger.logTime logger "clone schema" localDbConn
                 )
 
@@ -51,7 +52,8 @@ type Tests () =
     let ``Copy data`` () =
         let silentLogger = Logger.create ignore
         let logger = Logger.create System.Console.Out.WriteLine
-        let options = Options.Default 
+        let readOptions = ReadOptions.Default 
+        let scriptOptions = ScriptOptions.Default
     
         let dbFolder = __SOURCE_DIRECTORY__ + "\\Samples\\adventure-works-2012-oltp-lt\\scripts"
 
@@ -61,7 +63,7 @@ type Tests () =
                     use testDbConn = new SqlConnection (testConnStr)
                     testDbConn.Open ()
 
-                    Execute.readSchema silentLogger options 
+                    Execute.readSchema silentLogger readOptions 
                     |> Logger.logTime logger "read schema" testDbConn 
     
                 let dataRef = 
@@ -80,7 +82,7 @@ type Tests () =
                     use localDbConn = new SqlConnection (localDb.ConnectionString)
                     localDbConn.Open ()
                     
-                    Execute.clone silentLogger options dbSchema
+                    Execute.clone silentLogger scriptOptions dbSchema
                     |> Logger.logTime logger "clone schema" localDbConn
                 
                 let () =
@@ -90,8 +92,8 @@ type Tests () =
                     use testDbConn = new SqlConnection (testConnStr)
                     testDbConn.Open ()
                     
-                    CopyData.copyData logger options dbSchema dataRef CopyData.CopyMethod.InsertCopy testDbConn localDbConn
-                    CopyData.copyData logger options dbSchema dataRef CopyData.CopyMethod.UpsertCopy testDbConn localDbConn
+                    CopyData.copyData logger scriptOptions dbSchema dataRef CopyData.CopyMethod.InsertCopy testDbConn localDbConn
+                    CopyData.copyData logger scriptOptions dbSchema dataRef CopyData.CopyMethod.UpsertCopy testDbConn localDbConn
                 ())
     
         ()

@@ -49,7 +49,7 @@ module Internal =
             bc.WriteToServer dataTable
             bc.RowsCopied)
     
-    let createTempTable (options : Options) (allTypes : Map<int, Datatype>) tempTableName (columns : Column array) = 
+    let createTempTable (options : ScriptOptions) (allTypes : Map<int, Datatype>) tempTableName (columns : Column array) = 
         let columnDefs = 
             columns 
             |> Array.joinBy 
@@ -67,7 +67,7 @@ module Internal =
                     $"{c.Name} {typeStr} {nullStr}")
         DbTr.nonQuery $"CREATE TABLE #{tempTableName} ({columnDefs});" []
         
-    let dataRefToTempTable (options : Options) allTypes (dataRef : DataReference) =
+    let dataRefToTempTable (options : ScriptOptions) allTypes (dataRef : DataReference) =
         let tempTableName = $"{System.Guid.NewGuid()}".Replace("-", "")
         let createTempTableTr = createTempTable options allTypes tempTableName dataRef.KeyColumns
         let insertKeysTr = dataRefToTempTable' $"#{tempTableName}" dataRef
@@ -76,7 +76,7 @@ module Internal =
         |> DbTr.map (fun (_, nCopied) -> nCopied, tempTableName)
         
     
-    let readTableKeys (logger : Logger) (options : Options) allTypes (columns : Schema.Column array) (dataRef : DataReference) : DbTr<DataKey list> =
+    let readTableKeys (logger : Logger) (options : ScriptOptions) allTypes (columns : Schema.Column array) (dataRef : DataReference) : DbTr<DataKey list> =
         let tableName = $"[{dataRef.Table.Schema.Name}].[{dataRef.Table.Name}]"
         let columnsStr = columns |> Array.joinBy ", " (fun c -> $"source.[{c.Name}]")
         let joinCondition = 
@@ -96,7 +96,7 @@ module Internal =
                 DbTr.readList cmdText []
                     (fun r -> columns |> Array.map (fun c -> readObject c.Name r)))
     
-    let copyTableData'' (options : Options) allTypes (dataRef : DataReference) (onSource : DbTr<'a> -> 'a) (targetTableName : string) (onTarget : DbTr<int> -> 'a) =
+    let copyTableData'' (options : ScriptOptions) allTypes (dataRef : DataReference) (onSource : DbTr<'a> -> 'a) (targetTableName : string) (onTarget : DbTr<int> -> 'a) =
         let sourceTableName = $"[{dataRef.Table.Schema.Name}].[{dataRef.Table.Name}]"
         let allColumns = 
             // Exclude computed columns
@@ -135,7 +135,7 @@ module Internal =
                         |> onTarget))
         |> onSource
     
-    let copyTableData' (options : Options) allTypes (dataRef : DataReference) (copyMethod : CopyMethod) (sourceConnection : System.Data.IDbConnection) (targetConnection : System.Data.IDbConnection) =
+    let copyTableData' (options : ScriptOptions) allTypes (dataRef : DataReference) (copyMethod : CopyMethod) (sourceConnection : System.Data.IDbConnection) (targetConnection : System.Data.IDbConnection) =
         match copyMethod with
         | InsertCopy ->
             // Plain insert to the target table
@@ -192,7 +192,7 @@ module Internal =
                     }
                     |> DbTr.commit_ targetConnection)
     
-    let rec collectDataRefs (logger : Logger) (options : Options) allTypes indent collected allTables (dataRef : DataReference) (sourceConnection : System.Data.IDbConnection) =
+    let rec collectDataRefs (logger : Logger) (options : ScriptOptions) allTypes indent collected allTables (dataRef : DataReference) (sourceConnection : System.Data.IDbConnection) =
         let table = dataRef.Table
         table.ForeignKeys
         |> Array.fold 
@@ -221,7 +221,7 @@ module Internal =
             (dataRef :: collected)
         
 /// Copies all data referenced by {origDataRef} from one database to another
-let copyData (logger : Logger) (options : Options) (schema : Schema.DatabaseSchema) (origDataRef : DataReference) copyMethod (sourceConnection : System.Data.IDbConnection) (targetConnection : System.Data.IDbConnection) =
+let copyData (logger : Logger) (options : ScriptOptions) (schema : Schema.DatabaseSchema) (origDataRef : DataReference) copyMethod (sourceConnection : System.Data.IDbConnection) (targetConnection : System.Data.IDbConnection) =
     let allTables =
         schema.Tables
         |> List.map (fun t -> t.Object.ObjectId, t)

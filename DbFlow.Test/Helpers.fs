@@ -6,6 +6,10 @@ open Microsoft.Data.SqlClient
 open DbFlow
 open DbFlow.SqlServer
 
+[<assembly: CaptureConsole>]
+[<assembly: CaptureTrace>]
+do ()
+
 module Helpers = 
     let separateTableScript (fullTableScript : string) =
         fullTableScript.Split("\r\n")
