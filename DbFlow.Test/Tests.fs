@@ -79,7 +79,7 @@ type ``Test suite`` () =
 
 
 
-module RegressionDirectory =
+module RegressionConstants =
     let dbflow_regression_directory = 
         let dbflow_regression_directory' = __SOURCE_DIRECTORY__ + "\\..\\..\dbflow-regression\\"
         System.IO.Path.GetFullPath (dbflow_regression_directory')
@@ -95,6 +95,8 @@ module RegressionDirectory =
             else Some [| dirName |> box |])
 
     
+    let markerForNoRegressions = "<<<No regressions found>>>"
+    
 // This test looks for "regression" database definitions in the directory "dbflow-regression" (in the same directory as the repo)
 // If such a directory is found it expects all subdirectories of that to represesent a database to test.
 // A database directory should contain a folder "scripts" containing scripts that define the database
@@ -105,8 +107,11 @@ type ``Regression`` () =
             
     [<Xunit.Theory; Xunit.MemberData("dbflow_regression_data")>]
     member x.``Test suite`` (db : string) = 
-        let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true; TypenameFormatter = Options.defaultTypenameFormatter }
-        Common.fullTestSuite logger options [] RegressionDirectory.dbflow_regression_directory db
+        if db = RegressionConstants.markerForNoRegressions
+        then ()
+        else 
+            let options = { BypassReferenceChecksOnLoad = false; SkipCompatibilityLevel = true; TypenameFormatter = Options.defaultTypenameFormatter }
+            Common.fullTestSuite logger options [] RegressionConstants.dbflow_regression_directory db
 
 
 type ``SqlLocalDb_exe`` () = 
