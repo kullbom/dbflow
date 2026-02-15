@@ -21,47 +21,27 @@ module Internal =
         |> List.map  (fun s -> DbTr.nonQuery s [])
         |> DbTr.sequence_
 
-    let redefineViews logger options connection =
-        let (views, deps) = DatabaseSchema.preReadAllViews logger connection
-        // Drop scripts
-        let dropScripts = 
-            views 
-            |> List.map 
-                (fun view -> 
-                    let drop_script = $"DROP VIEW [{view.Schema.Name}].[{view.Name}]"
-                    Dependent.create drop_script [view.Object.ObjectId] [] 0)
-            |> Dependent.resolveOrder (fun d -> d.Content) deps 
-        // Create scripts
-        let createScripts = 
-            views 
-            |> List.fold 
-                (fun scripts view -> 
-                    let create_script =
-                        Dependent.create view.Definition [view.Object.ObjectId] [] 0
-                    let view_scripts =
-                        let view_name = $"[{view.Schema.Name}].[{view.Name}]"
-                        view.Indexes
-                        |> Array.fold 
-                            (fun acc index ->
-                                match Scripts.Generate.getIndexDefinitionStr options view_name true index with
-                                | None -> acc
-                                | Some indexScript -> 
-                                    let index_contains_objects =
-                                        match index.Object with Some o -> [o.ObjectId] | None -> []
-                                    Dependent.create indexScript index_contains_objects [view.Object.ObjectId] 0 :: acc)
-                            (create_script :: scripts)
-                    view_scripts)
-                []
-            |> Dependent.resolveOrder (fun d -> d.Content) deps 
-            
-        // The drop scripts needs to be reverted since dependency works on the asumption that objects are created...
-        dropScripts 
-        |> List.fold 
-            (fun acc s -> scriptTransaction (ScriptContent.single s.Content) :: acc)
-            (createScripts |> List.map (fun s -> s.Content |> ScriptContent.single |> scriptTransaction))
+    let refreshViewMetadata logger options connection =
+        let objects = 
+            let xProperties = RCMap.ofMap Map.empty
+            let schemas = Schema.readAll xProperties connection
+            OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
+        
+        // Execute refresh scripts
+        objects 
+        |> RCMap.fold 
+            (fun scripts _ _ (o : OBJECT) -> 
+                match o.ObjectType with
+                | ObjectType.View -> 
+                    let script =
+                        $"EXECUTE sp_refreshview N'[{o.Schema.Name}].[{o.Name}]'"
+                        |> ScriptContent.single |> scriptTransaction
+                    script :: scripts
+                | _ -> scripts
+                )
+            []
         |> DbTr.sequence_ 
         |> DbTr.commit_ connection 
-        ()
 
     let collectScriptsFromSchema (options : Options) (sourceDb : DatabaseSchema) =
         Scripts.Generate.generateScripts options sourceDb
@@ -98,7 +78,7 @@ let readSchema logger (options : Options) connection =
         | [true] -> ()
         | r -> failwithf "Missing privileges to read schema" 
     
-    Internal.redefineViews logger options 
+    Internal.refreshViewMetadata logger options 
     |> Logger.logTime logger "Refresh view meta data" connection 
 
     DatabaseSchema.read logger options connection

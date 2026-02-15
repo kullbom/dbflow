@@ -77,9 +77,10 @@
 
 [x] Add support for .Net 10
 
-## Version 0.x.x
+## Version 0.7.0
 
-[ ] Investigate how I can stop recreating the indexes - main reason is the principle (the tool should only require read access) but it could also take time (indexed views) 
+[x] Investigate how I can stop recreating the indexes - main reason is the principle (the tool should only require read access) but it could also take time (indexed views) 
+[x] Replaced the drop and recreation of views with calls to `sp_refreshview`. 
 
 ## Version 1.0.0
 

@@ -5,7 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>DbFlow</Title>
-    <Version>0.6.0</Version>
+    <Version>0.7.0</Version>
     <Copyright>2025-2026 Johan Kullbom</Copyright>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>.net;f#;sql;mssqlserver</PackageTags>
@@ -53,7 +53,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="10.0.102" />
+    <PackageReference Update="FSharp.Core" Version="10.0.103" />
   </ItemGroup>
 
 </Project>

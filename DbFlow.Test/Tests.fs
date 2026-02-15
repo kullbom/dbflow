@@ -83,6 +83,17 @@ module RegressionConstants =
     let dbflow_regression_directory = 
         let dbflow_regression_directory' = __SOURCE_DIRECTORY__ + "\\..\\..\dbflow-regression\\"
         System.IO.Path.GetFullPath (dbflow_regression_directory')
+
+    let dbflow_regression_data () =
+        if System.IO.Directory.Exists (dbflow_regression_directory)
+        then System.IO.Directory.GetDirectories (dbflow_regression_directory)
+        else [||]
+        |> Seq.choose (fun dir -> 
+            let dirName = dir.Substring(dir.LastIndexOf("\\") + 1) 
+            if dirName.StartsWith(".")
+            then None
+            else Some [| dirName |> box |])
+
     
     let markerForNoRegressions = "<<<No regressions found>>>"
     
@@ -92,20 +103,8 @@ module RegressionConstants =
 type ``Regression`` () = 
     let logger = Logger.create System.Console.Out.WriteLine
     
-
-    static member dbflow_regression_data = 
-            if System.IO.Directory.Exists (RegressionConstants.dbflow_regression_directory)
-            then System.IO.Directory.GetDirectories (RegressionConstants.dbflow_regression_directory)
-            else [||]
-            |> Array.choose (fun dir -> 
-                let dirName = dir.Substring(dir.LastIndexOf("\\") + 1) 
-                if dirName.StartsWith(".")
-                then None
-                else Some [| dirName |> box |])
-            |> function
-                | [||] -> [| [| RegressionConstants.markerForNoRegressions |> box |] |]
-                | arr -> arr
-
+    static member dbflow_regression_data = RegressionDirectory.dbflow_regression_data ()
+            
     [<Xunit.Theory; Xunit.MemberData("dbflow_regression_data")>]
     member x.``Test suite`` (db : string) = 
         if db = RegressionConstants.markerForNoRegressions

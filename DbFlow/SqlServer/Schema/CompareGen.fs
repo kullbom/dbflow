@@ -39,7 +39,7 @@ type CompareGen = CompareGenCase
                     fun path diffs ->
                        diffs
                        |> CompareGen.Collect (x0.Schema, x1.Schema) ("Schema" :: path)
-                       |> CompareGen.Collect (x0.Name, x1.Name) ("Name" :: path)
+                       |> Compare.objectName' (x0.Name, x1.Name) path
                        |> CompareGen.Collect (x0.Object, x1.Object) ("Object" :: path)
                        |> Compare.collectArray x0.Columns x1.Columns SortOrder.orderBy ElementId.elementId CompareGen.Collect ("Columns" :: path)
                        |> Compare.collectArray x0.Indexes x1.Indexes SortOrder.orderBy ElementId.elementId CompareGen.Collect ("Indexes" :: path)
@@ -196,7 +196,7 @@ type CompareGen = CompareGenCase
                     fun path diffs ->
                        diffs
                        |> CompareGen.Collect (x0.Schema, x1.Schema) ("Schema" :: path)
-                       |> CompareGen.Collect (x0.Name, x1.Name) ("Name" :: path)
+                       |> Compare.objectName' (x0.Name, x1.Name) path
                        |> CompareGen.Collect (x0.Object, x1.Object) ("Object" :: path)
                        |> CompareGen.Collect (x0.Definition, x1.Definition) ("Definition" :: path)
                        |> Compare.collectArray x0.Columns x1.Columns SortOrder.orderBy ElementId.elementId CompareGen.Collect ("Columns" :: path)
