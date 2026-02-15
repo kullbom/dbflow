@@ -103,7 +103,7 @@ module RegressionConstants =
 type ``Regression`` () = 
     let logger = Logger.create System.Console.Out.WriteLine
     
-    static member dbflow_regression_data = RegressionDirectory.dbflow_regression_data ()
+    static member dbflow_regression_data = RegressionConstants.dbflow_regression_data ()
             
     [<Xunit.Theory; Xunit.MemberData("dbflow_regression_data")>]
     member x.``Test suite`` (db : string) = 
