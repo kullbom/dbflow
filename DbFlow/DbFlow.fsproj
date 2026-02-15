@@ -13,7 +13,8 @@
     <PackageProjectUrl>https://github.com/kullbom/dbflow</PackageProjectUrl>
     <RepositoryUrl>https://github.com/kullbom/dbflow.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageReleaseNotes>
+	<Description>DbFlow is a library that helps with schema oriented database tasks</Description>
+	<PackageReleaseNotes>
 		- Separated options into ScriptOptions and ReadOptions. 
 		- Added option for refreshing view metadata. 
 		- Only refresh non schema bound views
