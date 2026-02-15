@@ -128,30 +128,6 @@ type DatabaseSchema = {
 }
 
 module DatabaseSchema =
-    // Read all views in order to redefined them - to get fresh/correct meta data 
-    let preReadAllViews logger connection =
-        let xProperties = RCMap.ofMap Map.empty
-        let dependencies = Dependency.readAll |> Logger.logTime logger "Dependencies" connection
-        
-        let schemas = Schema.readAll xProperties connection
-        let objects = OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
-        let types = Datatype.readAll schemas objects xProperties connection
-
-        let sql_modules = SqlModule.readAll connection
-        
-        let (columns, columnsByObject) = Column.readAll objects types xProperties |> Logger.logTime logger "COLUMN" connection
-        let triggersByParent = Trigger.readAll objects sql_modules xProperties |> Logger.logTime logger "TRIGGER" connection
-        
-        let indexesColumnsByIndex = IndexColumn.readAll objects columns |> Logger.logTime logger "INDEX_COLUMN" connection
-        let indexesByParent = Index.readAll objects indexesColumnsByIndex xProperties |> Logger.logTime logger "INDEX" connection
-        
-        let views = 
-            View.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules xProperties
-            |> Logger.logTime logger "VIEW" connection
-            |> List.filter (fun v -> Schema.includeObjectsInScripts v.Schema)
-        
-        views, dependencies
-
     let read logger (options : Options) connection =
         let xProperties = XProperty.readAll |> Logger.logTime logger "XProperties" connection
         let dependencies = Dependency.readAll |> Logger.logTime logger "Dependencies" connection

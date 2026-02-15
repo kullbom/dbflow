@@ -68,3 +68,5 @@ SET QUOTED_IDENTIFIER OFF
 GO
 SET ANSI_NULLS OFF
 GO
+
+EXECUTE [sys].[sp_addextendedproperty] N'MS_Description', N'Displays the content from each element in the xml column CatalogDescription for each product in the Sales.ProductModel table that has catalog data.', N'SCHEMA', [SalesLT], N'VIEW', [vProductModelCatalogDescription];

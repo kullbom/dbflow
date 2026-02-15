@@ -5,8 +5,8 @@ open DbFlow
 // In order to compare sequences we need a deterministic order of the elements
 type SortOrder = SortOrder
     with 
-        static member orderBy (x : OBJECT) = SortOrder.orderBy x.Schema, x.Name, x.ObjectType
-        static member orderBy (x : Schema) = x.Name 
+        static member orderBy (x : OBJECT) = SortOrder.orderBy x.Schema, x.Name.ToLowerInvariant (), x.ObjectType
+        static member orderBy (x : Schema) = x.Name.ToLowerInvariant ()
         static member orderBy (x : Table) = SortOrder.orderBy x.Object 
         static member orderBy (x : View) = SortOrder.orderBy x.Object 
         static member orderBy (x : Index) = match x.Name with Some n -> n | None -> x.Columns |> Array.joinBy "," (fun c -> c.Column.Name)
@@ -112,7 +112,8 @@ module Compare =
             (Map.toList x0)
             (Map.toList x1)
 
-
+    let objectName' (n0 : string, n1 : string) path diffs =
+        equalCollector (n0.ToLowerInvariant(), n1.ToLowerInvariant()) ("name" :: path) diffs
 
     let objectName (x0 : OBJECT, x1 : OBJECT) path diffs =
         match x0.ObjectType, x1.ObjectType with
@@ -120,7 +121,7 @@ module Compare =
         | ObjectType.TypeTable, ObjectType.TypeTable ->
             // Ignore these since they can be system named 
             diffs
-        | _ -> equalCollector (x0.Name, x1.Name) ("name" :: path) diffs
+        | _ -> objectName' (x0.Name, x1.Name) path diffs
     
     let datatypeSpec (x0 : DatatypeSpec, x1 : DatatypeSpec) objectCollector path diff = 
         match x0, x1 with
@@ -134,7 +135,7 @@ module Compare =
     let indexName (x0 : Index, x1 : Index) path diff =
         match x0.IsSystemNamed, x0.Name, x1.IsSystemNamed, x1.Name with
         | true, _, true, _ -> diff
-        | false, Some n0, false, Some n1 when n0 = n1 -> diff
+        | false, Some n0, false, Some n1 when n0.ToLowerInvariant () = n1.ToLowerInvariant () -> diff
         | false, None, false, None -> diff
         | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path x0 x1 :: diff
         
@@ -142,19 +143,19 @@ module Compare =
     let foreignKeyName (x0 : ForeignKey, x1 : ForeignKey) path diff =
         match x0.IsSystemNamed, x0.Name, x1.IsSystemNamed, x1.Name with
         | true, _, true, _ -> diff
-        | false, n0, false, n1 when n0 = n1 -> diff
+        | false, n0, false, n1 when n0.ToLowerInvariant () = n1.ToLowerInvariant () -> diff
         | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path x0 x1 :: diff
 
     let checkConstraintName (x0 : CheckConstraint, x1 : CheckConstraint) path diff =
         match x0.IsSystemNamed, x0.Object.Name, x1.IsSystemNamed, x1.Object.Name with
         | true, _, true, _ -> diff
-        | false, n0, false, n1 when n0 = n1 -> diff
+        | false, n0, false, n1 when n0.ToLowerInvariant () = n1.ToLowerInvariant () -> diff
         | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path n0 n1 :: diff
        
     let defaultConstraintName (x0 : DefaultConstraint, x1 : DefaultConstraint) path diff =
         match x0.IsSystemNamed, x0.Object.Name, x1.IsSystemNamed, x1.Object.Name with
         | true, _, true, _ -> diff
-        | false, n0, false, n1 when n0 = n1 -> diff
+        | false, n0, false, n1 when n0.ToLowerInvariant () = n1.ToLowerInvariant () -> diff
         | _,n0,_,n1 -> Diff.create $"names does not match ({n0} != {n1})" path x0 x1 :: diff
 
     
@@ -212,6 +213,9 @@ module Generator =
                 sDefT<OBJECT> "Name" (fun _ -> $"|> Compare.objectName (x0, x1) path") 
                 sDefT<OBJECT> "ObjectType" equalCollector
                 
+                sDefT<Table> "Name" (fun _ -> $"|> Compare.objectName' (x0.Name, x1.Name) path")
+                sDefT<View> "Name" (fun _ -> $"|> Compare.objectName' (x0.Name, x1.Name) path")
+
                 sDefT<Index> "Name" (fun _ -> $"|> Compare.indexName (x0, x1) path")
                 sDefNoneT<Index> "Object"
                 sDefNoneT<Index> "IsSystemNamed"
