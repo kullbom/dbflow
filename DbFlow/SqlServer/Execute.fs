@@ -19,7 +19,7 @@ module Internal =
                     "SET QUOTED_IDENTIFIER OFF"
                 ])
         |> List.map  (fun s -> DbTr.nonQuery s [])
-        |> DbTr.sequence_
+        |> IO.sequence_
 
     // https://learn.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-refreshsqlmodule-transact-sql?view=sql-server-ver17
 
@@ -45,7 +45,7 @@ module Internal =
             []
         |> DbTr.commit_ connection
         |> List.map (fun refreshScript -> refreshScript |> ScriptContent.single |> scriptTransaction)
-        |> DbTr.sequence_ 
+        |> IO.sequence_ 
         |> DbTr.commit_ connection 
 
     let collectScriptsFromSchema (options : ScriptOptions) (sourceDb : DatabaseSchema) =
@@ -104,14 +104,14 @@ let clone logger (options : ScriptOptions) (sourceDb : DatabaseSchema) (targetCo
     (fun () -> 
         settingsScripts
         |> List.map (fun script -> Internal.scriptTransaction script.Content.Content)
-        |> DbTr.sequence_
+        |> IO.sequence_
         |> DbTr.exe targetConnection)
     |> Logger.logTime logger "Execute database setup scripts" ()
 
     (fun () -> 
         resolvedScripts
         |> List.map (fun script -> Internal.scriptTransaction script.Content.Content) 
-        |> DbTr.sequence_
+        |> IO.sequence_
         |> DbTr.commit_ targetConnection)
     |> Logger.logTime logger "Resolve and execute scripts" ()
 
@@ -126,6 +126,8 @@ let cloneToLocal logger (options : ScriptOptions) (sourceDb : DatabaseSchema) =
 
 /// Generate scripts of a schema to a folder structure
 let generateScriptFiles (opt : ScriptOptions) (schema : DatabaseSchema) directory =
+    // TODO: "Move" requires the source and target to be on the same device. 
+    //  Rewrite to use a "temp directory" in the same folder as the target directory... instead of GetTempPath
     let tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), (System.Guid.NewGuid ()).ToString().Replace("-", ""))
     Scripts.Generate.generateScripts opt schema
         (fun () _isDatabaseSettings script ->
@@ -162,7 +164,7 @@ let performDbUpgrade logger connectionStr scriptFolder =
         (fun () -> 
             scripts
             |> List.map (ScriptContent.single >> Internal.scriptTransaction)
-            |> DbTr.sequence_)
+            |> IO.sequence_)
         |> Logger.logTime logger "Upgrade - Prepare transaction" ()
             
     (fun dbTransaction -> 

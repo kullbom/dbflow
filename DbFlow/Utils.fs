@@ -43,27 +43,5 @@ module RCMap =
     let unused exclude (pm : RCMap<'key, 'data>) =
         pm |> fold (fun acc key c d -> if c = 0 && not (exclude d) then (key, d) :: acc else acc) []
     
-type Logger = Logger of (string -> unit)
-    with member x.info s = let (Logger f) = x in f s 
 
-module Logger =
-    let dummy = Logger (fun _ -> ())
-    
-    let create f = Logger f
-    
-    /// C# friendly 
-    let fromFunc (f : System.Action<string>) = create f.Invoke
-    
-    let decorate f (Logger logger') = Logger (fun m -> logger' (f m))
-        
-    let infoWithTime (message : string) (logger : Logger) =  
-        let timestamp = System.DateTime.Now.ToString("HH:mm:ss.fff")
-        logger.info $"{timestamp} {message}" 
-        
-    let logTime (logger : Logger) (taskName : string) arg fn =
-        let ws = System.Diagnostics.Stopwatch ()
-        ws.Start ()
-        let result = fn arg
-        infoWithTime $"{taskName} (in {ws.ElapsedMilliseconds} ms)" logger
-        result
 

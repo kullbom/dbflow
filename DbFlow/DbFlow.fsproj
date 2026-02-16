@@ -23,7 +23,8 @@
   <ItemGroup>
     <Compile Include="Utils.fs" />
     <Compile Include="SqlParser.fs" />
-    <Compile Include="DbTr.fs" />
+    <Compile Include="IO.fs" />
+    <Compile Include="Logger.fs" />
     <Compile Include="Dependent.fs" />
     <Compile Include="SqlServer\Options.fs" />
     <Compile Include="SqlServer\Schema\XProperties.fs" />

@@ -11,7 +11,7 @@ module Common =
     let testDbFlowRoundtrip logger readOptions scriptOptions sourceSchema sourceScriptFolder destScriptFolder =
         use localDb =
             Logger.infoWithTime "Clone db (start)" logger 
-            Execute.cloneToLocal (Logger.decorate (fun m -> $"  {m}") logger) scriptOptions  
+            Execute.cloneToLocal (Logger.decorate logger (fun m -> $"  {m}")) scriptOptions  
             |> Logger.logTime logger "Clone db" sourceSchema
 
         let cloneSchema = 

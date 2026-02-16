@@ -47,7 +47,7 @@ module Internal =
                 dataTable.Rows.Add(dataRow)
 
             writeToServer bc dataTable
-        DbTr.create
+        IO.create
             (dataRefToTempTable'' 
                 (fun bc dataTable ->
                     bc.WriteToServer dataTable
@@ -82,8 +82,8 @@ module Internal =
         let createTempTableTr = createTempTable options allTypes tempTableName dataRef.KeyColumns
         let insertKeysTr = dataRefToTempTable' $"#{tempTableName}" dataRef
     
-        DbTr.zip createTempTableTr insertKeysTr
-        |> DbTr.map (fun (_, nCopied) -> nCopied, tempTableName)
+        IO.zip createTempTableTr insertKeysTr
+        |> IO.map (fun (_, nCopied) -> nCopied, tempTableName)
         
     
     let readTableKeys (logger : Logger) (options : ScriptOptions) allTypes (columns : Schema.Column array) (dataRef : DataReference) : DbTr<DataKey list> =
@@ -97,7 +97,7 @@ module Internal =
             |> Array.joinBy " AND " (fun c -> $"source.[{c.Name}] IS NOT NULL")
             |> function "" -> "" | c -> $"\r\nWHERE {c}"
         dataRefToTempTable options allTypes dataRef
-        |> DbTr.bind
+        |> IO.bind
             (fun (_nCopied, tempTableName) ->
                 let cmdText = 
                     $"SELECT {columnsStr} 
@@ -116,7 +116,7 @@ module Internal =
             dataRef.KeyColumns 
             |> Array.joinBy " AND " (fun c -> $"source.[{c.Name}] = keys.[{c.Name}]")
         dataRefToTempTable options allTypes dataRef
-        |> DbTr.bind
+        |> IO.bind
             (fun (_nCopied, tempTableName) ->
                 DbTr.reader'
                     $"SELECT {allColumnsStr}
@@ -140,7 +140,7 @@ module Internal =
                                     bc.ColumnMappings.Add (c.Name, c.Name) |> ignore
 
                                 writeToServer bc
-                            DbTr.create
+                            IO.create
                                 (fun c ->
                                     bulkInsertTransaction' c 
                                         (fun bc -> 
@@ -174,7 +174,7 @@ module Internal =
                 (DbTr.commit_ sourceConnection)
                 tempTableName
                 (fun copyTr -> 
-                    DbTr.builder {
+                    IO.builder {
                         // 1. Create temp table
                         let columns = 
                             // Exclude computed columns
@@ -315,7 +315,7 @@ let TopN (table : Schema.Table) (topN : int) =
     DbTr.readList 
         $"SELECT TOP ({topN}) {keyColumnsStr} FROM {Table.fullName table}" []
         (fun r -> keyColumnNames |> Array.map (fun columnName -> readObject columnName r))
-    |> DbTr.map (fun dataKeys -> 
+    |> IO.map (fun dataKeys -> 
         {
             Id = $"TOP {topN} FROM {Table.fullName table}"
             Table = table
