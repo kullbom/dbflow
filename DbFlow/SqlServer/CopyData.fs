@@ -163,15 +163,15 @@ module Internal =
             // Plain insert to the target table
             let targetTableName = $"[{dataRef.Table.Schema.Name}].[{dataRef.Table.Name}]"
             // Ensure SET ANSI_NULLS ON 
-            DbTr.nonQuery "SET ANSI_NULLS ON" [] |> DbTr.exe targetConnection
-            DbTr.nonQuery "SET QUOTED_IDENTIFIER ON" [] |> DbTr.exe targetConnection
-            copyTableData'' options allTypes dataRef (DbTr.commit_ sourceConnection) targetTableName (DbTr.commit_ targetConnection)
+            DbTr.nonQuery "SET ANSI_NULLS ON" [] |> DbTr.exe targetConnection |> IO.run
+            DbTr.nonQuery "SET QUOTED_IDENTIFIER ON" [] |> DbTr.exe targetConnection |> IO.run
+            copyTableData'' options allTypes dataRef (DbTr.commit_ sourceConnection >> IO.run) targetTableName (DbTr.commit_ targetConnection >> IO.run)
         | UpsertCopy ->
             // Upsert
             let targetTableName = $"[{dataRef.Table.Schema.Name}].[{dataRef.Table.Name}]"
             let tempTableName = $"{System.Guid.NewGuid()}".Replace("-", "")
             copyTableData'' options allTypes dataRef 
-                (DbTr.commit_ sourceConnection)
+                (DbTr.commit_ sourceConnection >> IO.run)
                 tempTableName
                 (fun copyTr -> 
                     IO.builder {
@@ -212,7 +212,8 @@ module Internal =
                                 []
                         return nRowsCopied
                     }
-                    |> DbTr.commit_ targetConnection)
+                    |> DbTr.commit_ targetConnection
+                    |> IO.run)
     
     let rec collectDataRefs (logger : Logger) (options : ScriptOptions) allTypes indent collected allTables (dataRef : DataReference) (sourceConnection : System.Data.Common.DbConnection) =
         let table = dataRef.Table
@@ -225,6 +226,7 @@ module Internal =
                 let dataKeys' = 
                     readTableKeys logger options allTypes fkColumns dataRef
                     |> DbTr.commit_ sourceConnection
+                    |> IO.run
                 let dataKeys = dataKeys' |> List.distinct
                 
                 logger.info $"{indent}{Table.fullName table} depends on {Table.fullName (allTables fk.Referenced.ObjectId)} : {dataKeys'.Length} ({dataKeys.Length} unique) keys found (in {sw.ElapsedMilliseconds} ms)"

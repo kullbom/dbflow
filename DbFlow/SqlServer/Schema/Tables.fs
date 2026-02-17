@@ -21,7 +21,7 @@ type TableType = {
 }
 
 module TableType = 
-    let readAll schemas objects xProperties columns indexes foreignKeys referencedForeignKeys checkConstraints defaultConstraints connection =
+    let readAll schemas objects xProperties columns indexes foreignKeys referencedForeignKeys checkConstraints defaultConstraints =
         DbTr.readMap
             "SELECT tt.schema_id, tt.name type_name, tt.type_table_object_id, tt.is_memory_optimized  
              FROM sys.table_types tt"
@@ -41,7 +41,6 @@ module TableType =
                     CheckConstraints = match RCMap.tryPick object_id checkConstraints with Some ccs -> ccs | None -> [||] 
                     DefaultConstraints = match RCMap.tryPick object_id defaultConstraints with Some dcs -> dcs | None -> [||]
                 })
-        |> DbTr.commit_ connection
         
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-tables-transact-sql?view=sql-server-ver17
@@ -67,7 +66,7 @@ type Table = {
 module Table = 
     let fullName (t : Table) = $"[{t.Schema.Name}].[{t.Name}]"
 
-    let readAll schemas objects columns indexes triggers foreignKeys referencedForeignKeys checkConstraints defaultConstraints xProperties connection =
+    let readAll schemas objects columns indexes triggers foreignKeys referencedForeignKeys checkConstraints defaultConstraints xProperties =
         objects
         |> RCMap.fold
             (fun acc _ _ (o : OBJECT) -> 
@@ -115,7 +114,7 @@ type View = {
 module View = 
     let fullName (v : View) = $"[{v.Schema.Name}].[{v.Name}]"
     
-    let readAll schemas objects columns indexes triggers (sql_modules : RCMap<int, SqlModule>) xProperties connection =
+    let readAll schemas objects columns indexes triggers (sql_modules : RCMap<int, SqlModule>) xProperties =
         objects
         |> RCMap.fold
             (fun acc _ _ (o : OBJECT) -> 

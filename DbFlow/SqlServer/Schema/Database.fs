@@ -36,7 +36,7 @@ type DatabaseProperties = {
 }
 
 module DatabaseProperties = 
-    let readAll connection =
+    let readAll =
         DbTr.reader
             "SELECT
                 [compatibility_level],
@@ -98,10 +98,10 @@ module DatabaseProperties =
                     is_date_correlation_on = readBool "is_date_correlation_on" r
                 } :: acc)
             []
-        |> DbTr.commit_ connection
-        |> function
-            | [settings] -> settings
-            | _ -> failwithf "Multiple of no settings found - should not happen"
+        |> IO.map
+            (function
+                | [settings] -> settings
+                | _ -> failwithf "Multiple of no settings found - should not happen")
         
 
 type DatabaseSchema = {
@@ -130,107 +130,118 @@ type DatabaseSchema = {
 
 module DatabaseSchema =
     let read logger (options : ReadOptions) connection =
-        let xProperties = XProperty.readAll |> Logger.logTime logger "XProperties" connection
-        let dependencies = Dependency.readAll |> Logger.logTime logger "Dependencies" connection
-        
-        let dbProperties = DatabaseProperties.readAll connection
+        IO.builder {
+            let! xProperties = XProperty.readAll |> Logger.logTimeIO logger "XProperties" |> DbTr.commit_ connection
+            let! dependencies = Dependency.readAll |> Logger.logTimeIO logger "Dependencies" |> DbTr.commit_ connection
+            
+            let! dbProperties = DatabaseProperties.readAll |> DbTr.commit_ connection
 
-        let schemas = Schema.readAll xProperties connection
-        let objects = OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
-        let types = Datatype.readAll schemas objects xProperties connection
+            let! schemas = Schema.readAll xProperties |> DbTr.commit_ connection
+            let! objects = OBJECT.readAll schemas |> Logger.logTime logger "OBJECT" connection
+            let! types = Datatype.readAll schemas objects xProperties connection
 
-        let sequences = Sequence.readAll objects types connection
-        let synonyms = Synonym.readAll objects connection
-        let sql_modules = SqlModule.readAll connection
-        let xml_schema_collections = XmlSchemaCollection.readAll schemas xProperties connection
-        
-        let (columns, columnsByObject) = Column.readAll objects types xProperties |> Logger.logTime logger "COLUMN" connection
-        let triggersByParent = Trigger.readAll objects sql_modules xProperties |> Logger.logTime logger "TRIGGER" connection
-        
-        let checkConstraintsByParent = 
-            CheckConstraint.readAll objects columns xProperties
-            |> Logger.logTime logger "CHECK_CONSTRAINT" connection
-        let defaultConstraintsByParent = 
-            DefaultConstraint.readAll objects columns xProperties 
-            |> Logger.logTime logger "DEFAULT_CONSTRAINT" connection
-        
-
-        let fkColsByConstraint = ForeignKeycolumn.readAll objects columns |> Logger.logTime logger "FOREIGN_KEY_COLUMN" connection 
-        let (foreignKeysByParent, foreignKeysByReferenced)  = 
-            ForeignKey.readAll objects fkColsByConstraint xProperties 
-            |> Logger.logTime logger "FOREIGN_KEY" connection
-        
-        let indexesColumnsByIndex = IndexColumn.readAll objects columns |> Logger.logTime logger "INDEX_COLUMN" connection
-        let indexesByParent = Index.readAll objects indexesColumnsByIndex xProperties |> Logger.logTime logger "INDEX" connection
-        
-        let tableTypes =
-            TableType.readAll schemas objects xProperties columnsByObject 
-                indexesByParent foreignKeysByParent foreignKeysByReferenced checkConstraintsByParent defaultConstraintsByParent 
-            |> Logger.logTime logger "TABLE_TYPE" connection
+            let! sequences = Sequence.readAll objects types connection
+            let! synonyms = Synonym.readAll objects connection
+            let! sql_modules = SqlModule.readAll connection
+            let! xml_schema_collections = XmlSchemaCollection.readAll schemas xProperties connection
+            
+            let! (columns, columnsByObject) = Column.readAll objects types xProperties |> Logger.logTimeIO logger "COLUMN" |> DbTr.commit_ connection
+            let! triggersByParent = Trigger.readAll objects sql_modules xProperties |> Logger.logTimeIO logger "TRIGGER" |> DbTr.commit_ connection
+            
+            let! checkConstraintsByParent = 
+                CheckConstraint.readAll objects columns xProperties
+                |> Logger.logTimeIO logger "CHECK_CONSTRAINT" 
+                |> DbTr.commit_ connection
+            let! defaultConstraintsByParent = 
+                DefaultConstraint.readAll objects columns xProperties 
+                |> Logger.logTimeIO logger "DEFAULT_CONSTRAINT" 
+                |> DbTr.commit_ connection
             
 
-        let parametersByObject = Parameter.readAll objects types xProperties connection
-        let procedures = Procedure.readAll objects parametersByObject columnsByObject indexesByParent sql_modules xProperties connection
-
-        let tables = 
-            Table.readAll 
-                schemas objects columnsByObject indexesByParent
-                triggersByParent foreignKeysByParent foreignKeysByReferenced 
-                checkConstraintsByParent defaultConstraintsByParent xProperties 
-            |> Logger.logTime logger "TABLE" connection
-        let views = 
-            View.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules xProperties
-            |> Logger.logTime logger "VIEW" connection
-        
-        let db_XProperties = XProperty.getXProperties (XPropertyClass.Database, 0, 0) xProperties
-        let db_triggers = Trigger.readAllDatabaseTriggers objects sql_modules xProperties connection
-
-        let checkUnused (id : string) exclude pm =
-            match RCMap.unused exclude pm with
-            | [] -> ()
-            | unused -> failwith $"{id} not mapped for {unused}" 
-
-        // Verify that all objects are "picked" (referenced) by something
-        if options.CheckReferencesOnLoad
-        then
-            xProperties |> checkUnused "xProperties" (fun _ -> false)
-            columnsByObject |> checkUnused "columns" (fun _ -> false)
-            objects |> checkUnused "objects" (fun c -> c.ObjectType = ObjectType.ServiceQueue)
-            triggersByParent |> checkUnused "triggers" (fun _ -> false)
-            parametersByObject |> checkUnused "parameters" (fun _ -> false)
-            checkConstraintsByParent |> checkUnused "check_constraints" (fun _ -> false)
-            defaultConstraintsByParent |> checkUnused "default_constraints" (fun _ -> false)
-            fkColsByConstraint |> checkUnused "foreign_key_columns" (fun _ -> false)
-            foreignKeysByParent |> checkUnused "foreign_keys" (fun _ -> false)
-            indexesColumnsByIndex |> checkUnused "index_columns" (fun _ -> false)
-            indexesByParent 
-            |> checkUnused "indexes" 
-                (fun i -> 
-                    match i[0].Parent.ObjectType with 
-                    | ObjectType.InternalTable 
-                    | ObjectType.SystemTable -> true 
-                    | _ -> false)
-
-        {
-            Schemas = schemas |> RCMap.toList 
-            Tables = tables
-            Views = views         
+            let! fkColsByConstraint = ForeignKeycolumn.readAll objects columns |> Logger.logTimeIO logger "FOREIGN_KEY_COLUMN" |> DbTr.commit_ connection 
+            let! (foreignKeysByParent, foreignKeysByReferenced)  = 
+                ForeignKey.readAll objects fkColsByConstraint xProperties 
+                |> Logger.logTimeIO logger "FOREIGN_KEY" 
+                |> DbTr.commit_ connection
             
-            Types = types |> Map.fold (fun acc _ v -> v :: acc) []
-            TableTypes = tableTypes
-
-            Procedures = procedures
-
-            XmlSchemaCollections = xml_schema_collections
-
-            Triggers = db_triggers
-            Synonyms = synonyms |> RCMap.toList
-            Sequences = sequences |> RCMap.toList
-
-            Properties = dbProperties
+            let! indexesColumnsByIndex = IndexColumn.readAll objects columns |> Logger.logTimeIO logger "INDEX_COLUMN" |> DbTr.commit_ connection 
+            let! indexesByParent = Index.readAll objects indexesColumnsByIndex xProperties |> Logger.logTimeIO logger "INDEX" |> DbTr.commit_ connection 
             
-            XProperties = db_XProperties
+            let! tableTypes =
+                TableType.readAll schemas objects xProperties columnsByObject 
+                    indexesByParent foreignKeysByParent foreignKeysByReferenced checkConstraintsByParent defaultConstraintsByParent 
+                |> Logger.logTimeIO logger "TABLE_TYPE"
+                |> DbTr.commit_ connection 
 
-            //all_objects = objects |> RCMap.toList
-            Dependencies = dependencies
+            let! parametersByObject = Parameter.readAll objects types xProperties |> DbTr.commit_ connection 
+            let procedures = Procedure.readAll objects parametersByObject columnsByObject indexesByParent sql_modules xProperties 
+
+            let tables = 
+                Table.readAll 
+                    schemas objects columnsByObject indexesByParent
+                    triggersByParent foreignKeysByParent foreignKeysByReferenced 
+                    checkConstraintsByParent defaultConstraintsByParent  
+                |> Logger.logTime logger "TABLE" xProperties
+            let views = 
+                View.readAll schemas objects columnsByObject indexesByParent triggersByParent sql_modules 
+                |> Logger.logTime logger "VIEW" xProperties
+            
+            let db_XProperties = XProperty.getXProperties (XPropertyClass.Database, 0, 0) xProperties
+            let! db_triggers = 
+                Trigger.readAllDatabaseTriggers objects sql_modules xProperties
+                |> DbTr.commit_ connection
+
+            // Verify that all objects are "picked" (referenced) by something
+            (*
+            if options.CheckReferencesOnLoad
+            then
+                let checkUnused (id : string) exclude pm =
+                    match RCMap.unused exclude pm with
+                    | [] -> ()
+                    | unused -> failwith $"{id} not mapped for {unused}" 
+
+                xProperties |> checkUnused "xProperties" (fun _ -> false)
+                columnsByObject |> checkUnused "columns" (fun _ -> false)
+                objects |> checkUnused "objects" (fun c -> c.ObjectType = ObjectType.ServiceQueue)
+                triggersByParent |> checkUnused "triggers" (fun _ -> false)
+                parametersByObject |> checkUnused "parameters" (fun _ -> false)
+                checkConstraintsByParent |> checkUnused "check_constraints" (fun _ -> false)
+                defaultConstraintsByParent |> checkUnused "default_constraints" (fun _ -> false)
+                fkColsByConstraint |> checkUnused "foreign_key_columns" (fun _ -> false)
+                foreignKeysByParent |> checkUnused "foreign_keys" (fun _ -> false)
+                indexesColumnsByIndex |> checkUnused "index_columns" (fun _ -> false)
+                indexesByParent 
+                |> checkUnused "indexes" 
+                    (fun i -> 
+                        match i[0].Parent.ObjectType with 
+                        | ObjectType.InternalTable 
+                        | ObjectType.SystemTable -> true 
+                        | _ -> false)
+            else ()
+            *)
+
+            return
+                {
+                    Schemas = schemas |> RCMap.toList 
+                    Tables = tables
+                    Views = views         
+                    
+                    Types = types |> Map.fold (fun acc _ v -> v :: acc) []
+                    TableTypes = tableTypes
+
+                    Procedures = procedures
+
+                    XmlSchemaCollections = xml_schema_collections
+
+                    Triggers = db_triggers
+                    Synonyms = synonyms |> RCMap.toList
+                    Sequences = sequences |> RCMap.toList
+
+                    Properties = dbProperties
+                    
+                    XProperties = db_XProperties
+
+                    //all_objects = objects |> RCMap.toList
+                    Dependencies = dependencies
+                }
         }

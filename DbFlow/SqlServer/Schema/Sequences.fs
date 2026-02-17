@@ -107,5 +107,6 @@ module Sequence =
                     } 
                     m)
             Map.empty
+        |> IO.map RCMap.ofMap
         |> DbTr.commit_ connection
-        |> RCMap.ofMap
+        

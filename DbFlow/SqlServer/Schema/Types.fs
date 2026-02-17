@@ -143,7 +143,7 @@ module Datatype =
         | sys_type_name -> failwithf "Unknown system type '%s'" sys_type_name
    
 
-    let readSystemTypes connection =
+    let readSystemTypes =
         DbTr.reader
             "SELECT name, user_type_id FROM sys.types WHERE is_user_defined = 0"
             []
@@ -152,82 +152,84 @@ module Datatype =
                 let name = readString "name" r
                 Map.add userTypeId (createSystemDataType name) m)
             Map.empty
-        |> DbTr.commit_ connection
 
     let readAll schemas objects xProperties connection =
-        let systemTypes = readSystemTypes connection
-        DbTr.reader 
-            "SELECT
-                  t.name
-                 ,t.system_type_id
-                 ,t.user_type_id
-                 ,t.schema_id
-                 ,t.principal_id
-                 ,t.max_length
-                 ,t.precision
-                 ,t.scale
-                 ,t.collation_name
-                 ,t.is_nullable
-                 ,t.is_user_defined
-                 ,t.is_assembly_type
-                 ,t.default_object_id
-                 ,t.rule_object_id
-                 ,t.is_table_type
-
-                 ,tt.type_table_object_id
-             FROM sys.types t
-             LEFT OUTER JOIN sys.table_types tt ON t.user_type_id = tt.user_type_id"
-            []
-            (fun m r ->
-                let schemaId = readInt32 "schema_id" r
-                let userTypeId = readInt32 "user_type_id" r
-                let systemTypeId = readByte "system_type_id" r
-                let isUserDefined = readBool "is_user_defined" r
-                let tableTypeObjectId = 
-                    if readBool "is_table_type" r 
-                    then Some (readInt32 "type_table_object_id" r)
-                    else None
-                let name = readString "name" r
- 
-                Map.add
-                    userTypeId
-                    {
-                        Name = name
-                        Schema = RCMap.pick schemaId schemas
-
-                        SystemTypeId = systemTypeId
-                        UserTypeId = userTypeId
-
-                        Parameter = 
-                            { 
-                                MaxLength = readInt16 "max_length" r
-                                Precision = readByte "precision" r
-                                Scale = readByte "scale" r
-                                CollationName = nullable "collation_name" readString r
-                                IsNullable = readBool "is_nullable" r
-                            }
-                        
-                        DatatypeSpec =
-                            match tableTypeObjectId, isUserDefined with
-                            | Some objectId, _ -> 
-                                RCMap.pick objectId objects
-                                |> TableType 
-                            | None, true ->
-                                UserDefined
-                            | None, false ->
-                                SystemType (Map.find userTypeId systemTypes)
-
-                        XProperties = 
-                            let x0 = XProperty.getXProperties (XPropertyClass.Type, userTypeId, 0) xProperties
-                            match tableTypeObjectId with
-                            | None -> x0
-                            | Some objectId ->
-                                XProperty.getXProperties (XPropertyClass.ObjectOrColumn, objectId, 0) xProperties
-                                |> Map.fold (fun m k v -> Map.add k v m) x0
-                    }
-                    m)
-            Map.empty
+        readSystemTypes 
         |> DbTr.commit_ connection
+        |> IO.bind
+            (fun systemTypes ->
+                DbTr.reader 
+                    "SELECT
+                          t.name
+                         ,t.system_type_id
+                         ,t.user_type_id
+                         ,t.schema_id
+                         ,t.principal_id
+                         ,t.max_length
+                         ,t.precision
+                         ,t.scale
+                         ,t.collation_name
+                         ,t.is_nullable
+                         ,t.is_user_defined
+                         ,t.is_assembly_type
+                         ,t.default_object_id
+                         ,t.rule_object_id
+                         ,t.is_table_type
+
+                         ,tt.type_table_object_id
+                     FROM sys.types t
+                     LEFT OUTER JOIN sys.table_types tt ON t.user_type_id = tt.user_type_id"
+                    []
+                    (fun m r ->
+                        let schemaId = readInt32 "schema_id" r
+                        let userTypeId = readInt32 "user_type_id" r
+                        let systemTypeId = readByte "system_type_id" r
+                        let isUserDefined = readBool "is_user_defined" r
+                        let tableTypeObjectId = 
+                            if readBool "is_table_type" r 
+                            then Some (readInt32 "type_table_object_id" r)
+                            else None
+                        let name = readString "name" r
+ 
+                        Map.add
+                            userTypeId
+                            {
+                                Name = name
+                                Schema = RCMap.pick schemaId schemas
+
+                                SystemTypeId = systemTypeId
+                                UserTypeId = userTypeId
+
+                                Parameter = 
+                                    { 
+                                        MaxLength = readInt16 "max_length" r
+                                        Precision = readByte "precision" r
+                                        Scale = readByte "scale" r
+                                        CollationName = nullable "collation_name" readString r
+                                        IsNullable = readBool "is_nullable" r
+                                    }
+                                
+                                DatatypeSpec =
+                                    match tableTypeObjectId, isUserDefined with
+                                    | Some objectId, _ -> 
+                                        RCMap.pick objectId objects
+                                        |> TableType 
+                                    | None, true ->
+                                        UserDefined
+                                    | None, false ->
+                                        SystemType (Map.find userTypeId systemTypes)
+
+                                XProperties = 
+                                    let x0 = XProperty.getXProperties (XPropertyClass.Type, userTypeId, 0) xProperties
+                                    match tableTypeObjectId with
+                                    | None -> x0
+                                    | Some objectId ->
+                                        XProperty.getXProperties (XPropertyClass.ObjectOrColumn, objectId, 0) xProperties
+                                        |> Map.fold (fun m k v -> Map.add k v m) x0
+                            }
+                            m)
+                    Map.empty
+                |> DbTr.commit_ connection)
 
     let readType types collation r =
         let userTypeId = readInt32 "user_type_id" r
@@ -261,7 +263,7 @@ type Column = {
 }    
 
 module Column =
-    let readAll' objects types xProperties connection =
+    let readAll' objects types xProperties =
         DbTr.reader 
             "SELECT 
                  c.name column_name, c.object_id, c.column_id, 
@@ -322,25 +324,26 @@ module Column =
                         XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, object_id, column_id) xProperties
                     } :: acc)
             []
-        |> DbTr.commit_ connection
             
 
-    let readAll objects types xProperties connection =
-        let columns' = readAll' objects types xProperties connection
-        let columns =
-            columns' 
-            |> List.map (fun c -> (c.Object.ObjectId, c.ColumnId), c)
-            |> Map.ofList
-            |> RCMap.ofMap
-        let columnsByObject =
-            columns'
-            |> List.groupBy (fun c -> c.Object.ObjectId)
-            |> List.fold 
-                (fun m (object_id, cs) -> 
-                    Map.add object_id (cs |> List.sortBy (fun c -> c.ColumnId) |> List.toArray) m)
-                Map.empty
-            |> RCMap.ofMap
-        columns, columnsByObject
+    let readAll objects types xProperties =
+        readAll' objects types xProperties
+        |> IO.map
+            (fun columns' -> 
+                let columns =
+                    columns' 
+                    |> List.map (fun c -> (c.Object.ObjectId, c.ColumnId), c)
+                    |> Map.ofList
+                    |> RCMap.ofMap
+                let columnsByObject =
+                    columns'
+                    |> List.groupBy (fun c -> c.Object.ObjectId)
+                    |> List.fold 
+                        (fun m (object_id, cs) -> 
+                            Map.add object_id (cs |> List.sortBy (fun c -> c.ColumnId) |> List.toArray) m)
+                        Map.empty
+                    |> RCMap.ofMap
+                columns, columnsByObject)
 
 
 

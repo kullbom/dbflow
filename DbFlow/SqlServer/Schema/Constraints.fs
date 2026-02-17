@@ -18,7 +18,7 @@ type DefaultConstraint = {
 }
 
 module DefaultConstraint =
-    let readAll' objects columns xProperties connection =
+    let readAll' objects columns xProperties =
         DbTr.reader 
             "SELECT dc.object_id, dc.parent_object_id, dc.parent_column_id, dc.definition,dc.is_system_named 
              FROM sys.default_constraints dc"
@@ -39,7 +39,7 @@ module DefaultConstraint =
                     XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, object_id, 0) xProperties
                 } :: acc)
             []
-        |> DbTr.commit_ connection
+        
 
     let stableOrder (dc : DefaultConstraint) =
         if dc.IsSystemNamed 
@@ -48,15 +48,17 @@ module DefaultConstraint =
             sprintf "%s%s" name' dc.Column.Name
         else dc.Object.Name
 
-    let readAll objects columns ms_descriptions connection =
-        let defaultConstraints' = readAll' objects columns ms_descriptions connection
-        defaultConstraints'
-        |> List.groupBy (fun dc -> dc.Parent.ObjectId)
-        |> List.fold 
-            (fun m (object_id, dcs) -> 
-                Map.add object_id (dcs |> List.sortBy stableOrder |> List.toArray) m)
-            Map.empty
-        |> RCMap.ofMap
+    let readAll objects columns ms_descriptions =
+        readAll' objects columns ms_descriptions
+        |> IO.map 
+            (fun defaultConstraints' ->
+                defaultConstraints'
+                |> List.groupBy (fun dc -> dc.Parent.ObjectId)
+                |> List.fold 
+                    (fun m (object_id, dcs) -> 
+                        Map.add object_id (dcs |> List.sortBy stableOrder |> List.toArray) m)
+                    Map.empty
+                |> RCMap.ofMap)
         
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-check-constraints-transact-sql?view=sql-server-ver17
@@ -80,7 +82,7 @@ type CheckConstraint = {
 }
 
 module CheckConstraint =
-    let readAll' objects columns xProperties connection =
+    let readAll' objects columns xProperties =
         DbTr.reader 
             "SELECT 
                  cc.object_id, cc.parent_object_id, cc.parent_column_id, cc.is_disabled, cc.is_not_for_replication, cc.is_not_trusted, cc.definition, cc.uses_database_collation, cc.is_system_named
@@ -110,7 +112,6 @@ module CheckConstraint =
                         XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, objectId, 0) xProperties
                 } :: acc)
             []
-        |> DbTr.commit_ connection
             
     let stableOrder (cc : CheckConstraint) =
         if cc.IsSystemNamed 
@@ -120,13 +121,15 @@ module CheckConstraint =
             sprintf "%s%s%s" name' column' cc.Definition
         else cc.Object.Name
 
-    let readAll objects columns xProperties connection =
-        let checkConstraints' = readAll' objects columns xProperties connection
-        checkConstraints'
-        |> List.groupBy (fun cc -> cc.Parent.ObjectId)
-        |> List.fold 
-            (fun m (object_id, ccs) -> 
-                Map.add object_id (ccs |> List.sortBy stableOrder |> List.toArray) m)
-            Map.empty
-        |> RCMap.ofMap
+    let readAll objects columns xProperties =
+        readAll' objects columns xProperties
+        |> IO.map
+            (fun checkConstraints' ->
+                checkConstraints'
+                |> List.groupBy (fun cc -> cc.Parent.ObjectId)
+                |> List.fold 
+                    (fun m (object_id, ccs) -> 
+                        Map.add object_id (ccs |> List.sortBy stableOrder |> List.toArray) m)
+                    Map.empty
+                |> RCMap.ofMap)
         

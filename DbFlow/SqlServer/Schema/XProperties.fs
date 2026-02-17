@@ -51,21 +51,24 @@ module XPROPERTY_CLASS =
         | _ -> failwithf "Unknown XPROPERTY_CLASS : %i" classCode
 
 module XProperty =
-    let readAll connection =
+    let readAll =
         DbTr.readList
             "SELECT class, name, major_id, minor_id, value FROM sys.extended_properties"
             []
             (fun r -> 
                 (XPROPERTY_CLASS.findClass (readByte "class" r), readInt32 "major_id" r, readInt32 "minor_id" r),
                 readString "name" r, readString "value" r)
-        |> DbTr.commit_ connection
-        |> List.groupBy (fun (k,n,v) -> k)
-        |> List.map 
-            (fun (k, xs) -> 
-                k,
-                xs |> List.map (fun (k,n,v) -> n,v) |> Map.ofList)
-        |> Map.ofList
-        |> RCMap.ofMap
+        |> IO.map
+            (fun properties ->
+                properties
+                |> List.groupBy (fun (k,n,v) -> k)
+                |> List.map 
+                    (fun (k, xs) -> 
+                        k,
+                        xs |> List.map (fun (k,n,v) -> n,v) |> Map.ofList)
+                |> Map.ofList
+                |> RCMap.ofMap)
+        
 
     let getXProperties key xProperties =
         match RCMap.tryPick key xProperties with

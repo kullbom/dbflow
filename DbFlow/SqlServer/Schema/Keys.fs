@@ -15,7 +15,7 @@ type ForeignKeycolumn = {
 }
 
 module ForeignKeycolumn =
-    let readAll' objects columns connection =
+    let readAll' objects columns =
         DbTr.reader 
             "SELECT constraint_object_id, constraint_column_id, parent_object_id, parent_column_id, referenced_object_id, referenced_column_id
              FROM sys.foreign_key_columns"
@@ -35,17 +35,18 @@ module ForeignKeycolumn =
                     ReferencedColumn = RCMap.pick (referencedObjectId, referencedColumnId) columns
                 } :: acc)
             []
-        |> DbTr.commit_ connection
 
-    let readAll foreignKeys columns connection =
-        let fkColumns' = readAll' foreignKeys columns connection
-        let fkColumnsByConstraint =
-            fkColumns'
-            |> List.groupBy (fun c -> c.ConstraintObject.ObjectId)
-            |> List.map (fun (object_id, cs) -> object_id, cs |> List.sortBy (fun c -> c.ConstraintColumnId) |> List.toArray)
-            |> Map.ofList
-            |> RCMap.ofMap
-        fkColumnsByConstraint
+    let readAll foreignKeys columns =
+        readAll' foreignKeys columns 
+        |> IO.map
+            (fun fkColumns' ->
+                let fkColumnsByConstraint =
+                    fkColumns'
+                    |> List.groupBy (fun c -> c.ConstraintObject.ObjectId)
+                    |> List.map (fun (object_id, cs) -> object_id, cs |> List.sortBy (fun c -> c.ConstraintColumnId) |> List.toArray)
+                    |> Map.ofList
+                    |> RCMap.ofMap
+                fkColumnsByConstraint)
         
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-foreign-keys-transact-sql?view=sql-server-ver17
@@ -82,7 +83,7 @@ module ForeignKey =
         | 3uy -> ReferentialAction.SetDefault
         | _ -> failwithf "Unknown REFERENTIAL_ACTION: %i" b
     
-    let readAll' objects fkColumns xProperties connection =
+    let readAll' objects fkColumns xProperties =
         DbTr.reader 
             "SELECT 
                 fk.name, fk.object_id, fk.parent_object_id, fk.referenced_object_id, fk.is_disabled, fk.is_system_named, fk.key_index_id, 
@@ -108,7 +109,6 @@ module ForeignKey =
                     XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, object_id, 0) xProperties
                 } :: acc)
             []
-        |> DbTr.commit_ connection
             
     let stableOrder (fk : ForeignKey) =
         if fk.IsSystemNamed 
@@ -119,18 +119,20 @@ module ForeignKey =
             sprintf "%s%s%s%s" name' fk.Referenced.Name parentColumns refColumns
         else fk.Name
 
-    let readAll objects fkColumns xProperties connection =
-        let foreignKeys' = readAll' objects fkColumns xProperties connection
-        let foreignKeysByParent =
-            foreignKeys'
-            |> List.groupBy (fun fk -> fk.Parent.ObjectId)
-            |> List.map (fun (parent_id, fks) -> parent_id, fks |> List.sortBy stableOrder |> List.toArray)
-            |> Map.ofList
-            |> RCMap.ofMap
-        let foreignKeysByReferenced =
-            foreignKeys'
-            |> List.groupBy (fun fk -> fk.Referenced.ObjectId)
-            |> List.map (fun (referenced_id, fks) -> referenced_id, fks |> List.sortBy (fun fk -> fk.Name) |> List.toArray)
-            |> Map.ofList
-            |> RCMap.ofMap
-        foreignKeysByParent, foreignKeysByReferenced
+    let readAll objects fkColumns xProperties =
+        readAll' objects fkColumns xProperties
+        |> IO.map 
+            (fun foreignKeys' -> 
+                let foreignKeysByParent =
+                    foreignKeys'
+                    |> List.groupBy (fun fk -> fk.Parent.ObjectId)
+                    |> List.map (fun (parent_id, fks) -> parent_id, fks |> List.sortBy stableOrder |> List.toArray)
+                    |> Map.ofList
+                    |> RCMap.ofMap
+                let foreignKeysByReferenced =
+                    foreignKeys'
+                    |> List.groupBy (fun fk -> fk.Referenced.ObjectId)
+                    |> List.map (fun (referenced_id, fks) -> referenced_id, fks |> List.sortBy (fun fk -> fk.Name) |> List.toArray)
+                    |> Map.ofList
+                    |> RCMap.ofMap
+                foreignKeysByParent, foreignKeysByReferenced)

@@ -44,9 +44,12 @@ module Internal =
                 refreshScript :: acc)
             []
         |> DbTr.commit_ connection
-        |> List.map (fun refreshScript -> refreshScript |> ScriptContent.single |> scriptTransaction)
-        |> IO.sequence_ 
-        |> DbTr.commit_ connection 
+        |> IO.bind
+            (fun refreshScripts -> 
+                refreshScripts
+                |> List.map (fun refreshScript -> refreshScript |> ScriptContent.single |> scriptTransaction)
+                |> IO.sequence_ 
+                |> DbTr.commit_ connection)
 
     let collectScriptsFromSchema (options : ScriptOptions) (sourceDb : DatabaseSchema) =
         Scripts.Generate.generateScripts options sourceDb
@@ -73,25 +76,36 @@ module Internal =
         |> List.sortBy fst
         |> List.map snd
 
+let readSchema' logger (options : ReadOptions) connection =
+    // Ensure the current user has enough privileges to access the schema
+    IO.builder {
+        do! DbTr.reader "SELECT IS_ROLEMEMBER('db_ddladmin') CanRead" []
+                (fun acc r -> (Readers.readInt32 "CanRead" r = 1) :: acc) []
+            |> DbTr.commit_ connection
+            |> IO.map
+                (function
+                    | [true] -> ()
+                    | r -> failwithf "Missing privileges to read schema") 
+    
+        do! if options.RefreshSqlModulesMetadata
+            then 
+                Internal.refreshSqlModuleMetadata logger connection
+                |> Logger.logTimeIO logger "Refresh meta data" 
+            else
+                IO.ret ()
+
+        return! DatabaseSchema.read logger options connection
+    }
+
 /// Read the schema of a database given a connection
 let readSchema logger (options : ReadOptions) connection =
-    // Ensure the current user has enough privileges to access the schema
-    DbTr.reader "SELECT IS_ROLEMEMBER('db_ddladmin') CanRead" []
-        (fun acc r -> (Readers.readInt32 "CanRead" r = 1) :: acc) []
-    |> DbTr.commit_ connection
-    |> function
-        | [true] -> ()
-        | r -> failwithf "Missing privileges to read schema" 
-    
-    if options.RefreshSqlModulesMetadata
-    then 
-        Internal.refreshSqlModuleMetadata logger 
-        |> Logger.logTime logger "Refresh meta data" connection 
+    readSchema' logger options connection |> IO.run
 
-    DatabaseSchema.read logger options connection
+let readSchemaAsync logger (options : ReadOptions) connection =
+    readSchema' logger options connection |> IO.runAsync
 
-/// Clone a schema into a database given a target connection
-let clone logger (options : ScriptOptions) (sourceDb : DatabaseSchema) (targetConnection : SqlConnection) =
+
+let clone' logger (options : ScriptOptions) (sourceDb : DatabaseSchema) (targetConnection : SqlConnection) =
     let (settingsScripts, collectedScripts) = 
         Internal.collectScriptsFromSchema options 
         |> Logger.logTime logger "Collect scripts" sourceDb
@@ -100,37 +114,56 @@ let clone logger (options : ScriptOptions) (sourceDb : DatabaseSchema) (targetCo
         Dependent.resolveOrder (fun d -> d.Content) sourceDb.Dependencies
         |> Logger.logTime logger "Resolve scripts dependencies" collectedScripts
 
-    // The "settings script" can not be run as part of the same transaction as the other scripts
-    (fun () -> 
-        settingsScripts
-        |> List.map (fun script -> Internal.scriptTransaction script.Content.Content)
-        |> IO.sequence_
-        |> DbTr.exe targetConnection)
-    |> Logger.logTime logger "Execute database setup scripts" ()
+    IO.builder {
+        // The "settings script" can not be run as part of the same transaction as the other scripts
+        do! settingsScripts
+            |> List.map (fun script -> Internal.scriptTransaction script.Content.Content)
+            |> IO.sequence_
+            |> DbTr.exe targetConnection
+            |> Logger.logTimeIO logger "Execute database setup scripts"
+    
+        do!
+            resolvedScripts
+            |> List.map (fun script -> Internal.scriptTransaction script.Content.Content) 
+            |> IO.sequence_
+            |> DbTr.commit_ targetConnection
+            |> Logger.logTimeIO logger "Resolve and execute scripts"
+            
+        do SqlConnection.ClearPool targetConnection
 
-    (fun () -> 
-        resolvedScripts
-        |> List.map (fun script -> Internal.scriptTransaction script.Content.Content) 
-        |> IO.sequence_
-        |> DbTr.commit_ targetConnection)
-    |> Logger.logTime logger "Resolve and execute scripts" ()
+        return ()
+    }
 
-    SqlConnection.ClearPool targetConnection
+let cloneToLocal' logger (options : ScriptOptions) (sourceDb : DatabaseSchema) =
+    let localDb = new LocalTempDb(logger)
+    IO.builder {
+        use conn = new Microsoft.Data.SqlClient.SqlConnection(localDb.ConnectionString)
+        conn.Open ()
+        do! clone' logger options sourceDb conn
+        return localDb
+    }
+
+
+/// Clone a schema into a database given a target connection
+let clone logger (options : ScriptOptions) (sourceDb : DatabaseSchema) (targetConnection : SqlConnection) =
+    clone' logger options sourceDb targetConnection |> IO.run
+
+let cloneAsync logger (options : ScriptOptions) (sourceDb : DatabaseSchema) (targetConnection : SqlConnection) =
+    clone' logger options sourceDb targetConnection |> IO.runAsync
 
 let cloneToLocal logger (options : ScriptOptions) (sourceDb : DatabaseSchema) =
-    let localDb = new LocalTempDb(logger)
-    use conn = new Microsoft.Data.SqlClient.SqlConnection(localDb.ConnectionString)
-    conn.Open ()
-    clone logger options sourceDb conn
-    localDb
+    cloneToLocal' logger options sourceDb |> IO.run
 
-/// Generate scripts of a schema to a folder structure
-let generateScriptFiles (opt : ScriptOptions) (schema : DatabaseSchema) directory =
+let cloneToLocalAsync logger (options : ScriptOptions) (sourceDb : DatabaseSchema) =
+    cloneToLocal' logger options sourceDb |> IO.runAsync
+
+
+let generateScriptFiles' (opt : ScriptOptions) (schema : DatabaseSchema) directory =
     // TODO: "Move" requires the source and target to be on the same device. 
     //  Rewrite to use a "temp directory" in the same folder as the target directory... instead of GetTempPath
     let tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), (System.Guid.NewGuid ()).ToString().Replace("-", ""))
     Scripts.Generate.generateScripts opt schema
-        (fun () _isDatabaseSettings script ->
+        (fun io _isDatabaseSettings script ->
             let subfolder = 
                 match script.Content.Subdirectory with
                 | Some sDir -> System.IO.Path.Combine(tempDir, sDir)
@@ -139,23 +172,28 @@ let generateScriptFiles (opt : ScriptOptions) (schema : DatabaseSchema) director
             then System.IO.Directory.CreateDirectory (subfolder) |> ignore
             
             let file = System.IO.Path.Combine(subfolder, script.Content.Filename)
-            System.IO.File.WriteAllText (file, script.Content.Content |> ScriptContent.toString)
-            ())
-        ()
+            io |> IO.bind (fun () -> FileSystem.writeAllText file (script.Content.Content |> ScriptContent.toString)))
+        (IO.ret ())
+    |> IO.map
+        (fun () -> 
+            if System.IO.Directory.Exists directory
+            then System.IO.Directory.Delete(directory,true)
 
-    if System.IO.Directory.Exists directory
-    then System.IO.Directory.Delete(directory,true)
+            System.IO.Directory.Move(tempDir, directory))
+    
+/// Generate scripts of a schema to a folder structure
+let generateScriptFiles (opt : ScriptOptions) (schema : DatabaseSchema) directory =
+    generateScriptFiles' opt schema directory |> IO.run
 
-    System.IO.Directory.Move(tempDir, directory)
-
+let generateScriptFilesAsync (opt : ScriptOptions) (schema : DatabaseSchema) directory =
+    generateScriptFiles' opt schema directory |> IO.runAsync
 
 /// Schema compare. Compares two schemas returning a list of differences
 let compare (d0 : DatabaseSchema) (d1 : DatabaseSchema) =
     CompareGen.Collect (d0, d1) [] []
 
 
-/// Db upgrade (experimental)
-let performDbUpgrade logger connectionStr scriptFolder =
+let performDbUpgrade' logger connectionStr scriptFolder =
     let scripts = 
         Internal.collectScriptsFromFolder 
         |> Logger.logTime logger "Upgrade - Collect scripts in folder" scriptFolder
@@ -167,9 +205,15 @@ let performDbUpgrade logger connectionStr scriptFolder =
             |> IO.sequence_)
         |> Logger.logTime logger "Upgrade - Prepare transaction" ()
             
-    (fun dbTransaction -> 
-        use connection = new Microsoft.Data.SqlClient.SqlConnection(connectionStr)
-        connection.Open()
-        DbTr.commit_ connection dbTransaction)
-    |> Logger.logTime logger "Upgrade - Execute scripts" updateTransaction
+    use connection = new Microsoft.Data.SqlClient.SqlConnection(connectionStr)
+    connection.Open()
+    DbTr.commit_ connection updateTransaction
+    |> Logger.logTimeIO logger "Upgrade - Execute scripts" 
+
+/// Db upgrade (experimental)
+let performDbUpgrade logger connectionStr scriptFolder =
+    performDbUpgrade' logger connectionStr scriptFolder |> IO.run
                 
+/// Db upgrade (experimental)
+let performDbUpgradeAsync logger connectionStr scriptFolder =
+    performDbUpgrade' logger connectionStr scriptFolder |> IO.runAsync

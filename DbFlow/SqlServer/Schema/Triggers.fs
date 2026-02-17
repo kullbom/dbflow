@@ -28,7 +28,7 @@ type Trigger = {
 }
 
 module Trigger =
-    let readAllDatabaseTriggers objects (sql_modules : RCMap<int, SqlModule>) xProperties connection =
+    let readAllDatabaseTriggers objects (sql_modules : RCMap<int, SqlModule>) xProperties =
         DbTr.reader 
             "SELECT
                  tr.object_id, tr.name, tr.is_disabled, tr.is_instead_of_trigger 
@@ -50,9 +50,8 @@ module Trigger =
                         XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, object_id, 0) xProperties
                 } :: acc)
             []
-        |> DbTr.commit_ connection
         
-    let readAll' (objects : RCMap<int, OBJECT>) (sql_modules : RCMap<int, SqlModule>) xProperties connection =
+    let readAll' (objects : RCMap<int, OBJECT>) (sql_modules : RCMap<int, SqlModule>) xProperties =
         DbTr.reader 
             "SELECT
                  tr.object_id, tr.parent_id, tr.name, tr.is_disabled, tr.is_instead_of_trigger 
@@ -84,16 +83,17 @@ module Trigger =
                         XProperties = XProperty.getXProperties (XPropertyClass.ObjectOrColumn, object_id, 0) xProperties
                 } :: acc)
             []
-        |> DbTr.commit_ connection
             
 
-    let readAll objects sql_modules xProperties connection =
-        let triggers' = readAll' objects sql_modules xProperties connection
-        triggers' 
-        |> List.groupBy (fun tr -> tr.Parent.ObjectId)
-        |> List.fold 
-            (fun m (object_id, trs) -> 
-                Map.add object_id (trs |> List.toArray) m)
-            Map.empty
-        |> RCMap.ofMap
+    let readAll objects sql_modules xProperties =
+        readAll' objects sql_modules xProperties
+        |> IO.map 
+            (fun triggers' ->  
+                triggers'
+                |> List.groupBy (fun tr -> tr.Parent.ObjectId)
+                |> List.fold 
+                    (fun m (object_id, trs) -> 
+                        Map.add object_id (trs |> List.toArray) m)
+                    Map.empty
+                |> RCMap.ofMap)
     

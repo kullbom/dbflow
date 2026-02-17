@@ -6,7 +6,7 @@ open DbFlow.Readers
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-sql-expression-dependencies-transact-sql?view=sql-server-ver17
 
 module Dependency =
-    let readAll connection =
+    let readAll =
         DbTr.reader
             "SELECT DISTINCT d.referencing_id, d.referenced_id, d.is_schema_bound_reference 
              FROM sys.sql_expression_dependencies d
@@ -17,10 +17,13 @@ module Dependency =
             (fun acc r -> 
                 (readInt32 "referencing_id" r, readInt32 "referenced_id" r) :: acc)
             []
-        |> DbTr.commit_ connection
-        |> List.groupBy fst 
-        |> List.map (fun (referencing_id, xs) -> referencing_id, xs |> List.map snd)
-        |> Map.ofList
+        |> IO.map
+            (fun dependencies ->
+                dependencies
+                |> List.groupBy fst 
+                |> List.map (fun (referencing_id, xs) -> referencing_id, xs |> List.map snd)
+                |> Map.ofList)
+        
 
 
 type Schema = { 
@@ -41,7 +44,7 @@ module Schema =
     let includeSchemaInScripts (s : Schema) = not s.IsSystemSchema
     let includeObjectsInScripts (s : Schema) = s.Name = "dbo" || not s.IsSystemSchema
 
-    let readAll xProperties connection =
+    let readAll xProperties =
         DbTr.reader 
             "SELECT s.name schema_name, s.schema_id, p.name principal_name FROM sys.schemas s
              INNER JOIN sys.database_principals p ON s.principal_id = p.principal_id" 
@@ -62,8 +65,8 @@ module Schema =
                     } 
                     m)
             Map.empty
-        |> DbTr.commit_ connection
-        |> RCMap.ofMap
+        |> IO.map RCMap.ofMap
+        
 
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-objects-transact-sql?view=sql-server-ver17
@@ -195,8 +198,9 @@ module OBJECT =
                     }
                     m)
             Map.empty
+        |> IO.map RCMap.ofMap
         |> DbTr.commit_ connection
-        |> RCMap.ofMap
+        
 
 
 type XmlSchemaCollection = {
@@ -256,8 +260,9 @@ module SqlModule =
                 let objectId = readInt32 "object_id" r
                 Map.add objectId { ObjectId = objectId; Definition = readString "definition" r} m)
             Map.empty
+        |> IO.map RCMap.ofMap
         |> DbTr.commit_ connection
-        |> RCMap.ofMap
+        
 
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-synonyms-transact-sql?view=sql-server-ver17
@@ -278,5 +283,6 @@ module Synonym =
                 let object_id = readInt32 "object_id" r
                 Map.add object_id { Object = RCMap.pick object_id objects; BaseObjectName = readString "base_object_name" r } m)
             Map.empty
+        |> IO.map RCMap.ofMap
         |> DbTr.commit_ connection
-        |> RCMap.ofMap
+        

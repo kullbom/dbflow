@@ -132,7 +132,7 @@ module Helpers =
                 | Some s -> 
                     use dbConn = new SqlConnection(connectionStr)
                     dbConn.Open ()
-                    DbTr.nonQuery s [] |> DbTr.exe dbConn
+                    DbTr.nonQuery s [] |> DbTr.exe dbConn |> IO.run
                     SqlConnection.ClearPool dbConn
                 Execute.performDbUpgrade logger connectionStr scriptFolder
 

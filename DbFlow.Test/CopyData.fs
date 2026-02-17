@@ -43,7 +43,7 @@ type Tests () =
                 
                     DbTr.nonQuery "INSERT INTO TestTablePadding (Id, Content) VALUES ('012345', 'Content 5')" []
                     |> DbTr.commit_ localDbConn
-
+                    |> IO.run
                 )
                 )
         ()
@@ -67,13 +67,13 @@ type Tests () =
                     |> Logger.logTime logger "read schema" testDbConn 
     
                 let dataRef = 
-                    fun () -> 
-                        use testDbConn = new SqlConnection (testConnStr)
-                        testDbConn.Open ()
+                    use testDbConn = new SqlConnection (testConnStr)
+                    testDbConn.Open ()
                         
-                        CopyData.TopN (dbSchema.Tables |> List.find (fun t -> t.Name = "Product")) 300 
-                        |> DbTr.commit_ testDbConn
-                    |> Logger.logTime logger "TopN" ()
+                    CopyData.TopN (dbSchema.Tables |> List.find (fun t -> t.Name = "Product")) 300 
+                    |> DbTr.commit_ testDbConn
+                    |> Logger.logTimeIO logger "TopN"
+                    |> IO.run
 
                 use localDb = new LocalTempDb(silentLogger)
                 

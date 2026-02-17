@@ -80,6 +80,7 @@ type LocalTempDb(logger) =
 
         LocalTempDb.create dbName dbFile logFile
         |> DbTr.exe connection
+        |> IO.run
 
     member _.ConnectionString = connectionString
 
@@ -88,15 +89,18 @@ type LocalTempDb(logger) =
             use connection = new SqlConnection(cs "master")
             connection.Open()
             // Removing all users before detaching is a huge speed up...
-            (fun () -> LocalTempDb.killAllUsers dbName |> DbTr.exe connection)
-            |> Logger.logTime logger "Kill all users" ()
+            LocalTempDb.killAllUsers dbName |> DbTr.exe connection
+            |> Logger.logTimeIO logger "Kill all users" 
+            |> IO.run
             
-            (fun () -> LocalTempDb.takeOffline dbName |> DbTr.exe connection)
-            |> Logger.logTime logger "Take db offline" ()
+            LocalTempDb.takeOffline dbName |> DbTr.exe connection
+            |> Logger.logTimeIO logger "Take db offline" 
+            |> IO.run
             
-            (fun () -> LocalTempDb.detach dbName |> DbTr.exe connection)
-            |> Logger.logTime logger "Detach db" ()
-            
+            LocalTempDb.detach dbName |> DbTr.exe connection
+            |> Logger.logTimeIO logger "Detach db"
+            |> IO.run
+
             File.Delete(dbFile)
             File.Delete(logFile)
             ()

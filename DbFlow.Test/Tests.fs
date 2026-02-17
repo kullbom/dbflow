@@ -17,9 +17,9 @@ module Common =
         let cloneSchema = 
             use connection = new SqlConnection(localDb.ConnectionString)
             connection.Open()
-            Execute.readSchema Logger.dummy readOptions
+            Execute.readSchema Logger.dummy readOptions 
             |> Logger.logTime logger "Load clone" connection
-
+            
         Execute.generateScriptFiles scriptOptions cloneSchema
         |> Logger.logTime logger "Generate scripts (of clone)" destScriptFolder 
 
@@ -43,7 +43,7 @@ module Common =
                 
                 let dbSchema = 
                     Execute.readSchema Logger.dummy readOptions 
-                    |> Logger.logTime logger "Load schema" connection
+                    |> Logger.logTime logger "Load schema" connection 
 
                 Execute.generateScriptFiles scriptOptions dbSchema 
                 |> Logger.logTime logger "Generate scripts" dbFlowOutputDir 

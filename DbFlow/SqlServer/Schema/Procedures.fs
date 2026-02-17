@@ -27,7 +27,7 @@ type Parameter = {
 }
 
 module Parameter = 
-    let readAll' objects types xProperties connection =
+    let readAll' objects types xProperties =
         DbTr.reader
             "SELECT 
                 p.object_id, p.name, p.parameter_id,
@@ -47,17 +47,18 @@ module Parameter =
                     XProperties = XProperty.getXProperties (XPropertyClass.Parameter, object_id, parameter_id) xProperties
                 } :: acc)
             []
-        |> DbTr.commit_ connection
 
-    let readAll objects types xProperties connection =
-        let parameters' = readAll' objects types xProperties connection
-        parameters'
-        |> List.groupBy (fun c -> c.Object.ObjectId)
-        |> List.fold 
-            (fun m (object_id, cs) -> 
-                Map.add object_id (cs |> List.sortBy (fun c -> c.ParameterId) |> List.toArray) m)
-            Map.empty
-        |> RCMap.ofMap
+    let readAll objects types xProperties =
+        readAll' objects types xProperties 
+        |> IO.map
+            (fun parameters' -> 
+                parameters'
+                |> List.groupBy (fun c -> c.Object.ObjectId)
+                |> List.fold 
+                    (fun m (object_id, cs) -> 
+                        Map.add object_id (cs |> List.sortBy (fun c -> c.ParameterId) |> List.toArray) m)
+                    Map.empty
+                |> RCMap.ofMap)
         
 type Procedure = {
     Object : OBJECT
@@ -75,7 +76,7 @@ type Procedure = {
 } 
 
 module Procedure =
-    let readAll (objects : RCMap<_,OBJECT>) parameters columns indexes (sql_modules : RCMap<int, SqlModule>) xProperties _connection =
+    let readAll (objects : RCMap<_,OBJECT>) parameters columns indexes (sql_modules : RCMap<int, SqlModule>) xProperties =
         objects
         |> RCMap.fold 
             (fun acc _ _ o ->

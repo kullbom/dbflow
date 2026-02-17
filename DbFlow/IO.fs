@@ -80,11 +80,15 @@ module IO =
                     (fun a fn -> a |> Task.bind (fun () -> fn ctx))
                     (Task.enter ()))
 
+    let run (t : IO<unit, 'a>) = t.Execute ()
+    let runAsync (t : IO<unit, 'a>) = t.ExecuteAsync ()
+
     type CompExprBuilder() =
         member inline b.Return (x)        = ret x
         member inline b.Bind (p, rest)    = p |> bind rest
         member inline b.Let (p, rest)     = rest p
         member inline b.ReturnFrom (expr) = expr
+        member inline b.Using (x, f)      = use x' = x in f x'
         
     let builder = new CompExprBuilder()
         
@@ -113,71 +117,51 @@ type DbContext = { Connection : DbConnection; Transaction : DbTransaction option
 type DbTr<'a> = IO<DbContext,'a>
 
 module DbTr =
+    let internal nonQuery' cmdText parameters executor ctx =
+        let cmd = ctx.Connection.CreateCommand()
+        cmd.CommandText <- cmdText
+        match ctx.Transaction with 
+        | Some t -> cmd.Transaction <- t
+        | None -> ()
+        for (parameterName : string, parameterValue : obj) in parameters do
+            let p = cmd.CreateParameter()
+            p.ParameterName <- parameterName
+            p.Value <- parameterValue
+            cmd.Parameters.Add(p) |> ignore
+        try
+            executor cmd
+        with e ->
+            raise (Exception($"Batch failed: {cmdText}", e))
+            
     let nonQuery cmdText parameters =
         IO.create  
-            (fun ctx -> 
-                let cmd = ctx.Connection.CreateCommand()
-                cmd.CommandText <- cmdText
-                match ctx.Transaction with 
-                | Some t -> cmd.Transaction <- t
-                | None -> ()
-                for (parameterName : string, parameterValue : obj) in parameters do
-                    let p = cmd.CreateParameter()
-                    p.ParameterName <- parameterName
-                    p.Value <- parameterValue
-                    cmd.Parameters.Add(p) |> ignore
-                try
-                    cmd.ExecuteNonQuery() |> ignore
-                with e ->
-                    raise (Exception($"Batch failed: {cmdText}", e)))
-            (fun ctx -> 
-                let cmd = ctx.Connection.CreateCommand()
-                cmd.CommandText <- cmdText
-                match ctx.Transaction with 
-                | Some t -> cmd.Transaction <- t
-                | None -> ()
-                for (parameterName : string, parameterValue : obj) in parameters do
-                    let p = cmd.CreateParameter()
-                    p.ParameterName <- parameterName
-                    p.Value <- parameterValue
-                    cmd.Parameters.Add(p) |> ignore
-                try
-                    cmd.ExecuteNonQueryAsync() |> Task.map ignore
-                with e ->
-                    raise (Exception($"Batch failed: {cmdText}", e)))                
+            (nonQuery' cmdText parameters (fun cmd -> cmd.ExecuteNonQuery() |> ignore))
+            (nonQuery' cmdText parameters (fun cmd -> cmd.ExecuteNonQueryAsync() |> Task.map ignore))
         
+    let internal reader'' cmdText parameters executor ctx = 
+        let cmd = ctx.Connection.CreateCommand()
+        cmd.CommandText <- cmdText
+        match ctx.Transaction with 
+        | Some t -> cmd.Transaction <- t
+        | None -> ()
+        for (parameterName : string, parameterValue : obj) in parameters do
+            let p = cmd.CreateParameter()
+            p.ParameterName <- parameterName
+            p.Value <- parameterValue
+            cmd.Parameters.Add(p) |> ignore
+        executor cmd
 
     /// Custom reader - traversing the data reader is up to the user    
     let reader' cmdText parameters f =
         IO.create 
-            (fun ctx -> 
-                let cmd = ctx.Connection.CreateCommand()
-                cmd.CommandText <- cmdText
-                match ctx.Transaction with 
-                | Some t -> cmd.Transaction <- t
-                | None -> ()
-                for (parameterName : string, parameterValue : obj) in parameters do
-                    let p = cmd.CreateParameter()
-                    p.ParameterName <- parameterName
-                    p.Value <- parameterValue
-                    cmd.Parameters.Add(p) |> ignore
-                use dataReader = cmd.ExecuteReader() 
-                f dataReader)
-            (fun ctx -> 
-                let cmd = ctx.Connection.CreateCommand() 
-                cmd.CommandText <- cmdText
-                match ctx.Transaction with 
-                | Some t -> cmd.Transaction <- t
-                | None -> ()
-                for (parameterName : string, parameterValue : obj) in parameters do
-                    let p = cmd.CreateParameter()
-                    p.ParameterName <- parameterName
-                    p.Value <- parameterValue
-                    cmd.Parameters.Add(p) |> ignore
-                task {
-                    use! dataReader = cmd.ExecuteReaderAsync() 
-                    return f dataReader
-                })
+            (reader'' cmdText parameters 
+                (fun cmd -> use dataReader = cmd.ExecuteReader() in f dataReader))
+            (reader'' cmdText parameters 
+                (fun cmd -> 
+                    task {
+                        use! dataReader = cmd.ExecuteReaderAsync() 
+                        return f dataReader
+                    }))
         
 
     /// Reader - folds that data of the data reader calling the fold function once per row of data
@@ -203,47 +187,41 @@ module DbTr =
         reader cmdText parameters (fun s r -> Set.add (f r) s) Set.empty
 
     /// Commit a transaction
-    let commit (c : DbConnection) (i : System.Data.IsolationLevel) (t : IO<DbContext, 'a>) =
-        let tr = c.BeginTransaction(i)
-        let mutable success = false
-        try 
-            let res = t.Execute { Connection = c; Transaction = Some tr }
-            tr.Commit ()
-            success <- true
-            res
-        finally
-            if not success
-            then tr.Rollback ()
+    let commit (c : DbConnection) (i : System.Data.IsolationLevel) (t : DbTr<'a>) =
+        IO.create 
+            (fun () ->
+                let tr = c.BeginTransaction(i)
+                let mutable success = false
+                try 
+                    let res = t.Execute { Connection = c; Transaction = Some tr }
+                    tr.Commit ()
+                    success <- true
+                    res
+                finally
+                    if not success
+                    then tr.Rollback ())
+            (fun () -> 
+                task {
+                    let! tr = c.BeginTransactionAsync(i)
+                    let mutable success = false
+                    try 
+                        let! res = t.ExecuteAsync { Connection = c; Transaction = Some tr }
+                        do! tr.CommitAsync ()
+                        success <- true
+                        return res
+                    finally
+                        if not success
+                        then tr.Rollback ()
+                })
 
     /// Commit a transaction with isolation level READ COMMITED
     let commit_ c t = commit c System.Data.IsolationLevel.ReadCommitted t
 
     /// Execute a transaction {t} without an actual database transaction
-    let exe (c : DbConnection) (t : IO<DbContext, 'a>) =
-        t.Execute { Connection = c; Transaction = None }
-
-
-    /// Commit a transaction asyncronously
-    let commitAsync (c : DbConnection) (i : System.Data.IsolationLevel) (t : IO<DbContext, 'a>) =
-        task {
-            let! tr = c.BeginTransactionAsync(i)
-            let mutable success = false
-            try 
-                let! res = t.ExecuteAsync { Connection = c; Transaction = Some tr }
-                do! tr.CommitAsync ()
-                success <- true
-                return res
-            finally
-                if not success
-                then tr.Rollback ()
-        }
-        
-    /// Commit a transaction asyncronously with isolation level READ COMMITED
-    let commitAsync_ c t = commitAsync c System.Data.IsolationLevel.ReadCommitted t
-
-    /// Execute a transaction {t} asyncronously without an actual database transaction
-    let exeAsync (c : DbConnection) (t : IO<DbContext, 'a>) =
-        t.ExecuteAsync { Connection = c; Transaction = None }
+    let exe (c : DbConnection) (t : DbTr<'a>) =
+        IO.create
+            (fun () -> t.Execute { Connection = c; Transaction = None })
+            (fun () -> t.ExecuteAsync { Connection = c; Transaction = None })
 
 
 

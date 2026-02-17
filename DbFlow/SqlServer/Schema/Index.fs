@@ -17,7 +17,7 @@ type IndexColumn = {
 }
 
 module IndexColumn =
-    let readAll' objects columns connection =
+    let readAll' objects columns =
         DbTr.reader 
             "SELECT 
                  ic.object_id, ic.index_id, ic.index_column_id, ic.column_id, ic.key_ordinal, ic.partition_ordinal,
@@ -45,26 +45,27 @@ module IndexColumn =
                         IsIncludedColumn = readBool "is_included_column" r
                     } :: acc)
             []
-        |> DbTr.commit_ connection
        
-    let readAll objects columns connection =
-        let indexColumns = readAll' objects columns connection
-        let indexColumnsByIndex =
-            indexColumns
-            |> List.groupBy (fun c -> c.Object.ObjectId, c.IndexId)
-            |> List.map 
-                (fun (key, cs) -> 
-                    key, 
-                    cs 
-                    |> List.sortBy 
-                        (fun c -> 
-                            match c.KeyOrdinal, c.IsIncludedColumn with
-                            | Some ordinal, false -> 0, int ordinal
-                            | _ -> 1, c.IndexColumnId)
-                    |> List.toArray)
-            |> Map.ofList
-            |> RCMap.ofMap
-        indexColumnsByIndex
+    let readAll objects columns =
+        readAll' objects columns
+        |> IO.map
+            (fun indexColumns ->
+                let indexColumnsByIndex =
+                    indexColumns
+                    |> List.groupBy (fun c -> c.Object.ObjectId, c.IndexId)
+                    |> List.map 
+                        (fun (key, cs) -> 
+                            key, 
+                            cs 
+                            |> List.sortBy 
+                                (fun c -> 
+                                    match c.KeyOrdinal, c.IsIncludedColumn with
+                                    | Some ordinal, false -> 0, int ordinal
+                                    | _ -> 1, c.IndexColumnId)
+                            |> List.toArray)
+                    |> Map.ofList
+                    |> RCMap.ofMap
+                indexColumnsByIndex)
         
 
 
@@ -134,7 +135,7 @@ type Index = {
 }
 
 module Index =
-    let readAll' objects indexColumnsByIndex xProperties connection =
+    let readAll' objects indexColumnsByIndex xProperties =
         DbTr.reader
             "SELECT 
                 i.object_id parent_object_id, kc.object_id index_object_id, 
@@ -206,14 +207,15 @@ module Index =
                     XProperties = xProperties
                 } :: acc)
             []
-        |> DbTr.commit_ connection
 
-    let readAll objects indexColumnsByIndex xProperties connection =
-        let indexes = readAll' objects indexColumnsByIndex xProperties connection 
-        let indexesByParent =
-            indexes
-            |> List.groupBy (fun i -> i.Parent.ObjectId)
-            |> List.map (fun (objectId, is) -> objectId, is |> List.sortBy (fun i -> i.IndexId) |> List.toArray)
-            |> Map.ofList
-            |> RCMap.ofMap
-        indexesByParent
+    let readAll objects indexColumnsByIndex xProperties =
+        readAll' objects indexColumnsByIndex xProperties
+        |> IO.map
+            (fun indexes -> 
+                let indexesByParent =
+                    indexes
+                    |> List.groupBy (fun i -> i.Parent.ObjectId)
+                    |> List.map (fun (objectId, is) -> objectId, is |> List.sortBy (fun i -> i.IndexId) |> List.toArray)
+                    |> Map.ofList
+                    |> RCMap.ofMap
+                indexesByParent)
