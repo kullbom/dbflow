@@ -78,7 +78,7 @@ module Internal =
 
 let readSchema' logger (options : ReadOptions) connection =
     // Ensure the current user has enough privileges to access the schema
-    IO.builder {
+    IO.io {
         do! DbTr.reader "SELECT IS_ROLEMEMBER('db_ddladmin') CanRead" []
                 (fun acc r -> (Readers.readInt32 "CanRead" r = 1) :: acc) []
             |> DbTr.commit_ connection
@@ -114,7 +114,7 @@ let clone' logger (options : ScriptOptions) (sourceDb : DatabaseSchema) (targetC
         Dependent.resolveOrder (fun d -> d.Content) sourceDb.Dependencies
         |> Logger.logTime logger "Resolve scripts dependencies" collectedScripts
 
-    IO.builder {
+    IO.io {
         // The "settings script" can not be run as part of the same transaction as the other scripts
         do! settingsScripts
             |> List.map (fun script -> Internal.scriptTransaction script.Content.Content)
@@ -136,7 +136,7 @@ let clone' logger (options : ScriptOptions) (sourceDb : DatabaseSchema) (targetC
 
 let cloneToLocal' logger (options : ScriptOptions) (sourceDb : DatabaseSchema) =
     let localDb = new LocalTempDb(logger)
-    IO.builder {
+    IO.io {
         use conn = new Microsoft.Data.SqlClient.SqlConnection(localDb.ConnectionString)
         conn.Open ()
         do! clone' logger options sourceDb conn

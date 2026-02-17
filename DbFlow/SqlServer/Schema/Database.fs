@@ -130,7 +130,7 @@ type DatabaseSchema = {
 
 module DatabaseSchema =
     let read logger (options : ReadOptions) connection =
-        IO.builder {
+        IO.io {
             let! xProperties = XProperty.readAll |> Logger.logTimeIO logger "XProperties" |> DbTr.commit_ connection
             let! dependencies = Dependency.readAll |> Logger.logTimeIO logger "Dependencies" |> DbTr.commit_ connection
             

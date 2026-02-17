@@ -174,7 +174,7 @@ module Internal =
                 (DbTr.commit_ sourceConnection >> IO.run)
                 tempTableName
                 (fun copyTr -> 
-                    IO.builder {
+                    IO.io {
                         // 1. Create temp table
                         let columns = 
                             // Exclude computed columns
