@@ -43,37 +43,51 @@ type SchemaScriptPart =
 
 module XProperties =
     let xPropStr (propName : string) (propValue : obj) keysAndValues =
-        let literalValue = XProperty.toLiteralSql propValue
-        match keysAndValues with
-        | [key0, value0] ->
-            $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', N'{literalValue}', {key0}, {value0};"
-        | [key0, value0; key1, value1] ->
-            $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', N'{literalValue}', {key0}, {value0}, {key1}, {value1};"
-        | [key0, value0; key1, value1; key2, value2] ->
-            $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', N'{literalValue}', {key0}, {value0}, {key1}, {value1}, {key2}, {value2};"
-        
-        | _ -> failwithf "Can not generate documentation script for %A" keysAndValues
+        match XProperty.toLiteralSql propValue with
+        | Some literalValue -> 
+            match keysAndValues with
+            | [key0, value0] ->
+                $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', {literalValue}, {key0}, {value0};"
+            | [key0, value0; key1, value1] ->
+                $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', {literalValue}, {key0}, {value0}, {key1}, {value1};"
+            | [key0, value0; key1, value1; key2, value2] ->
+                $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', {literalValue}, {key0}, {value0}, {key1}, {value1}, {key2}, {value2};"
+            
+            | _ -> failwithf "Can not generate documentation script for %A" keysAndValues
+            |> Some
+        | None -> 
+            None
 
-    let xProps (xProperties : XProperties) keysAndValues f seed =
+    let xProps (opt : ScriptOptions) (xProperties : XProperties) keysAndValues f seed =
         xProperties
-        |> Map.fold (fun acc k v -> f acc (xPropStr k v keysAndValues)) seed
+        |> Map.fold 
+            (fun acc k v -> 
+                match xPropStr k v keysAndValues with
+                | Some s -> f acc s
+                | None ->
+                    if opt.SkipUnsupportedExtendedProperties
+                    then acc
+                    else 
+                        let ty = v.GetType()
+                        failwith $"Support for extended properties of type {ty.FullName} not implemented")
+            seed
     
-    let collectXProps (xProperties : XProperties) keysAndValues sc =
-        xProps xProperties keysAndValues 
+    let collectXProps (opt : ScriptOptions) (xProperties : XProperties) keysAndValues sc =
+        xProps opt xProperties keysAndValues 
             (fun (isFirst, sc') xp -> 
                 false, (if isFirst then sc' |>+ "" else sc') |>+ xp)
             (true, sc)
         |> snd
     
-    let database xProperties = collectXProps xProperties ["NULL", "NULL";]
+    let database (opt : ScriptOptions) xProperties = collectXProps opt xProperties ["NULL", "NULL";]
     
-    let xmlSchemaCollection (xmlSchema : XmlSchemaCollection) =
-        collectXProps xmlSchema.XProperties 
+    let xmlSchemaCollection (opt : ScriptOptions) (xmlSchema : XmlSchemaCollection) =
+        collectXProps opt xmlSchema.XProperties 
             ["N'SCHEMA'", $"[{xmlSchema.Schema.Name}]"; "N'XML SCHEMA COLLECTION'", $"[{xmlSchema.Name}]";]
 
-    let schema (s : Schema) = collectXProps s.XProperties ["N'SCHEMA'", $"[{s.Name}]";]
+    let schema (opt : ScriptOptions) (s : Schema) = collectXProps opt s.XProperties ["N'SCHEMA'", $"[{s.Name}]";]
     
-    let procedure (p : Procedure) =
+    let procedure (opt : ScriptOptions) (p : Procedure) =
         let pType =
             match p.Object.ObjectType with
             | ObjectType.SqlScalarFunction 
@@ -87,56 +101,56 @@ module XProperties =
                 p.Parameters
                 |> Array.fold 
                     (fun acc para ->
-                        collectXProps para.XProperties
+                        collectXProps opt para.XProperties
                             ["N'SCHEMA'", $"[{p.Object.Schema.Name}]"; $"N'{pType}'", $"[{p.Name}]"; "N'PARAMETER'", $"'{para.Name}'"]
                             acc)
-                    (collectXProps p.XProperties 
+                    (collectXProps opt p.XProperties 
                         ["N'SCHEMA'", $"[{p.Object.Schema.Name}]"; $"N'{pType}'", $"[{p.Name}]"]
                         sc'))
 
-    let constraint' (parent : OBJECT) constraintName xProperties sc =
+    let constraint' (opt : ScriptOptions) (parent : OBJECT) constraintName xProperties sc =
         sc
         |> ScriptContent.surround [] ["GO"]
-            (collectXProps xProperties 
+            (collectXProps opt xProperties 
                 ["N'SCHEMA'", $"[{parent.Schema.Name}]"; "N'TABLE'", $"[{parent.Name}]"; "N'CONSTRAINT'", $"[{constraintName}]"])
                 
             
-    let trigger (tr : Trigger) =
-        collectXProps tr.XProperties
+    let trigger (opt : ScriptOptions) (tr : Trigger) =
+        collectXProps opt tr.XProperties
             ["N'SCHEMA'", $"[{tr.Parent.Schema.Name}]"; "N'TABLE'", $"[{tr.Parent.Name}]"; "N'TRIGGER'", $"[{tr.Name}]"]
     
         
-    let index cType (i : Index) sc =
+    let index (opt : ScriptOptions) cType (i : Index) sc =
         match i.Name with
         | Some iName ->
-            collectXProps i.XProperties 
+            collectXProps opt i.XProperties 
                 ["N'SCHEMA'", $"[{i.Parent.Schema.Name}]"; cType, $"[{i.Parent.Name}]"; "N'INDEX'", $"[{iName}]"]
                 sc
         | None -> sc
     
-    let containerAndColumns schemaName cType cName cXProperties (columns : Column array) sc =
+    let containerAndColumns (opt : ScriptOptions) schemaName cType cName cXProperties (columns : Column array) sc =
         columns
         |> Array.fold 
             (fun acc c ->
-                collectXProps c.XProperties
+                collectXProps opt c.XProperties
                     ["N'SCHEMA'", $"[{schemaName}]"; cType, $"[{cName}]"; "N'COLUMN'", $"[{c.Name}]"]
                     acc)
-            (collectXProps cXProperties
+            (collectXProps opt cXProperties
                 ["N'SCHEMA'", $"[{schemaName}]"; cType, $"[{cName}]";]
                 sc)
 
-    let table (t : Table) sc =
+    let table (opt : ScriptOptions) (t : Table) sc =
         sc
-        |> containerAndColumns t.Schema.Name "N'TABLE'" t.Name t.XProperties t.Columns
+        |> containerAndColumns opt t.Schema.Name "N'TABLE'" t.Name t.XProperties t.Columns
         |> (fun sc' -> 
             t.Indexes
-            |> Array.fold (fun sc'' i -> index "N'TABLE'" i sc'') sc')
+            |> Array.fold (fun sc'' i -> index opt "N'TABLE'" i sc'') sc')
 
-    let viewAndColumns (v : View) =
-        containerAndColumns v.Schema.Name "N'VIEW'" v.Name v.XProperties v.Columns
+    let viewAndColumns (opt : ScriptOptions) (v : View) =
+        containerAndColumns opt v.Schema.Name "N'VIEW'" v.Name v.XProperties v.Columns
 
-    let typeProps (s : Schema) (typeName : string) (xProps : XProperties) =
-        collectXProps xProps  ["N'SCHEMA'", $"[{s.Name}]"; "N'TYPE'", $"[{typeName}]";]
+    let typeProps (opt : ScriptOptions) (s : Schema) (typeName : string) (xProps : XProperties) =
+        collectXProps opt xProps  ["N'SCHEMA'", $"[{s.Name}]"; "N'TYPE'", $"[{typeName}]";]
 
         
 let columnDefinitionStr (opt : ScriptOptions) (dbProps : DatabaseProperties) allTypes isTableType (columnInlineDefaults : Map<int, DefaultConstraint>) (column : Column) =
@@ -223,7 +237,7 @@ let generateSettingsScript (opt : ScriptOptions) (schema : DatabaseSchema) =
     |>+ $"EXEC('ALTER DATABASE [' + @DB + '] SET DATE_CORRELATION_OPTIMIZATION {onOff s.is_date_correlation_on}')"
     |>+ "GO"
     
-    |> XProperties.database schema.XProperties
+    |> XProperties.database opt schema.XProperties
 
     |> DatabaseDefinition
 
@@ -233,7 +247,7 @@ let generateSchemaScript (opt : ScriptOptions) (schema : Schema) =
     |>+ $"CREATE SCHEMA [{schema.Name}] AUTHORIZATION [{schema.PrincipalName}]"
     |>+ "GO"
 
-    |> XProperties.schema schema
+    |> XProperties.schema opt schema
 
     |> SchemaDefinition
 
@@ -436,7 +450,7 @@ let generateTableScript allTypes ds (opt : ScriptOptions) (t : Table) =
     |> generateTableScript' opt ds allTypes false tableName 
             t.Columns t.Indexes t.CheckConstraints t.DefaultConstraints
     |> (fun (sc, objectIds) ->
-        let sc' = sc |> XProperties.table t
+        let sc' = sc |> XProperties.table opt t
 
         ObjectDefinitions {| Contains = t.Object.ObjectId :: objectIds; DependsOn = []; Script = sc'|})
 
@@ -447,7 +461,7 @@ let generateTableTypeScript allTypes ds (opt : ScriptOptions) (ty : Datatype, tt
     |> generateTableScript' opt ds allTypes true tName 
             tt.Columns tt.Indexes tt.CheckConstraints tt.DefaultConstraints
     |> fun (sc, objectIds) ->
-        let sc' = XProperties.typeProps tt.Schema tt.Name ty.XProperties sc
+        let sc' = XProperties.typeProps opt tt.Schema tt.Name ty.XProperties sc
 
         ObjectDefinitions {| Contains = tt.Object.ObjectId :: objectIds; DependsOn = []; Script = sc' |}
 
@@ -465,7 +479,7 @@ let generateViewScript (opt : ScriptOptions) (view : View)=
     |>+ "SET ANSI_NULLS OFF"
     |>+ "GO"
     
-    |> XProperties.viewAndColumns view
+    |> XProperties.viewAndColumns opt view
 
     |> fun sc -> ObjectDefinitions {| Contains = [view.Object.ObjectId]; DependsOn = []; Script = sc |}
 
@@ -487,7 +501,7 @@ let generateCheckConstraintsScript (opt : ScriptOptions) (table : Table, table_o
                 else sc''
             |>+ "GO"
             
-            |> XProperties.constraint' table.Object cc.Object.Name cc.XProperties,
+            |> XProperties.constraint' opt table.Object cc.Object.Name cc.XProperties,
 
             cc.Object.ObjectId :: objectIds)
         (ScriptContent.empty, [])
@@ -506,7 +520,7 @@ let generateDefaultConstraintsScript (opt : ScriptOptions) (table : Table, dcs :
                  else $"ALTER TABLE {tableName} ADD CONSTRAINT [{dc.Object.Name}] DEFAULT {dc.Definition} FOR [{dc.Column.Name}]")
             |>+ "GO"
 
-            |> XProperties.constraint' table.Object dc.Object.Name dc.XProperties,
+            |> XProperties.constraint' opt table.Object dc.Object.Name dc.XProperties,
             
             dc.Object.ObjectId :: objectIds)
         (ScriptContent.empty, [])
@@ -545,7 +559,7 @@ let generateForeignKeysScript (opt : ScriptOptions) (table : Table, fks : Foreig
                 |>+ ""
                 |>+ "GO"
 
-                |> XProperties.constraint' table.Object fk.Object.Name fk.XProperties,
+                |> XProperties.constraint' opt table.Object fk.Object.Name fk.XProperties,
 
                 fk.Object.ObjectId :: object_ids,
                 fk.Parent.ObjectId :: fk.Referenced.ObjectId :: depends_on)
@@ -570,7 +584,7 @@ let generateTriggerScript (opt : ScriptOptions) (tr : Trigger) =
          then $"DISABLE TRIGGER [{tr.Object.Schema.Name}].[{tr.Object.Name}] ON [{tr.Parent.Schema.Name}].[{tr.Parent.Name}]"
          else $"ENABLE TRIGGER [{tr.Object.Schema.Name}].[{tr.Object.Name}] ON [{tr.Parent.Schema.Name}].[{tr.Parent.Name}]")
     |>+ "GO"
-    |> XProperties.trigger tr
+    |> XProperties.trigger opt tr
     |> fun sc ->
         ObjectDefinitions {| Contains = [tr.Object.ObjectId]; DependsOn = [tr.Parent.ObjectId]; Script = sc |}
     
@@ -588,7 +602,7 @@ let generateProcedureScript (opt : ScriptOptions) (p : Procedure) =
     |>+ "SET ANSI_NULLS OFF "
     |>+ "GO"
 
-    |> XProperties.procedure p
+    |> XProperties.procedure opt p
 
     |> fun sc -> ObjectDefinitions {| Contains = [p.Object.ObjectId]; DependsOn = []; Script = sc |}
 
@@ -605,7 +619,7 @@ let generateXmlSchemaCollectionScript (opt : ScriptOptions) (s : XmlSchemaCollec
     |>+ $"CREATE XML SCHEMA COLLECTION {name} AS N'{s.Definition}'"
     |>+ "GO"
     
-    |> XProperties.xmlSchemaCollection s
+    |> XProperties.xmlSchemaCollection opt s
 
     |> XmlSchemaCollectionDefinition 
 
@@ -658,7 +672,7 @@ let generateUserDefinedTypeScript (types : Map<int, Datatype>) (opt : ScriptOpti
     |>+ $"CREATE TYPE [{t.Schema.Name}].[{t.Name}] FROM {tDef} {nullStr}"
     |>+ "GO"
 
-    |> XProperties.typeProps t.Schema t.Name t.XProperties
+    |> XProperties.typeProps opt t.Schema t.Name t.XProperties
 
     |> UserDefinedTypeDefinition
 
@@ -746,7 +760,7 @@ let generateScripts (opt : ScriptOptions) (schema : DatabaseSchema) f seed =
             |> fun sc ->
                 let sc' = 
                     view.Indexes
-                    |> Array.fold (fun sc' i -> XProperties.index "N'VIEW'" i sc') sc
+                    |> Array.fold (fun sc' i -> XProperties.index opt "N'VIEW'" i sc') sc
 
                 ObjectDefinitions
                     {| 

@@ -161,15 +161,14 @@ type XProperties = Map<string, obj>
 module XProperty =
     let toLiteralSql (propValue : obj) =
         match propValue with
-        | :? string as s -> s.Replace("'", "''")
-        | :? byte as i -> string i
-        | :? int16 as i -> string i
-        | :? int32 as i -> string i
-        | :? int64 as i -> string i
-        | _ -> 
-            let ty = propValue.GetType()
-            failwith $"Support for extended properties of type {ty.FullName} not implemented"
-        
+        | :? string as s -> 
+            let escaped = s.Replace("'", "''")
+            $"N'{escaped}'" |> Some
+        | :? byte as i -> string i |> Some
+        | :? int16 as i -> string i |> Some
+        | :? int32 as i -> string i |> Some
+        | :? int64 as i -> string i |> Some
+        | _ -> None 
 
     let readAll connection =
         DbTr.readList
