@@ -5,7 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>DbFlow</Title>
-    <Version>0.8.1</Version>
+    <Version>0.8.2</Version>
     <Copyright>2025-2026 Johan Kullbom</Copyright>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>.net;f#;sql;mssqlserver</PackageTags>
@@ -15,7 +15,7 @@
     <RepositoryType>git</RepositoryType>
 	<Description>DbFlow is a library that helps with schema oriented database tasks</Description>
 	<PackageReleaseNotes>
-		- Fix bug in reading extended properties
+		- Added support for skipping extended properties with unsupported types
 	</PackageReleaseNotes>
   </PropertyGroup>
 
