@@ -87,6 +87,10 @@
 [x] Make executing refresh view optional
 [x] Only refresh view that are not schemabound
 
+## Version 0.8.1 (2026-03-27)
+
+[x] Support for extended properties that isn't of type string 
+
 ## Version 1.0.0
 
 [ ] Instead of generating failing XML scripts: output warning and "scripts" with comments that it is not yet supported. 

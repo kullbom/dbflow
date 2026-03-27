@@ -84,7 +84,7 @@ CREATE TYPE [dbo].[IntList] AS TABLE (
     ColWithNamedDefault INT NOT NULL DEFAULT (((-1)))
 )
 
-EXEC sys.sp_addextendedproperty @name=N'Foobar2', @value=N'The value 456' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TYPE', @level1name=N'IntList'
+EXEC sys.sp_addextendedproperty @name=N'Foobar2', @value=456 , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TYPE', @level1name=N'IntList'
 GO
 
 -- Keys -----------------------------------------------------------------------

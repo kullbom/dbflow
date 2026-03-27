@@ -14,7 +14,7 @@ type DefaultConstraint = {
     
     Definition : string
 
-    XProperties : Map<string, string>
+    XProperties : XProperties
 }
 
 module DefaultConstraint =
@@ -76,7 +76,7 @@ type CheckConstraint = {
     UsesDatabaseCollation : bool
     IsSystemNamed : bool
 
-    XProperties : Map<string, string>
+    XProperties : XProperties
 }
 
 module CheckConstraint =

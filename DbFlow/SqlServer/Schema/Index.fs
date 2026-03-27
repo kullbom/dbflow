@@ -130,7 +130,7 @@ type Index = {
     
     Columns : IndexColumn array
 
-    XProperties : Map<string, string>
+    XProperties : XProperties
 }
 
 module Index =

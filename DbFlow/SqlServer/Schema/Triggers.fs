@@ -12,7 +12,7 @@ type DatabaseTrigger = {
     IsDisabled : bool
     IsInsteadOfTrigger : bool
 
-    XProperties : Map<string, string>
+    XProperties : XProperties
 }
 
 type Trigger = {
@@ -24,7 +24,7 @@ type Trigger = {
     IsDisabled : bool
     IsInsteadOfTrigger : bool
 
-    XProperties : Map<string, string>
+    XProperties : XProperties
 }
 
 module Trigger =

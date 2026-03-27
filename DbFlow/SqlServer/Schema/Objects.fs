@@ -30,7 +30,7 @@ type Schema = {
 
     IsSystemSchema : bool
 
-    XProperties : Map<string, string>
+    XProperties : XProperties
 }
 
 module Schema =
@@ -209,7 +209,7 @@ type XmlSchemaCollection = {
 
     Definition : string 
 
-    XProperties : Map<string, string>
+    XProperties : XProperties
 }
 
 module XmlSchemaCollection = 

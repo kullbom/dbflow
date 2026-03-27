@@ -156,14 +156,28 @@ module XPROPERTY_CLASS =
         | 27uy -> XPropertyClass.PlanGuide 
         | _ -> failwithf "Unknown XPROPERTY_CLASS : %i" classCode
 
+type XProperties = Map<string, obj>
+
 module XProperty =
+    let toLiteralSql (propValue : obj) =
+        match propValue with
+        | :? string as s -> s.Replace("'", "''")
+        | :? byte as i -> string i
+        | :? int16 as i -> string i
+        | :? int32 as i -> string i
+        | :? int64 as i -> string i
+        | _ -> 
+            let ty = propValue.GetType()
+            failwith $"Support for extended properties of type {ty.FullName} not implemented"
+        
+
     let readAll connection =
         DbTr.readList
             "SELECT class, name, major_id, minor_id, value FROM sys.extended_properties"
             []
             (fun r -> 
                 (XPROPERTY_CLASS.findClass (readByte "class" r), readInt32 "major_id" r, readInt32 "minor_id" r),
-                readString "name" r, readString "value" r)
+                readString "name" r, readObject "value" r)
         |> DbTr.commit_ connection
         |> List.groupBy (fun (k,n,v) -> k)
         |> List.map 
