@@ -121,7 +121,7 @@ type DatabaseSchema = {
     
     Properties : DatabaseProperties
 
-    XProperties : Map<string, string>
+    XProperties : XProperties
 
     //all_objects : OBJECT list
     Dependencies : Map<int, int list>

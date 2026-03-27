@@ -70,7 +70,7 @@ type ForeignKey = {
 
     Columns : ForeignKeycolumn array
 
-    XProperties : Map<string, string>
+    XProperties : XProperties
 }
 
 module ForeignKey =

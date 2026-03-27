@@ -102,7 +102,7 @@ module Compare =
 
     // A few manual implementations
 
-    let xProperties (x0 : Map<string, string>, x1 : Map<string, string>) path diffs =
+    let xProperties (x0 : XProperties, x1 : XProperties) path diffs =
         List.fold2
             (fun diffs' (k0,v0) (k1,v1) ->
                 diffs'

@@ -51,7 +51,7 @@ type Datatype = {
     
     DatatypeSpec : DatatypeSpec
     
-    XProperties : Map<string, string>
+    XProperties : XProperties
 }
 
 module Datatype =
@@ -256,7 +256,7 @@ type Column = {
     MaskingFunction : string option
     IsRowguidcol : bool     
 
-    XProperties : Map<string,string>
+    XProperties : XProperties
 }    
 
 module Column =

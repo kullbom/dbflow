@@ -42,23 +42,23 @@ type SchemaScriptPart =
     | XmlSchemaCollectionDefinition of ScriptContent
 
 module XProperties =
-    let xPropStr (propName : string) (propValue : string) keysAndValues =
-        let escapedPropValue = propValue.Replace("'", "''")
+    let xPropStr (propName : string) (propValue : obj) keysAndValues =
+        let literalValue = XProperty.toLiteralSql propValue
         match keysAndValues with
         | [key0, value0] ->
-            $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', N'{escapedPropValue}', {key0}, {value0};"
+            $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', N'{literalValue}', {key0}, {value0};"
         | [key0, value0; key1, value1] ->
-            $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', N'{escapedPropValue}', {key0}, {value0}, {key1}, {value1};"
+            $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', N'{literalValue}', {key0}, {value0}, {key1}, {value1};"
         | [key0, value0; key1, value1; key2, value2] ->
-            $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', N'{escapedPropValue}', {key0}, {value0}, {key1}, {value1}, {key2}, {value2};"
+            $"EXECUTE [sys].[sp_addextendedproperty] N'{propName}', N'{literalValue}', {key0}, {value0}, {key1}, {value1}, {key2}, {value2};"
         
         | _ -> failwithf "Can not generate documentation script for %A" keysAndValues
 
-    let xProps (xProperties : Map<string, string>) keysAndValues f seed =
+    let xProps (xProperties : XProperties) keysAndValues f seed =
         xProperties
         |> Map.fold (fun acc k v -> f acc (xPropStr k v keysAndValues)) seed
     
-    let collectXProps (xProperties : Map<string, string>) keysAndValues sc =
+    let collectXProps (xProperties : XProperties) keysAndValues sc =
         xProps xProperties keysAndValues 
             (fun (isFirst, sc') xp -> 
                 false, (if isFirst then sc' |>+ "" else sc') |>+ xp)
@@ -135,7 +135,7 @@ module XProperties =
     let viewAndColumns (v : View) =
         containerAndColumns v.Schema.Name "N'VIEW'" v.Name v.XProperties v.Columns
 
-    let typeProps (s : Schema) (typeName : string) (xProps : Map<string, string>) =
+    let typeProps (s : Schema) (typeName : string) (xProps : XProperties) =
         collectXProps xProps  ["N'SCHEMA'", $"[{s.Name}]"; "N'TYPE'", $"[{typeName}]";]
 
         

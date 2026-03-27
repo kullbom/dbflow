@@ -23,7 +23,7 @@ type Parameter = {
     // encryption_algorithm_name
     // column_encryption_key_id
     // column_encryption_key_database_name
-    XProperties : Map<string, string>
+    XProperties : XProperties
 }
 
 module Parameter = 
@@ -71,7 +71,7 @@ type Procedure = {
 
     Indexes : Index array
 
-    XProperties : Map<string, string>
+    XProperties : XProperties
 } 
 
 module Procedure =

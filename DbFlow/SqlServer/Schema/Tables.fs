@@ -61,7 +61,7 @@ type Table = {
     CheckConstraints : CheckConstraint array
     DefaultConstraints : DefaultConstraint array
 
-    XProperties : Map<string, string>
+    XProperties : XProperties
 }
 
 module Table = 
@@ -109,7 +109,7 @@ type View = {
     Indexes : Index array
     Triggers : Trigger array
 
-    XProperties : Map<string, string>
+    XProperties : XProperties
 }
 
 module View = 
