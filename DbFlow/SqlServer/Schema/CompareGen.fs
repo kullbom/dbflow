@@ -25,7 +25,7 @@ type CompareGen = CompareGenCase
                     fun path diffs ->
                        diffs
                        |> CompareGen.Collect (x0.Name, x1.Name) ("Name" :: path)
-                       |> CompareGen.Collect (x0.PrincipalName, x1.PrincipalName) ("PrincipalName" :: path)
+                       |> Compare.collectOption x0.PrincipalName x1.PrincipalName CompareGen.Collect ("PrincipalName" :: path)
                        |> CompareGen.Collect (x0.IsSystemSchema, x1.IsSystemSchema) ("IsSystemSchema" :: path)
                        |> Compare.xProperties (x0.XProperties, x1.XProperties) ("XProperties" :: path)
 
