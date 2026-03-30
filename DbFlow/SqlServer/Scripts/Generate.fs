@@ -244,7 +244,9 @@ let generateSettingsScript (opt : ScriptOptions) (schema : DatabaseSchema) =
 
 let generateSchemaScript (opt : ScriptOptions) (schema : Schema) =
     ScriptContent.empty
-    |>+ $"CREATE SCHEMA [{schema.Name}] AUTHORIZATION [{schema.PrincipalName}]"
+    |>+ match schema.PrincipalName with 
+        | Some principalName -> $"CREATE SCHEMA [{schema.Name}] AUTHORIZATION [{principalName}]" 
+        | None -> $"CREATE SCHEMA [{schema.Name}]"
     |>+ "GO"
 
     |> XProperties.schema opt schema
@@ -679,6 +681,7 @@ let generateUserDefinedTypeScript (types : Map<int, Datatype>) (opt : ScriptOpti
 
 let generateScripts (opt : ScriptOptions) (schema : DatabaseSchema) f seed =
     let db = schema
+    let escapeFilename (fn : string) = fn.Replace("\\", "_") 
     let dataForFolder subfolderName (xs : 'a list) (nameFn : 'a -> string) generator acc =
         match xs with
         | [] -> acc
@@ -702,7 +705,7 @@ let generateScripts (opt : ScriptOptions) (schema : DatabaseSchema) f seed =
                             
                             Content  = { 
                                 Subdirectory = match subfolderName with "" -> None | s -> Some s; 
-                                Filename = nameFn x; 
+                                Filename = nameFn x |> escapeFilename; 
                                 Content = script
                             }
                         }

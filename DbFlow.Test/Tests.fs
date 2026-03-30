@@ -157,5 +157,20 @@ type ``SqlLocalDb_exe`` () =
             then 
                 cmd System.Console.Out.WriteLine "SqlLocalDB.exe delete \"%s\"" dbName
                 |> ignore<bool> 
-        
+
+    //[<Fact>]
+    member _.``Scripts from Db`` () =
+        let dbName = ""
+        let dbConnStr = $""
+        let outputFolder = __SOURCE_DIRECTORY__ + "\\SqlLocalDbTest\\"
+
+        let readOptions = ReadOptions.Default
+        let scriptOptions = ScriptOptions.Default
+        let schema = 
+            use dbConn = new Microsoft.Data.SqlClient.SqlConnection (dbConnStr)
+            dbConn.Open ()
+            SqlServer.Execute.readSchema logger readOptions dbConn
+
+        SqlServer.Execute.generateScriptFiles scriptOptions schema outputFolder
+
         

@@ -26,7 +26,7 @@ module Dependency =
 type Schema = { 
     Name : string; 
     SchemaId : int; 
-    PrincipalName : string;
+    PrincipalName : string option;
 
     IsSystemSchema : bool
 
@@ -44,7 +44,7 @@ module Schema =
     let readAll xProperties connection =
         DbTr.reader 
             "SELECT s.name schema_name, s.schema_id, p.name principal_name FROM sys.schemas s
-             INNER JOIN sys.database_principals p ON s.principal_id = p.principal_id" 
+             LEFT OUTER JOIN sys.database_principals p ON s.principal_id = p.principal_id" 
             []
             (fun m r -> 
                 let schemaId = readInt32 "schema_id" r
@@ -54,7 +54,7 @@ module Schema =
                     { 
                         Name = schemaName
                         SchemaId = schemaId 
-                        PrincipalName = readString "principal_name" r
+                        PrincipalName = nullable "principal_name" readString r
 
                         IsSystemSchema = isSystemSchema schemaName schemaId
                     
