@@ -85,11 +85,17 @@
 ## Version 0.8.0
 
 [x] Make executing refresh view optional
-[x] Only refresh view that are not schemabound
+[x] Only refresh views that are not schemabound
 
-## Version 0.8.1 (2026-03-27)
+## Version 0.8.1 - 2026-03-27
 
 [x] Support for extended properties that isn't of type string 
+
+## Version 0.8.2 - 2026-03-27
+
+[x] Added support for skipping extended properties with unsupported types
+
+## ...
 
 ## Version 1.0.0
 
@@ -111,7 +117,7 @@
 [ ] It should be possible to configure DbFlow to be compatible with DbUp (use table dbo.SchemaVersion) 
 [ ] Add option to disable triggers (in copy data) "BEGIN TRAN;DISABLE TRIGGER ALL ON %s{formatTblId tableId};%s{sql};ENABLE TRIGGER ALL ON %s{formatTblId tableId};COMMIT"
 
-## Some upcoming version?
+## Some upcoming versions?
 
 [ ] Generate documentation using something like literate programming... 
 [ ] ANSI PADDING is not supported. It is not considered in the db comparison and is not part of generated scripts.
