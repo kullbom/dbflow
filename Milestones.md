@@ -95,7 +95,7 @@
 
 [x] Added support for skipping extended properties with unsupported types
 
-## Version 0.8.3 - 2026-03-31
+## Version 0.9.0 - 2026-04-06
 
 [x] Fix problem reading schemas containing schemas of specific users 
 
