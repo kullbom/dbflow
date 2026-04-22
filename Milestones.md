@@ -99,6 +99,10 @@
 
 - [x] Fix problem reading schemas containing schemas of specific users 
 
+## Version 0.10.0 - 2026-04-22
+
+- [x] Added possibility to control the internal connection string used to connect to a local SqlServer database
+
 ## ...
 
 ## Version 1.0.0

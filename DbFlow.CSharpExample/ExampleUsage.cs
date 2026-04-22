@@ -16,7 +16,7 @@
             sourceConnection.Open();
             var schema = Execute.readSchema(logger, ReadOptions.Default, sourceConnection);
 
-            var cloneDb = Execute.cloneToLocal(logger, ScriptOptions.Default, schema);
+            var cloneDb = Execute.cloneToLocal(logger, LocalDbOptions.Default, ScriptOptions.Default, schema);
         }
 
         static void GenerateScripts(string sourceConnectionString, string destinationDirectory)

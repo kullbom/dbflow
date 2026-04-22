@@ -82,25 +82,23 @@ Execute.generateScriptFiles options dbSchema dstDirectory
 
 ```csharp
 var logger = LoggerModule.fromFunc(s => { });
-var options = OptionsModule.Default;
-
+            
 using var sourceConnection = new Microsoft.Data.SqlClient.SqlConnection(sourceConnectionString);
 sourceConnection.Open();
-var schema = Execute.readSchema(logger, options, sourceConnection);
+var schema = Execute.readSchema(logger, ReadOptions.Default, sourceConnection);
 
-var cloneDb = Execute.cloneToLocal(logger, options, schema);
+var cloneDb = Execute.cloneToLocal(logger, LocalDbOptions.Default, ScriptOptions.Default, schema);
 ```
 
 ### To generate scripts from a database (C#):
 
 ```csharp
 var logger = LoggerModule.fromFunc(s => { });
-var options = OptionsModule.Default;
-
+            
 using var sourceConnection = new Microsoft.Data.SqlClient.SqlConnection(sourceConnectionString);
 sourceConnection.Open();
-var schema = Execute.readSchema(logger, options, sourceConnection);
+var schema = Execute.readSchema(logger, ReadOptions.Default, sourceConnection);
 
-Execute.generateScriptFiles(options, schema, destinationDirectory);
+Execute.generateScriptFiles(ScriptOptions.Default, schema, destinationDirectory);
 ```
 

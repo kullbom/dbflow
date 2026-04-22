@@ -58,11 +58,11 @@ module private LocalTempDb =
 
 
 /// Creates a local temporary (random guid name) database
-type LocalTempDb(logger) =
+type LocalTempDb(logger, options : LocalDbOptions) =
     let dbName = "_" + Guid.NewGuid().ToString().Replace('-', '_')
     
     let cs initialCatalog =
-        $"Server=(LocalDB)\\mssqllocaldb;Initial Catalog={initialCatalog};Integrated Security=true"
+        options.ConnectionString initialCatalog
 
     let path = Path.Combine(Directory.GetCurrentDirectory(), "Data")
     let di = DirectoryInfo(path)

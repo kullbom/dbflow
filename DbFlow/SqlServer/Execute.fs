@@ -113,11 +113,11 @@ let clone logger (options : ScriptOptions) (sourceDb : DatabaseSchema) (targetCo
 
     SqlConnection.ClearPool targetConnection
 
-let cloneToLocal logger (options : ScriptOptions) (sourceDb : DatabaseSchema) =
-    let localDb = new LocalTempDb(logger)
+let cloneToLocal logger (localDbOptions : LocalDbOptions) (scriptOptions : ScriptOptions) (sourceDb : DatabaseSchema) =
+    let localDb = new LocalTempDb(logger, localDbOptions)
     use conn = new Microsoft.Data.SqlClient.SqlConnection(localDb.ConnectionString)
     conn.Open ()
-    clone logger options sourceDb conn
+    clone logger scriptOptions sourceDb conn
     localDb
 
 /// Generate scripts of a schema to a folder structure

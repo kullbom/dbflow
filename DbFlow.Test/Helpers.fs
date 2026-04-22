@@ -118,14 +118,14 @@ module Helpers =
             compareScriptFolder logger dir subdir0 subdir1
             
     
-    let withLocalDb logger f =
-        use localDb = new SqlServer.LocalTempDb(logger)
+    let withLocalDb logger options f =
+        use localDb = new SqlServer.LocalTempDb(logger, options)
         let localDbConnectionString = localDb.ConnectionString
         Logger.infoWithTime $"New local db: {localDbConnectionString}" logger
         f localDbConnectionString
 
-    let withLocalDbFromScripts logger initScript scriptFolder f =
-        withLocalDb logger
+    let withLocalDbFromScripts logger options initScript scriptFolder f =
+        withLocalDb logger options
             (fun connectionStr ->
                 match initScript with
                 | None -> ()

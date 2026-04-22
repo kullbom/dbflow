@@ -12,6 +12,7 @@ type Tests () =
     let ``Clone db`` () =
         let silentLogger = Logger.create ignore
         let logger = Logger.create System.Console.Out.WriteLine
+        let localDbOptions = LocalDbOptions.Default
         let readOptions = ReadOptions.Default 
         let scriptOptions = ScriptOptions.Default 
     
@@ -19,7 +20,7 @@ type Tests () =
         let initScript =
             "DECLARE @DB VARCHAR(255) = DB_NAME()
              EXEC('ALTER DATABASE [' + @DB + '] COLLATE Latin1_General_CI_AS')"
-        Helpers.withLocalDbFromScripts logger (Some initScript) dbFolder
+        Helpers.withLocalDbFromScripts logger localDbOptions (Some initScript) dbFolder
             (fun testConnStr ->
                 let dbSchema =
                     use testDbConn = new SqlConnection (testConnStr)
@@ -27,7 +28,7 @@ type Tests () =
                     Execute.readSchema silentLogger readOptions 
                     |> Logger.logTime logger "read schema" testDbConn 
     
-                use localDb = new LocalTempDb(silentLogger)
+                use localDb = new LocalTempDb(silentLogger, localDbOptions)
                 
                 (
                     use localDbConn = new SqlConnection (localDb.ConnectionString)
@@ -52,12 +53,13 @@ type Tests () =
     let ``Copy data`` () =
         let silentLogger = Logger.create ignore
         let logger = Logger.create System.Console.Out.WriteLine
+        let localDbOptions = LocalDbOptions.Default
         let readOptions = ReadOptions.Default 
         let scriptOptions = ScriptOptions.Default
     
         let dbFolder = __SOURCE_DIRECTORY__ + "\\Samples\\adventure-works-2012-oltp-lt\\scripts"
 
-        Helpers.withLocalDbFromScripts logger None dbFolder
+        Helpers.withLocalDbFromScripts logger localDbOptions None dbFolder
             (fun testConnStr ->
                 let dbSchema =
                     use testDbConn = new SqlConnection (testConnStr)
@@ -75,7 +77,7 @@ type Tests () =
                         |> DbTr.commit_ testDbConn
                     |> Logger.logTime logger "TopN" ()
 
-                use localDb = new LocalTempDb(silentLogger)
+                use localDb = new LocalTempDb(silentLogger, localDbOptions)
                 
                 
                 let () =

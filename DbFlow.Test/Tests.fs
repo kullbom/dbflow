@@ -8,10 +8,10 @@ open DbFlow.SqlServer
 
 module Common = 
                 
-    let testDbFlowRoundtrip logger readOptions scriptOptions sourceSchema sourceScriptFolder destScriptFolder =
+    let testDbFlowRoundtrip logger localDbOptions readOptions scriptOptions sourceSchema sourceScriptFolder destScriptFolder =
         use localDb =
             Logger.infoWithTime "Clone db (start)" logger 
-            Execute.cloneToLocal (Logger.decorate (fun m -> $"  {m}") logger) scriptOptions  
+            Execute.cloneToLocal (Logger.decorate (fun m -> $"  {m}") logger) localDbOptions scriptOptions  
             |> Logger.logTime logger "Clone db" sourceSchema
 
         let cloneSchema = 
@@ -31,8 +31,8 @@ module Common =
         | diff -> Assert.Fail (sprintf "Schema is not same (%i differences)" diff.Length)
         
         
-    let fullTestSuite logger readOptions scriptOptions rules directory (dbName : string) =
-        Helpers.withLocalDbFromScripts logger None (directory + $"{dbName}\\scripts")
+    let fullTestSuite logger localDbOptions readOptions scriptOptions rules directory (dbName : string) =
+        Helpers.withLocalDbFromScripts logger localDbOptions None (directory + $"{dbName}\\scripts")
             (fun connectionString ->
                 let dbFlowOutputDir = directory + $"{dbName}\\dbflow_output"
                 let dbFlowOutputDir2 = directory + $"{dbName}\\dbflow_output2"
@@ -49,7 +49,7 @@ module Common =
                 |> Logger.logTime logger "Generate scripts" dbFlowOutputDir 
 
                 // Test DbFlow "roundtrip"
-                testDbFlowRoundtrip logger readOptions scriptOptions dbSchema dbFlowOutputDir dbFlowOutputDir2
+                testDbFlowRoundtrip logger localDbOptions readOptions scriptOptions dbSchema dbFlowOutputDir dbFlowOutputDir2
 
                 for (rule : Rule) in rules do
                     match rule.CheckRule dbSchema with
@@ -63,9 +63,10 @@ type ``Test suite`` () =
     [<Theory>]
     [<InlineData("test_db")>]
     member x.SampleDbs(db : string) = 
+        let localDbOptions = LocalDbOptions.Default
         let readOptions = { ReadOptions.Default with CheckReferencesOnLoad = true; }
         let scriptOptions = { ScriptOptions.Default with SkipCompatibilityLevel = true; }
-        Common.fullTestSuite logger readOptions scriptOptions (Rule.ALL RuleExclusion.none) samplesFolder db
+        Common.fullTestSuite logger localDbOptions readOptions scriptOptions (Rule.ALL RuleExclusion.none) samplesFolder db
 
     // AdventureWorks in different versions - the scripts are modified to be compatible with DbUp
     // source: https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure?view=sql-server-ver17&tabs=ssms
@@ -75,15 +76,16 @@ type ``Test suite`` () =
     [<InlineData("2012-oltp-lt")>]
     [<InlineData("2014-2022")>]
     member x.AdventureWorks (ver : string) =
+        let localDbOptions = LocalDbOptions.Default
         let readOptions = { ReadOptions.Default with CheckReferencesOnLoad = false; }
         let scriptOptions = { ScriptOptions.Default with SkipCompatibilityLevel = true; }
-        Common.fullTestSuite logger readOptions scriptOptions [] samplesFolder ("adventure-works-" + ver)
+        Common.fullTestSuite logger localDbOptions readOptions scriptOptions [] samplesFolder ("adventure-works-" + ver)
 
 
 
 module RegressionConstants =
     let dbflow_regression_directory = 
-        let dbflow_regression_directory' = __SOURCE_DIRECTORY__ + "\\..\\..\dbflow-regression\\"
+        let dbflow_regression_directory' = __SOURCE_DIRECTORY__ + "\\..\\..\dbflow-regression\\SqlServer\\"
         System.IO.Path.GetFullPath (dbflow_regression_directory')
 
     let dbflow_regression_data () =
@@ -106,9 +108,10 @@ type ``Regression`` () =
             
     [<Xunit.Theory; Xunit.MemberData("dbflow_regression_data")>]
     member x.``Test suite`` (db : string) = 
+        let localDbOptions = LocalDbOptions.Default
         let readOptions = { ReadOptions.Default with CheckReferencesOnLoad = true; RefreshViewMetadata = true; }
         let scriptOptions = { ScriptOptions.Default with SkipCompatibilityLevel = true; }
-        Common.fullTestSuite logger readOptions scriptOptions [] RegressionConstants.dbflow_regression_directory db
+        Common.fullTestSuite logger localDbOptions readOptions scriptOptions [] RegressionConstants.dbflow_regression_directory db
 
 
 type ``SqlLocalDb_exe`` () = 
