@@ -12,6 +12,17 @@ module Array =
         |> Array.map formatter
         |> fun ss -> System.String.Join (separator, ss)
 
+module Result =
+    let Errorf fmt = Printf.ksprintf (fun s -> Error s) fmt
+
+    type CEBuilder() =
+        member inline b.Return (x)        = Ok x
+        member inline b.Bind (p, rest)    = p |> Result.bind rest
+        member inline b.Let (p, rest)     = rest p
+        member inline b.ReturnFrom (expr) = expr
+
+    let builder = new CEBuilder()
+
 module String =
     let trim (s : string) = s.Trim ()
 

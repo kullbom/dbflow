@@ -1,4 +1,5 @@
 ﻿module Xsd
+
 open System
 open System.IO
 open System.Xml
@@ -69,118 +70,6 @@ let describe_undeclared_parameters (sqlQuery : string) =
 // https://mermaid.js.org/config/schema-docs/config.html#defaultrenderer
 
 
-// Record to hold type generation context
-type TypeContext = {
-    Name: string
-    IsOptional: bool
-    BaseType: string
-    Attributes: (string * string) list
-    Children: TypeContext list
-}
-
-// Map XML schema types to F# types
-let mapFSharpType (typeName: string) =
-    match typeName.ToLower() with
-    | "string" -> "string"
-    | "int" -> "int"
-    | "unsignedint" -> "uint"
-    | "double" -> "float"
-    | "boolean" -> "bool"
-    | "datetime" -> "DateTime"
-    | "decimal" -> "decimal"
-    | _ -> typeName // Use the type name directly for custom types
-
-// Generate F# type definition from TypeContext
-let generateFSharpType (ctx: TypeContext) =
-    let sb = new StringBuilder()
-    let typeName = if ctx.IsOptional then $"{ctx.Name} option" else ctx.Name
-    sb.AppendLine($"type {typeName} = {{") |> ignore
-    
-    // Add attributes
-    for (attrName, attrType) in ctx.Attributes do
-        let fsharpType = mapFSharpType attrType
-        sb.AppendLine($"    {attrName}: {fsharpType}") |> ignore
-    
-    // Add children (nested elements)
-    for child in ctx.Children do
-        let childType = if child.IsOptional then $"{child.Name} option" else child.Name
-        sb.AppendLine($"    {child.Name}: {childType}") |> ignore
-    
-    sb.AppendLine("}") |> ignore
-    sb.ToString()
-
-// Process XmlSchemaComplexType into TypeContext
-let rec processComplexType schema (complexType: XmlSchemaComplexType) : TypeContext =
-    let name = complexType.Name
-    let isOptional = false // Root types are not optional; handle nesting for optionality
-    let attributes = 
-        [ for item in complexType.AttributeUses.Values do
-            match item with
-            | :? XmlSchemaAttribute as attr ->
-                let attrType = attr.SchemaTypeName.Name |> mapFSharpType
-                (attr.Name, attrType)
-            | _ -> () ]
-        |> List.ofSeq
-    let children = 
-        match complexType.Particle with
-        | :? XmlSchemaSequence as seq ->
-            [ for item in seq.Items do
-                match item with
-                | :? XmlSchemaElement as elem ->
-                    let childType = 
-                        if not (isNull elem.SchemaTypeName) && not (String.IsNullOrEmpty(elem.SchemaTypeName.Name)) then
-                            processComplexTypeOrSimpleType elem.SchemaTypeName schema
-                        else
-                            { Name = elem.Name; IsOptional = elem.MinOccurs = 0M; BaseType = "obj"; Attributes = []; Children = [] }
-                    childType
-                | _ -> { Name = "Unknown"; IsOptional = false; BaseType = "obj"; Attributes = []; Children = [] } ]
-        | _ -> []
-    { Name = name; IsOptional = isOptional; BaseType = "object"; Attributes = attributes; Children = children }
-
-// Handle simple types (e.g., enumerations)
-and processComplexTypeOrSimpleType (typeName: XmlQualifiedName) (schema: XmlSchema) : TypeContext =
-    let items = schema.Items |> Seq.cast<XmlSchemaObject>
-    match items |> Seq.tryFind (fun x -> 
-        match x with
-        | :? XmlSchemaComplexType as ct -> ct.Name = typeName.Name
-        | :? XmlSchemaSimpleType as st -> st.Name = typeName.Name
-        | _ -> false) with
-    | Some (:? XmlSchemaComplexType as ct) -> processComplexType schema ct
-    | Some (:? XmlSchemaSimpleType as st) ->
-        match st.Content with
-        | :? XmlSchemaSimpleTypeRestriction as restriction ->
-            let baseType = restriction.BaseTypeName.Name |> mapFSharpType
-            let values = [ for item in restriction.Facets do
-                            match item with
-                            | :? XmlSchemaEnumerationFacet as facet -> facet.Value
-                            | _ -> "" ]
-            let unionCases = String.Join(" | ", values |> List.map (fun v -> $"{v} = \"{v}\""))
-            { Name = typeName.Name; IsOptional = false; BaseType = baseType; Attributes = []; Children = [] }
-        | _ -> { Name = typeName.Name; IsOptional = false; BaseType = "string"; Attributes = []; Children = [] }
-    | _ -> { Name = typeName.Name; IsOptional = false; BaseType = "obj"; Attributes = []; Children = [] }
-
-// Generate F# code for the entire schema
-let generateFSharpCode (schema: XmlSchema) =
-    let sb = new StringBuilder()
-    sb.AppendLine("namespace ShowPlanTypes") |> ignore
-    sb.AppendLine("open System") |> ignore
-    sb.AppendLine() |> ignore
-    
-    for item in schema.Items do
-        match item with
-        | :? XmlSchemaComplexType as complexType ->
-            sb.Append(generateFSharpType (processComplexType schema complexType)) |> ignore
-            sb.AppendLine() |> ignore
-        | :? XmlSchemaSimpleType as simpleType ->
-            let ctx = processComplexTypeOrSimpleType (XmlQualifiedName(simpleType.Name, schema.TargetNamespace)) schema
-            if ctx.Children.IsEmpty && ctx.Attributes.IsEmpty then
-                sb.AppendLine($"type {ctx.Name} = {ctx.BaseType}") |> ignore
-            sb.AppendLine() |> ignore
-        | _ -> ()
-    
-    sb.ToString()
-
-
 open Xunit
 open Xunit.Abstractions
 
@@ -200,12 +89,12 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
             |> DbTr.commit_ testDbConn
         ()
 
-    [<Fact>]
-    let ``Generate plan code`` () =
-        let xsdContent = System.IO.File.ReadAllText "showplanxml.xsd"
-        let schema = System.Xml.Schema.XmlSchema.Read(System.Xml.XmlReader.Create(new System.IO.StringReader(xsdContent)), fun sender args -> printfn "Warning: %s" args.Message)
+    // let xsdContent = System.IO.File.ReadAllText "showplanxml.xsd"
+    // let schema = System.Xml.Schema.XmlSchema.Read(System.Xml.XmlReader.Create(new System.IO.StringReader(xsdContent)), fun sender args -> printfn "Warning: %s" args.Message)
 
-        let fsharpCode = generateFSharpCode schema
-        printfn "%s" fsharpCode
-        let outputPath = __SOURCE_DIRECTORY__ + "/GeneratedTypes.fs"
-        System.IO.File.WriteAllText(outputPath, fsharpCode)
+    [<Fact>]
+    let ``Parse plan`` () =
+        let plan01 = System.IO.File.ReadAllText "Plan01.xml"
+        let doc = Xml.Linq.XDocument.Parse plan01
+        let plan = ShowPlanXML.parseShowPlanXML doc.Root
+        ()

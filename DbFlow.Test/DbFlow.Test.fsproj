@@ -10,6 +10,11 @@
 
   <ItemGroup>
 	<None Include="showplanxml.xsd" />
+	<Content Include="Plan01.xml">
+	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	</Content>
+	<Compile Include="XmlParser.fs" />
+	<Compile Include="ShowPlanXml.fs" />
 	<Compile Include="Plans.fs" />
 	<Compile Include="Examples.fs" />
 	<None Include="Samples\**\*.*" />
@@ -23,8 +28,6 @@
     <Compile Include="CodeGenerator.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
-
-  <ItemGroup />
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4">
