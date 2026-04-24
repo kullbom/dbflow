@@ -5,37 +5,477 @@ open System.Xml
 open DbFlow
 open DbFlow.Test.XmlParser
 
-let ns = "http://schemas.microsoft.com/sqlserver/2004/07/showplan"
+// ========================================
+// Enumerations (SimpleTypes)
+// ========================================
 
-type StmtSimpleType () = class end 
-type StmtCondType () = class end
-type StmtCursorType () = class end
-type StmtReceiveType () = class end
-type StmtUseDbType () = class end
+type StorageType =
+    | RowStore
+    | ColumnStore
+    | MemoryOptimized
 
-/// The statement block that contains many statements
-type StmtBlockType = 
+type ExecutionModeType =
+    | Row
+    | Batch
+
+type CursorType =
+    | Dynamic
+    | FastForward
+    | Keyset
+    | SnapShot
+
+type OrderType =
+    | BACKWARD
+    | FORWARD
+
+type PartitionType =
+    | Broadcast
+    | Demand
+    | Hash
+    | NoPartitioning
+    | Range
+    | RoundRobin
+    | CloneLocation
+
+type CompareOpType =
+    | BINARY_IS
+    | BOTH_NULL
+    | EQ
+    | GE
+    | GT
+    | IS
+    | IS_NOT
+    | IS_NOT_NULL
+    | IS_NULL
+    | LE
+    | LT
+    | NE
+    | ONE_NULL
+
+type IndexKindType =
+    | Heap
+    | Clustered
+    | FTSChangeTracking
+    | FTSMapping
+    | NonClustered
+    | PrimaryXML
+    | SecondaryXML
+    | Spatial
+    | ViewClustered
+    | ViewNonClustered
+    | NonClusteredHash
+    | SelectiveXML
+    | SecondarySelectiveXML
+
+type CloneAccessScopeType =
+    | Primary
+    | Secondary
+    | Both
+    | Either
+    | ExactMatch
+    | Local
+
+type LogicalOpType =
+    | Aggregate
+    | AntiDiff
+    | Assert
+    | AsyncConcat
+    | BatchHashTableBuild
+    | BitmapCreate
+    | ClusteredIndexScan
+    | ClusteredIndexSeek
+    | ClusteredUpdate
+    | Collapse
+    | ComputeScalar
+    | Concatenation
+    | ConstantScan
+    | ConstantTableGet
+    | CrossJoin
+    | Delete
+    | DeletedScan
+    | DistinctSort
+    | Distinct
+    | DistributeStreams
+    | EagerSpool
+    | ExternalExtractionScan
+    | ExternalSelect
+    | Filter
+    | FlowDistinct
+    | ForeignKeyReferencesCheck
+    | FullOuterJoin
+    | GatherStreams
+    | GbAgg
+    | GbApply
+    | Get
+    | Generic
+    | InnerApply
+    | IndexScan
+    | IndexSeek
+    | InnerJoin
+    | Insert
+    | InsertedScan
+    | Intersect
+    | IntersectAll
+    | LazySpool
+    | LeftAntiSemiApply
+    | LeftSemiApply
+    | LeftOuterApply
+    | LeftAntiSemiJoin
+    | LeftDiff
+    | LeftDiffAll
+    | LeftOuterJoin
+    | LeftSemiJoin
+    | LocalCube
+    | LogRowScan
+    | Merge
+    | MergeInterval
+    | MergeStats
+    | Move
+    | ParameterTableScan
+    | PartialAggregate
+    | Print
+    | Project
+    | Put
+    | Rank
+    | RemoteDelete
+    | RemoteIndexScan
+    | RemoteIndexSeek
+    | RemoteInsert
+    | RemoteQuery
+    | RemoteScan
+    | RemoteUpdate
+    | RepartitionStreams
+    | RIDLookup
+    | RightAntiSemiJoin
+    | RightDiff
+    | RightDiffAll
+    | RightOuterJoin
+    | RightSemiJoin
+    | Segment
+    | Sequence
+    | Sort
+    | Split
+    | Switch
+    | TableValuedFunction
+    | TableScan
+    | Top
+    | TopNSort
+    | UDX
+    | Union
+    | UnionAll
+    | Update
+    | LocalStats
+    | WindowSpool
+    | WindowAggregate
+    | KeyLookup
+    | ExtensibleColumnStoreScan
+
+type PhysicalOpType =
+    | AdaptiveJoin
+    | Apply
+    | Assert
+    | BatchHashTableBuild
+    | Bitmap
+    | Broadcast
+    | ClusteredIndexDelete
+    | ClusteredIndexInsert
+    | ClusteredIndexScan
+    | ClusteredIndexSeek
+    | ClusteredIndexUpdate
+    | ClusteredIndexMerge
+    | ClusteredUpdate
+    | Collapse
+    | ColumnstoreIndexDelete
+    | ColumnstoreIndexInsert
+    | ColumnstoreIndexMerge
+    | ColumnstoreIndexScan
+    | ColumnstoreIndexUpdate
+    | ComputeScalar
+    | ComputeToControlNode
+    | Concatenation
+    | ConstantScan
+    | ConstantTableGet
+    | ControlToComputeNodes
+    | Delete
+    | DeletedScan
+    | ExternalBroadcast
+    | ExternalExtractionScan
+    | ExternalLocalStreaming
+    | ExternalRoundRobin
+    | ExternalSelect
+    | ExternalShuffle
+    | Filter
+    | ForeignKeyReferencesCheck
+    | GbAgg
+    | GbApply
+    | Get
+    | Generic
+    | HashMatch
+    | IndexDelete
+    | IndexInsert
+    | IndexScan
+    | Insert
+    | Join
+    | IndexSeek
+    | IndexSpool
+    | IndexUpdate
+    | InsertedScan
+    | LocalCube
+    | LogRowScan
+    | MergeInterval
+    | MergeJoin
+    | NestedLoops
+    | OnlineIndexInsert
+    | Parallelism
+    | ParameterTableScan
+    | Print
+    | Project
+    | Put
+    | Rank
+    | RemoteDelete
+    | RemoteIndexScan
+    | RemoteIndexSeek
+    | RemoteInsert
+    | RemoteQuery
+    | RemoteScan
+    | RemoteUpdate
+    | RIDLookup
+    | RowCountSpool
+    | Segment
+    | Sequence
+    | SequenceProject
+    | Shuffle
+    | SingleSourceRoundRobinMove
+    | Sort
+    | Split
+    | StreamAggregate
+    | Switch
+    | TableDelete
+    | TableInsert
+    | TableMerge
+    | TableScan
+    | TableSpool
+    | TableUpdate
+    | TableValuedFunction
+    | Top
+    | Trim
+    | UDX
+    | Union
+    | UnionAll
+    | WindowAggregate
+    | WindowSpool
+    | KeyLookup
+    | ExtensibleColumnStoreScan
+
+// ========================================
+// Basic Types
+// ========================================
+
+type SetOptionsType = {
+    ANSI_NULLS: bool option
+    ANSI_PADDING: bool option
+    ANSI_WARNINGS: bool option
+    ARITHABORT: bool option
+    CONCAT_NULL_YIELDS_NULL: bool option
+    NUMERIC_ROUNDABORT: bool option
+    QUOTED_IDENTIFIER: bool option
+}
+
+type ObjectType = {
+    Server: string option
+    Database: string option
+    Schema: string option
+    Table: string option
+    Index: string option
+    Filtered: bool option
+    Alias: string option
+    TableReferenceId: int option
+    IndexKind: IndexKindType option
+    CloneAccessScope: CloneAccessScopeType option
+    Storage: StorageType option
+}
+
+type ColumnReferenceType = {
+    Server: string option
+    Database: string option
+    Schema: string option
+    Table: string option
+    Alias: string option
+    Column: string
+    ComputedColumn: bool option
+    ParameterDataType: string option
+    ParameterCompiledValue: string option
+    ParameterRuntimeValue: string option
+}
+
+type MemoryGrantType = {
+    SerialRequiredMemory: uint64
+    SerialDesiredMemory: uint64
+    RequiredMemory: uint64 option
+    DesiredMemory: uint64 option
+    RequestedMemory: uint64 option
+    GrantWaitTime: uint64 option
+    GrantedMemory: uint64 option
+    MaxUsedMemory: uint64 option
+    MaxQueryMemory: uint64 option
+    LastRequestedMemory: uint64 option
+    IsMemoryGrantFeedbackAdjusted: string option
+}
+
+type OptimizerHardwareDependentPropertiesType = {
+    EstimatedAvailableMemoryGrant: uint64
+    EstimatedPagesCached: uint64
+    EstimatedAvailableDegreeOfParallelism: uint64 option
+    MaxCompileMemory: uint64 option
+}
+
+type StatsInfoType = {
+    Database: string option
+    Schema: string option
+    Table: string option
+    Statistics: string
+    ModificationCount: uint64
+    SamplingPercent: float
+    LastUpdate: System.DateTime option
+}
+
+type OptimizerStatsUsageType = {
+    StatisticsInfo: StatsInfoType list
+}
+
+type AffectingConvertWarningType = {
+    ConvertIssue: string
+    Expression: string
+}
+
+type WarningsType = {
+    PlanAffectingConvert: AffectingConvertWarningType list
+    NoJoinPredicate: bool option
+    SpatialGuess: bool option
+    UnmatchedIndexes: bool option
+    FullUpdateForOnlineIndexBuild: bool option
+}
+
+type RunTimeCountersPerThread = {
+    Thread: int
+    ActualRows: uint64
+    ActualEndOfScans: uint64
+    ActualExecutions: uint64
+    ActualExecutionMode: ExecutionModeType option
+    ActualElapsedms: uint64 option
+    ActualCPUms: uint64 option
+    ActualScans: uint64 option
+    ActualLogicalReads: uint64 option
+    ActualPhysicalReads: uint64 option
+}
+
+type RunTimeInformationType = {
+    RunTimeCountersPerThread: RunTimeCountersPerThread list
+}
+
+// ========================================
+// Relational Operators
+// ========================================
+
+type RelOpType = {
+    NodeId: int option
+    PhysicalOp: PhysicalOpType
+    LogicalOp: LogicalOpType
+    EstimateRows: float
+    EstimateIO: float
+    EstimateCPU: float
+    AvgRowSize: float
+    EstimatedTotalSubtreeCost: float
+    Parallel: bool
+    EstimateRebinds: float
+    EstimateRewinds: float
+    EstimatedExecutionMode: ExecutionModeType option
+    OutputList: ColumnReferenceType list
+    Warnings: WarningsType option
+    RunTimeInformation: RunTimeInformationType option
+    // Operator-specific details would go here
+}
+
+// ========================================
+// Query Plan
+// ========================================
+
+type QueryPlanType = {
+    DegreeOfParallelism: int option
+    NonParallelPlanReason: string option
+    MemoryGrant: uint64 option
+    CachedPlanSize: uint64 option
+    CompileTime: uint64 option
+    CompileCPU: uint64 option
+    CompileMemory: uint64 option
+    Warnings: WarningsType option
+    MemoryGrantInfo: MemoryGrantType option
+    OptimizerHardwareDependentProperties: OptimizerHardwareDependentPropertiesType option
+    OptimizerStatsUsage: OptimizerStatsUsageType option
+    RelOp: RelOpType
+    ParameterList: ColumnReferenceType list option
+}
+
+// ========================================
+// Statement Types
+// ========================================
+
+type BaseStmtInfoType = {
+    StatementSetOptions: SetOptionsType option
+    StatementCompId: int option
+    StatementEstRows: float option
+    StatementId: int option
+    StatementOptmLevel: string option
+    StatementOptmEarlyAbortReason: string option
+    CardinalityEstimationModelVersion: string option
+    StatementSubTreeCost: float option
+    StatementText: string option
+    StatementType: string option
+    QueryHash: string option
+    QueryPlanHash: string option
+    RetrievedFromCache: string option
+    StatementSqlHandle: string option
+    SecurityPolicyApplied: bool option
+    BatchModeOnRowStoreUsed: bool option
+}
+
+type StmtSimpleType = {
+    BaseInfo: BaseStmtInfoType
+    QueryPlan: QueryPlanType option
+}
+
+type StmtType =
     | StmtSimple of StmtSimpleType
-    | StmtCond of StmtCondType
-    | StmtCursor of StmtCursorType 
-    | StmtReceive of StmtReceiveType
+    | StmtCond
+    | StmtCursor
+    | StmtReceive
     | StmtUseDb
 
-type Batch = {
-    // minOccurs="1" maxOccurs="unbounded"
-    // The statement block that contains many statements
-    Statements : StmtBlockType list
+type StmtBlockType = {
+    Statements: StmtType list
 }
+
+type Batch = {
+    Statements: StmtBlockType list
+}
+
+type BatchSequence = {
+    Batches: Batch list
+}
+
+// ========================================
+// Root Element
+// ========================================
 
 type ShowPlanXML = {
-    // minOccurs="1" maxOccurs="unbounded"
-    Batches : Batch list
-
-    // Attributes
-    Version : string 
-    Build : string
-    ClusteredMode : bool option
+    Version: string
+    Build: string
+    ClusteredMode: bool option
+    BatchSequence: BatchSequence
 }
+
+
+let ns = "http://schemas.microsoft.com/sqlserver/2004/07/showplan"
 
 let parseShowPlanXML (root : Linq.XElement) : Result<ShowPlanXML, _> =
     Result.builder {
