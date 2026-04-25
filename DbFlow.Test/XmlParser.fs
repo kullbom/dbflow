@@ -26,6 +26,7 @@ type XPathResolver = XPathResolver with
 
 let inline XP selector = XPathResolver $ selector
 
+
 type XValResolver = XValResolver with
     static member xValue (x : #System.Xml.Linq.XElement) = x.Value
     static member xValue (x : System.Xml.Linq.XAttribute) = x.Value
@@ -80,20 +81,84 @@ let inline xElementRequire path (c : #System.Xml.Linq.XContainer) = xElementRequ
 
 ///<summary>xElement : name/names -> XContainer -> Result<xElement option, string>
 /// ('name' is string OR string * string)</summary>
-let inline xElementOptional path (c : #System.Xml.Linq.XContainer) = xElementOptional' c (XP path)
+let inline xElementOptional parser path (c : #System.Xml.Linq.XContainer) = 
+    match xElementOptional' c (XP path) with
+    | Ok (Some e) -> parser e |> Result.map Some
+    | Ok None -> Ok None
+    | Error e -> Error e
 
 ///<summary>xElements : name -> XContainer -> XElement list    
 /// ('name' is string OR string * string)</summary>
-let inline xElements path (c : #System.Xml.Linq.XContainer) = xElements' c (XN path)
+let inline xElements name (c : #System.Xml.Linq.XContainer) = xElements' c (XN name)
 
+let xElementsAll (c : #System.Xml.Linq.XContainer) = c.Elements () |> Seq.toList
+
+
+module XmlReaders =
+    let readBool (s : string) = 
+        match s with
+        | "true" | "1" -> Ok true
+        | "false" | "0" -> Ok false
+        | _ -> Result.Errorf "Invalid boolean value: %s" s
+
+    let readString  (s : string) : Result<string, string> = s |> Ok
+
+    let readInt32   (s : string) = 
+        match System.Int32.TryParse s with
+        | true, v -> Ok v
+        | false, _ -> Result.Errorf "Invalid int32 value: %s" s
+
+    let readUInt64  (s : string) = 
+        match System.UInt64.TryParse s with
+        | true, v -> Ok v
+        | false, _ -> Result.Errorf "Invalid uint64 value: %s" s
+
+    let readFloat   (s : string) = 
+        match System.Double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture) with
+        | true, v -> Ok v
+        | false, _ -> Result.Errorf "Invalid float value: %s" s
+        
+    //let optionReader (reader : System.Xml.Linq.XAttribute -> Result<'a, string>) (a : System.Xml.Linq.XAttribute) =
+    //    match a..ValueKind with
+    //    | Json.JsonValueKind.Null -> Ok None
+    //    | _ -> reader j |> Result.map Some
+
+type public XmlTypeMapping = 
+    static member inline ($) (_:XmlTypeMapping,_:bool)   = XmlReaders.readBool     
+    static member inline ($) (_:XmlTypeMapping,_:string) = XmlReaders.readString
+    static member inline ($) (_:XmlTypeMapping,_:int32)  = XmlReaders.readInt32
+    static member inline ($) (_:XmlTypeMapping,_:uint64) = XmlReaders.readUInt64
+    static member inline ($) (_:XmlTypeMapping,_:float)  = XmlReaders.readFloat
+    
+    //static member inline ($) (_:XmlTypeMapping,_:^K option) =
+    //    Readers.optionReader (Unchecked.defaultof<XmlTypeMapping> $ Unchecked.defaultof< ^K>)
+
+/// Convert a JsonElement to the expected output type (or Error)
+let inline resolveAttr (a : string) : Result< ^R,string> = (Unchecked.defaultof<XmlTypeMapping> $ (Unchecked.defaultof< ^R>)) a
 ///<summary>xAttr : name -> XElement -> XAttribute option    
 /// ('name' is string OR string * string)</summary>
-let inline xAttr name (e : #System.Xml.Linq.XElement) = 
+let inline xAttr' name (e : #System.Xml.Linq.XElement) = 
     e.Attribute 
         (match XN name with
          | Name name -> System.Xml.Linq.XName.Get (name)
          | NSName (name, ns) -> System.Xml.Linq.XName.Get (name, ns))
     |> nullGuard
+    |> Option.map (fun a -> a.Value)
+    
+let inline xAttr name (e : #System.Xml.Linq.XElement) = 
+    match xAttr' name e with
+    | Some v -> resolveAttr v |> Result.map Some 
+    | None -> Ok None
+
+let inline xAttrTr t name (e : #System.Xml.Linq.XElement) = 
+    match xAttr' name e with
+    | Some v -> resolveAttr v |> Result.bind t |> Result.map Some 
+    | None -> Ok None
+
+let inline xAttrRequire name (e : #System.Xml.Linq.XElement) = 
+    match xAttr' name e with
+    | Some v -> resolveAttr v
+    | None -> Result.Errorf "Expected attribute %A not found" name
 
 ///<summary>xVal : XElement -> string</summary>
 let inline xVal (e : #System.Xml.Linq.XElement) = e.Value
@@ -110,12 +175,6 @@ let xPathElement expression (n : #System.Xml.Linq.XNode) =
 let xPathElements expression (n : #System.Xml.Linq.XNode) = 
     System.Xml.XPath.Extensions.XPathSelectElements (n, expression) |> Seq.toList
 
-
-let parseBoolean (s : string) = 
-    match s with
-    | "true" | "1" -> Ok true
-    | "false" | "0" -> Ok false
-    | _ -> Result.Errorf "Invalid boolean value: %s" s
 
 //let doc = System.Xml.Linq.XDocument.Parse "<foo><bar baz='br' bazn='bz' /><bar baz='br2' bazn='bz2' /></foo>"
 //

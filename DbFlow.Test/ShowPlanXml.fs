@@ -372,7 +372,15 @@ type RunTimeInformationType = {
 // Relational Operators
 // ========================================
 
+[<System.ObsoleteAttribute("Dubbelkolla xsd - choice")>]
 type RelOpType = {
+    OutputList: ColumnReferenceType list
+    Warnings: WarningsType option
+    //MemoryFractions : MemoryFractionsType option
+    RunTimeInformation: RunTimeInformationType option
+    //RunTimePartitionSummary: RunTimePartitionSummaryType option
+    //InternalInfo : InternalInfoType option
+
     NodeId: int option
     PhysicalOp: PhysicalOpType
     LogicalOp: LogicalOpType
@@ -385,9 +393,7 @@ type RelOpType = {
     EstimateRebinds: float
     EstimateRewinds: float
     EstimatedExecutionMode: ExecutionModeType option
-    OutputList: ColumnReferenceType list
-    Warnings: WarningsType option
-    RunTimeInformation: RunTimeInformationType option
+    
     // Operator-specific details would go here
 }
 
@@ -480,18 +486,14 @@ type StmtCondType = {
     Then: StmtBlockType
     Else: StmtBlockType option
 }
-and StmtType =
+and StmtBlockType =
     | StmtSimple of StmtSimpleType
     | StmtCond of StmtCondType
     | StmtCursor of StmtCursorType
     | StmtReceive of StmtReceiveType
     | StmtUseDb of StmtUseDbType
     | ExternalDistributedComputation of ExternalDistributedComputationType
-and StmtBlockType = {
-    Statements: StmtType list
-}
-
-type Batch = {
+and  Batch = {
     Statements: StmtBlockType list
 }
 
