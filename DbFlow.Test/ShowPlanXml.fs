@@ -1,10 +1,5 @@
 ﻿module DbFlow.Test.ShowPlanXml
 
-open System.Xml
-
-open DbFlow
-open DbFlow.Test.XmlParser
-
 // ========================================
 // Enumerations (SimpleTypes)
 // ========================================
@@ -448,13 +443,6 @@ type StmtSimpleType = {
     QueryPlan: QueryPlanType option
 }
 
-type StmtCondType = {
-    BaseInfo: BaseStmtInfoType
-    Condition: QueryPlanType option
-    Then: StmtBlockType
-    Else: StmtBlockType option
-}
-
 type CursorOperationType = {
     OperationType: string // "FetchQuery" | "PopulateQuery" | "RefreshQuery"
     QueryPlan: QueryPlanType
@@ -485,15 +473,21 @@ type StmtUseDbType = {
     Database: string
 }
 
-type StmtType =
+// Mutually recursive types to handle cycle: StmtCondType -> StmtBlockType -> StmtType -> StmtCondType
+type StmtCondType = {
+    BaseInfo: BaseStmtInfoType
+    Condition: QueryPlanType option
+    Then: StmtBlockType
+    Else: StmtBlockType option
+}
+and StmtType =
     | StmtSimple of StmtSimpleType
     | StmtCond of StmtCondType
     | StmtCursor of StmtCursorType
     | StmtReceive of StmtReceiveType
     | StmtUseDb of StmtUseDbType
     | ExternalDistributedComputation of ExternalDistributedComputationType
-
-type StmtBlockType = {
+and StmtBlockType = {
     Statements: StmtType list
 }
 
@@ -516,27 +510,5 @@ type ShowPlanXML = {
     BatchSequence: BatchSequence
 }
 
-
-let ns = "http://schemas.microsoft.com/sqlserver/2004/07/showplan"
-
-let parseShowPlanXML (root : Linq.XElement) : Result<ShowPlanXML, _> =
-    Result.builder {
-        let! version = xAttr "Version" root |> function Some v -> v |> xAttrVal |> Ok | None -> Error "Version attribute not found" 
-        let! build = root |> xAttr "Build" |> function Some v -> v |> xAttrVal |> Ok | None -> Error "Build attribute not found" 
-        let! clusteredMode = 
-            root 
-            |> xAttr "ClusteredMode" 
-            |> function Some v -> parseBoolean (xAttrVal v) |> Result.map Some | None -> Ok None
-             
-        //let batchSequences = 
-        //    root |> xElements ("BatchSequence", ns)
-        
-        return {
-            Version = version
-            Build = build
-            ClusteredMode = clusteredMode
-            BatchSequence = { Batches = [] }
-        }
-    }
 
 

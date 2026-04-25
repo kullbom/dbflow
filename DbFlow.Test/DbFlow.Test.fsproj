@@ -15,6 +15,7 @@
 	</Content>
 	<Compile Include="XmlParser.fs" />
 	<Compile Include="ShowPlanXml.fs" />
+	<Compile Include="PlanParser.fs" />
 	<Compile Include="Plans.fs" />
 	<Compile Include="Examples.fs" />
 	<None Include="Samples\**\*.*" />

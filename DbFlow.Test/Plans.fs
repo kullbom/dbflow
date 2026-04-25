@@ -1,4 +1,4 @@
-﻿module Xsd
+﻿module DbFlow.Test.Plans
 
 open System
 open System.IO
@@ -7,6 +7,7 @@ open System.Xml.Schema
 open System.Text
 open Microsoft.Data.SqlClient
 open DbFlow
+open DbFlow.Test
 
 let estimatedPlan (sqlQuery : string) : string DbTr =
     DbTr.nonQuery "SET SHOWPLAN_XML ON" []
@@ -96,5 +97,5 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
     let ``Parse plan`` () =
         let plan01 = System.IO.File.ReadAllText "Plan01.xml"
         let doc = Xml.Linq.XDocument.Parse plan01
-        let plan = ShowPlanXML.parseShowPlanXML doc.Root
+        let plan = PlanParser.parseShowPlanXML doc.Root
         ()
