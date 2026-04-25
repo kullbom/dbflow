@@ -439,17 +439,59 @@ type BaseStmtInfoType = {
     BatchModeOnRowStoreUsed: bool option
 }
 
+type ExternalDistributedComputationType = {
+    EdcShowplanXml: string
+}
+
 type StmtSimpleType = {
     BaseInfo: BaseStmtInfoType
     QueryPlan: QueryPlanType option
 }
 
+type StmtCondType = {
+    BaseInfo: BaseStmtInfoType
+    Condition: QueryPlanType option
+    Then: StmtBlockType
+    Else: StmtBlockType option
+}
+
+type CursorOperationType = {
+    OperationType: string // "FetchQuery" | "PopulateQuery" | "RefreshQuery"
+    QueryPlan: QueryPlanType
+}
+
+type StmtCursorType = {
+    BaseInfo: BaseStmtInfoType
+    CursorName: string option
+    CursorActualType: CursorType option
+    CursorRequestedType: CursorType option
+    CursorConcurrency: string option // "Read Only" | "Pessimistic" | "Optimistic"
+    ForwardOnly: bool option
+    Operations: CursorOperationType list
+}
+
+type ReceiveOperationType = {
+    OperationType: string // "ReceivePlanSelect" | "ReceivePlanUpdate"
+    QueryPlan: QueryPlanType
+}
+
+type StmtReceiveType = {
+    BaseInfo: BaseStmtInfoType
+    Operations: ReceiveOperationType list
+}
+
+type StmtUseDbType = {
+    BaseInfo: BaseStmtInfoType
+    Database: string
+}
+
 type StmtType =
     | StmtSimple of StmtSimpleType
-    | StmtCond
-    | StmtCursor
-    | StmtReceive
-    | StmtUseDb
+    | StmtCond of StmtCondType
+    | StmtCursor of StmtCursorType
+    | StmtReceive of StmtReceiveType
+    | StmtUseDb of StmtUseDbType
+    | ExternalDistributedComputation of ExternalDistributedComputationType
 
 type StmtBlockType = {
     Statements: StmtType list
@@ -493,7 +535,7 @@ let parseShowPlanXML (root : Linq.XElement) : Result<ShowPlanXML, _> =
             Version = version
             Build = build
             ClusteredMode = clusteredMode
-            Batches = []
+            BatchSequence = { Batches = [] }
         }
     }
 
