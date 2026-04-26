@@ -528,17 +528,6 @@ type StmtUseDbType = {
     Database: string
 }
 
-// <xsd:complexType name="FunctionType">
-// 	<xsd:annotation>
-// 		<xsd:documentation>Shows the plan for the UDF or stored procedure</xsd:documentation>
-// 	</xsd:annotation>
-// 	<xsd:sequence>
-// 		<xsd:element name="Statements" type="shp:StmtBlockType" />
-// 	</xsd:sequence>
-// 	<xsd:attribute name="ProcName" type="xsd:string" />
-// 	<xsd:attribute name="IsNativelyCompiled" type="xsd:boolean" use="optional" />
-// </xsd:complexType>
-
 /// Shows the plan for the UDF or stored procedure
 type FunctionType = {
     Statements : StmtBlockType list
