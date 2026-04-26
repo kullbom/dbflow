@@ -6,6 +6,16 @@ let Failf fmt =
     //failwithf fmt
     Printf.ksprintf (fun s -> Error s) fmt
 
+let forAll (f : 'a -> Result<'b, _>) (xs : 'a list) : Result<'b list, _> =
+    let rec forAll' acc xs =
+        match xs with
+        | [] -> Ok (List.rev acc)
+        | x :: xs ->
+            match f x with
+            | Ok y -> forAll' (y :: acc) xs
+            | Error e -> Error e
+    forAll' [] xs
+
 type XName =
       Name of string
     | NSName of string * string 
@@ -90,23 +100,22 @@ let xElements' (c : #System.Xml.Linq.XContainer) =
 
 // Simple navigation
 
-///<summary>xElement : name/names -> XContainer -> Result<xElement, string>
-/// ('name' is string OR string * string)</summary>
-let inline xElementRequire path (c : #System.Xml.Linq.XContainer) = xElementRequire' c (XP path)
+let inline xElementReqP path parser (c : #System.Xml.Linq.XContainer) = 
+    match xElementRequire' c (XP path) with
+    | Ok v -> parser v 
+    | Error e -> Error e
 
-///<summary>xElement : name/names -> XContainer -> Result<xElement option, string>
-/// ('name' is string OR string * string)</summary>
-let inline xElementOptional parser path (c : #System.Xml.Linq.XContainer) = 
+let inline xElementP path parser (c : #System.Xml.Linq.XContainer) = 
     match xElementOptional' c (XP path) with
     | Ok (Some e) -> parser e |> Result.map Some
     | Ok None -> Ok None
     | Error e -> Error e
 
-///<summary>xElements : name -> XContainer -> XElement list    
-/// ('name' is string OR string * string)</summary>
-let inline xElements name (c : #System.Xml.Linq.XContainer) = xElements' c (XN name)
+let inline xElementsP name parser (c : #System.Xml.Linq.XContainer) = 
+    xElements' c (XN name) |> forAll parser
 
-let xElementsAll (c : #System.Xml.Linq.XContainer) = c.Elements () |> Seq.toList
+let xElementsAllP parser (c : #System.Xml.Linq.XContainer) = 
+    c.Elements () |> Seq.toList |> forAll parser
 
 
 module XmlReaders =
@@ -150,6 +159,7 @@ type public XmlTypeMapping =
 
 /// Convert a JsonElement to the expected output type (or Error)
 let inline resolveAttr (a : string) : Result< ^R,string> = (Unchecked.defaultof<XmlTypeMapping> $ (Unchecked.defaultof< ^R>)) a
+
 ///<summary>xAttr : name -> XElement -> XAttribute option    
 /// ('name' is string OR string * string)</summary>
 let inline xAttr' name (e : #System.Xml.Linq.XElement) = 
@@ -165,14 +175,20 @@ let inline xAttr name (e : #System.Xml.Linq.XElement) =
     | Some v -> resolveAttr v |> Result.map Some 
     | None -> Ok None
 
-let inline xAttrTr t name (e : #System.Xml.Linq.XElement) = 
+let inline xAttrP name attrParser (e : #System.Xml.Linq.XElement) = 
     match xAttr' name e with
-    | Some v -> resolveAttr v |> Result.bind t |> Result.map Some 
+    | Some v -> resolveAttr v |> Result.bind attrParser |> Result.map Some 
     | None -> Ok None
 
-let inline xAttrRequire name (e : #System.Xml.Linq.XElement) = 
+let inline xAttrReq name (e : #System.Xml.Linq.XElement) = 
     match xAttr' name e with
     | Some v -> resolveAttr v
+    | None -> 
+        Failf "Expected attribute %A not found" name
+
+let inline xAttrReqP name parser (e : #System.Xml.Linq.XElement) = 
+    match xAttr' name e with
+    | Some v -> resolveAttr v |> Result.bind parser
     | None -> 
         Failf "Expected attribute %A not found" name
 

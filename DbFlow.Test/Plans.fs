@@ -94,7 +94,15 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
 
     [<Fact>]
     let ``Parse plan`` () =
+        let sw = System.Diagnostics.Stopwatch ()
+        sw.Start ()
         let plan01 = System.IO.File.ReadAllText "Plan01.xml"
+        let timeRead = sw.ElapsedMilliseconds 
+        sw.Restart ()
         let doc = Xml.Linq.XDocument.Parse plan01
+        let timeXmlParse = sw.ElapsedMilliseconds 
+        sw.Restart ()
         let plan = DbFlow.Plans.Parser.parseShowPlanXML doc.Root
+        let timePlanParse = sw.ElapsedMilliseconds 
+        
         ()
