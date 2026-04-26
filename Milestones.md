@@ -105,6 +105,12 @@
 
 ## ...
 
+- [ ] Add support for ShowPlanXml 
+    - [x] Add support for parsing ShowPlanXml
+    - [ ] Add support for writing ShowPlanXml
+    - [ ] Add tests to validate ShowPlanXml
+- [ ] Add support for fetching input and output of a query using `sys.sp_describe_first_result_set` and `sys.sp_describe_undeclared_parameters`
+
 ## Version 1.0.0
 
 - [ ] Instead of generating failing XML scripts: output warning and "scripts" with comments that it is not yet supported. 
