@@ -87,9 +87,7 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
             |> DbTr.commit_ testDbConn
         ()
 
-    // let xsdContent = System.IO.File.ReadAllText "showplanxml.xsd"
-    // let schema = System.Xml.Schema.XmlSchema.Read(System.Xml.XmlReader.Create(new System.IO.StringReader(xsdContent)), fun sender args -> printfn "Warning: %s" args.Message)
-
+    
     [<Fact>]
     let ``Parse plan`` () =
         let sw = System.Diagnostics.Stopwatch ()
@@ -100,7 +98,13 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
         let doc = Xml.Linq.XDocument.Parse plan01
         let timeXmlParse = sw.ElapsedMilliseconds 
         sw.Restart ()
-        let plan = DbFlow.SqlServer.ShowPlanXml.Plan.parseXDocument doc
+       
+        let mutable plans = [] 
+        for i = 0 to 10000 do
+            let plan = DbFlow.SqlServer.ShowPlanXml.Plan.parseXDocument doc
+            plans <- plan :: plans
+            ()
+
         let timePlanParse = sw.ElapsedMilliseconds 
         
         output "Time to read file: %d ms" timeRead

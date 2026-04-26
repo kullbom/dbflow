@@ -1,0 +1,879 @@
+﻿<ShowPlanXML xmlns="http://schemas.microsoft.com/sqlserver/2004/07/showplan" Version="1.481" Build="14.0.3520.4">
+	<BatchSequence>
+		<Batch>
+			<Statements>
+				<StmtSimple StatementText="UPDATE [Role] SET ParentRoleId = @parentRoleId, &#xd;&#xa;                                  RoleType = @roleType,  &#xd;&#xa;                                  RoleValue = @roleValue,  &#xd;&#xa;                                  Name = @name,  &#xd;&#xa;                                  Hidden = @hidden, &#xd;&#xa;                                  LastModifiedBy = @byUserId&#xd;&#xa;                  FROM [Role]&#xd;&#xa;                  WHERE Id = @roleId" StatementId="1" StatementCompId="1" StatementType="UPDATE" StatementSqlHandle="0x09006FEE4367A964FB2171B726BE9F7A7FB20000000000000000000000000000000000000000000000000000" DatabaseContextSettingsId="1" ParentObjectId="0" StatementParameterizationType="1" RetrievedFromCache="false" StatementSubTreeCost="0.054562" StatementEstRows="1" SecurityPolicyApplied="false" StatementOptmLevel="FULL" QueryHash="0x886F1278084BB696" QueryPlanHash="0x4C103C8FF7944DA5" StatementOptmEarlyAbortReason="GoodEnoughPlanFound" CardinalityEstimationModelVersion="140">
+					<StatementSetOptions QUOTED_IDENTIFIER="true" ARITHABORT="false" CONCAT_NULL_YIELDS_NULL="true" ANSI_NULLS="true" ANSI_PADDING="true" ANSI_WARNINGS="true" NUMERIC_ROUNDABORT="false"></StatementSetOptions>
+					<QueryPlan NonParallelPlanReason="MaxDOPSetToOne" CachedPlanSize="96" CompileTime="8" CompileCPU="4" CompileMemory="840">
+						<Warnings>
+							<PlanAffectingConvert ConvertIssue="Cardinality Estimate" Expression="CONVERT(varchar(max),[ParentRoleId_OLD],0)"></PlanAffectingConvert>
+							<PlanAffectingConvert ConvertIssue="Cardinality Estimate" Expression="CONVERT(varchar(max),[P-INF-Admittance].[dbo].[Role].[ParentRoleId],0)"></PlanAffectingConvert>
+						</Warnings>
+						<MemoryGrantInfo SerialRequiredMemory="0" SerialDesiredMemory="0"></MemoryGrantInfo>
+						<OptimizerHardwareDependentProperties EstimatedAvailableMemoryGrant="1671168" EstimatedPagesCached="835584" EstimatedAvailableDegreeOfParallelism="1" MaxCompileMemory="86524712"></OptimizerHardwareDependentProperties>
+						<OptimizerStatsUsage>
+							<StatisticsInfo LastUpdate="2025-04-08T05:30:15.56" ModificationCount="7091" SamplingPercent="77.2132" Statistics="[PK_Role]" Table="[Role]" Schema="[dbo]" Database="[P-INF-Admittance]"></StatisticsInfo>
+							<StatisticsInfo LastUpdate="2018-06-04T05:38:05.15" ModificationCount="0" SamplingPercent="100" Statistics="[PK_RoleType_1]" Table="[RoleType]" Schema="[dbo]" Database="[P-INF-Admittance]"></StatisticsInfo>
+							<StatisticsInfo LastUpdate="2025-04-08T05:30:16.27" ModificationCount="8070" SamplingPercent="77.543" Statistics="[_WA_Sys_00000002_5EBF139D]" Table="[Role]" Schema="[dbo]" Database="[P-INF-Admittance]"></StatisticsInfo>
+						</OptimizerStatsUsage>
+						<RelOp NodeId="1" PhysicalOp="Sequence" LogicalOp="Sequence" EstimateRows="2" EstimateIO="0" EstimateCPU="4e-06" AvgRowSize="9" EstimatedTotalSubtreeCost="0.054562" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+							<OutputList></OutputList>
+							<Sequence>
+								<RelOp NodeId="2" PhysicalOp="Table Spool" LogicalOp="Eager Spool" EstimateRows="2" EstimateIO="0" EstimateCPU="5.02005e-05" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0250322" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+									<OutputList>
+										<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+										<ColumnReference Column="Act1032"></ColumnReference>
+									</OutputList>
+									<Spool>
+										<RelOp NodeId="3" PhysicalOp="Split" LogicalOp="Split" EstimateRows="2" EstimateIO="0" EstimateCPU="1.5e-06" AvgRowSize="15" EstimatedTotalSubtreeCost="0.049864" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+											<OutputList>
+												<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+												<ColumnReference Column="Act1032"></ColumnReference>
+											</OutputList>
+											<Split>
+												<DefinedValues>
+													<DefinedValue>
+														<ColumnReference Column="Act1032"></ColumnReference>
+													</DefinedValue>
+												</DefinedValues>
+												<ActionColumn>
+													<ColumnReference Column="Act1032"></ColumnReference>
+												</ActionColumn>
+												<RelOp NodeId="4" PhysicalOp="Assert" LogicalOp="Assert" EstimateRows="1" EstimateIO="0" EstimateCPU="6.8e-07" AvgRowSize="11" EstimatedTotalSubtreeCost="0.0498625" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+													<OutputList>
+														<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+													</OutputList>
+													<Assert StartupExpression="0">
+														<RelOp NodeId="5" PhysicalOp="Nested Loops" LogicalOp="Left Semi Join" EstimateRows="1" EstimateIO="0" EstimateCPU="4.18e-06" AvgRowSize="12" EstimatedTotalSubtreeCost="0.0498619" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+															<OutputList>
+																<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																<ColumnReference Column="Expr1030"></ColumnReference>
+																<ColumnReference Column="Expr1031"></ColumnReference>
+															</OutputList>
+															<NestedLoops Optimized="0">
+																<DefinedValues>
+																	<DefinedValue>
+																		<ColumnReference Column="Expr1031"></ColumnReference>
+																	</DefinedValue>
+																</DefinedValues>
+																<OuterReferences>
+																	<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="RoleType"></ColumnReference>
+																</OuterReferences>
+																<ProbeColumn>
+																	<ColumnReference Column="Expr1031"></ColumnReference>
+																</ProbeColumn>
+																<RelOp NodeId="6" PhysicalOp="Nested Loops" LogicalOp="Left Semi Join" EstimateRows="1" EstimateIO="0" EstimateCPU="4.18e-06" AvgRowSize="13" EstimatedTotalSubtreeCost="0.0465746" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																	<OutputList>
+																		<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																		<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="RoleType"></ColumnReference>
+																		<ColumnReference Column="Expr1030"></ColumnReference>
+																	</OutputList>
+																	<NestedLoops Optimized="0">
+																		<DefinedValues>
+																			<DefinedValue>
+																				<ColumnReference Column="Expr1030"></ColumnReference>
+																			</DefinedValue>
+																		</DefinedValues>
+																		<OuterReferences>
+																			<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="LastModifiedBy"></ColumnReference>
+																		</OuterReferences>
+																		<ProbeColumn>
+																			<ColumnReference Column="Expr1030"></ColumnReference>
+																		</ProbeColumn>
+																		<RelOp NodeId="7" PhysicalOp="Clustered Index Update" LogicalOp="Update" EstimateRows="1" EstimateIO="0.04" EstimateCPU="4e-06" AvgRowSize="16" EstimatedTotalSubtreeCost="0.0432873" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																			<OutputList>
+																				<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																				<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="RoleType"></ColumnReference>
+																				<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="LastModifiedBy"></ColumnReference>
+																			</OutputList>
+																			<Update DMLRequestSort="0">
+																				<Object Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Index="[PK_Role]" IndexKind="Clustered" Storage="RowStore"></Object>
+																				<Object Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Index="[IX_Role_UniqueAggregatedName]" IndexKind="NonClustered" Storage="RowStore"></Object>
+																				<Object Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Index="[IX_Role_ParentRoleId]" IndexKind="NonClustered" Storage="RowStore"></Object>
+																				<Object Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Index="[IX_Role_TypeAndValue]" IndexKind="NonClustered" Storage="RowStore"></Object>
+																				<SetPredicate>
+																					<ScalarOperator ScalarString="[P-INF-Admittance].[dbo].[Role].[ParentRoleId] = [@parentRoleId],[P-INF-Admittance].[dbo].[Role].[RoleType] = RaiseIfNullUpdate([Expr1002]),[P-INF-Admittance].[dbo].[Role].[RoleValue] = RaiseIfNullUpdate([Expr1003]),[P-INF-Admittance].[dbo].[Role].[Name] = RaiseIfNullUpdate([Expr1004]),[P-INF-Admittance].[dbo].[Role].[Hidden] = RaiseIfNullUpdate([@hidden]),[P-INF-Admittance].[dbo].[Role].[LastModifiedBy] = RaiseIfNullUpdate([@byUserId])">
+																						<ScalarExpressionList>
+																							<ScalarOperator>
+																								<MultipleAssign>
+																									<Assign>
+																										<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																										<ScalarOperator>
+																											<Identifier>
+																												<ColumnReference Column="@parentRoleId"></ColumnReference>
+																											</Identifier>
+																										</ScalarOperator>
+																									</Assign>
+																									<Assign>
+																										<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="RoleType"></ColumnReference>
+																										<ScalarOperator>
+																											<Intrinsic FunctionName="RaiseIfNullUpdate">
+																												<ScalarOperator>
+																													<Identifier>
+																														<ColumnReference Column="Expr1002"></ColumnReference>
+																													</Identifier>
+																												</ScalarOperator>
+																											</Intrinsic>
+																										</ScalarOperator>
+																									</Assign>
+																									<Assign>
+																										<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="RoleValue"></ColumnReference>
+																										<ScalarOperator>
+																											<Intrinsic FunctionName="RaiseIfNullUpdate">
+																												<ScalarOperator>
+																													<Identifier>
+																														<ColumnReference Column="Expr1003"></ColumnReference>
+																													</Identifier>
+																												</ScalarOperator>
+																											</Intrinsic>
+																										</ScalarOperator>
+																									</Assign>
+																									<Assign>
+																										<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Name"></ColumnReference>
+																										<ScalarOperator>
+																											<Intrinsic FunctionName="RaiseIfNullUpdate">
+																												<ScalarOperator>
+																													<Identifier>
+																														<ColumnReference Column="Expr1004"></ColumnReference>
+																													</Identifier>
+																												</ScalarOperator>
+																											</Intrinsic>
+																										</ScalarOperator>
+																									</Assign>
+																									<Assign>
+																										<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Hidden"></ColumnReference>
+																										<ScalarOperator>
+																											<Intrinsic FunctionName="RaiseIfNullUpdate">
+																												<ScalarOperator>
+																													<Identifier>
+																														<ColumnReference Column="@hidden"></ColumnReference>
+																													</Identifier>
+																												</ScalarOperator>
+																											</Intrinsic>
+																										</ScalarOperator>
+																									</Assign>
+																									<Assign>
+																										<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="LastModifiedBy"></ColumnReference>
+																										<ScalarOperator>
+																											<Intrinsic FunctionName="RaiseIfNullUpdate">
+																												<ScalarOperator>
+																													<Identifier>
+																														<ColumnReference Column="@byUserId"></ColumnReference>
+																													</Identifier>
+																												</ScalarOperator>
+																											</Intrinsic>
+																										</ScalarOperator>
+																									</Assign>
+																								</MultipleAssign>
+																							</ScalarOperator>
+																						</ScalarExpressionList>
+																					</ScalarOperator>
+																				</SetPredicate>
+																				<RelOp NodeId="8" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="1e-07" AvgRowSize="335" EstimatedTotalSubtreeCost="0.0032833" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																					<OutputList>
+																						<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																						<ColumnReference Column="Expr1002"></ColumnReference>
+																						<ColumnReference Column="Expr1003"></ColumnReference>
+																						<ColumnReference Column="Expr1004"></ColumnReference>
+																						<ColumnReference Column="Expr1027"></ColumnReference>
+																						<ColumnReference Column="Expr1028"></ColumnReference>
+																						<ColumnReference Column="Expr1029"></ColumnReference>
+																					</OutputList>
+																					<ComputeScalar>
+																						<DefinedValues>
+																							<DefinedValue>
+																								<ColumnReference Column="Expr1027"></ColumnReference>
+																								<ScalarOperator ScalarString="[Expr1027]">
+																									<Identifier>
+																										<ColumnReference Column="Expr1027"></ColumnReference>
+																									</Identifier>
+																								</ScalarOperator>
+																							</DefinedValue>
+																							<DefinedValue>
+																								<ColumnReference Column="Expr1028"></ColumnReference>
+																								<ScalarOperator ScalarString="[Expr1028]">
+																									<Identifier>
+																										<ColumnReference Column="Expr1028"></ColumnReference>
+																									</Identifier>
+																								</ScalarOperator>
+																							</DefinedValue>
+																							<DefinedValue>
+																								<ColumnReference Column="Expr1029"></ColumnReference>
+																								<ScalarOperator ScalarString="[Expr1029]">
+																									<Identifier>
+																										<ColumnReference Column="Expr1029"></ColumnReference>
+																									</Identifier>
+																								</ScalarOperator>
+																							</DefinedValue>
+																						</DefinedValues>
+																						<RelOp NodeId="9" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="1e-07" AvgRowSize="335" EstimatedTotalSubtreeCost="0.0032833" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																							<OutputList>
+																								<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																								<ColumnReference Column="Expr1002"></ColumnReference>
+																								<ColumnReference Column="Expr1003"></ColumnReference>
+																								<ColumnReference Column="Expr1004"></ColumnReference>
+																								<ColumnReference Column="Expr1027"></ColumnReference>
+																								<ColumnReference Column="Expr1028"></ColumnReference>
+																								<ColumnReference Column="Expr1029"></ColumnReference>
+																							</OutputList>
+																							<ComputeScalar>
+																								<DefinedValues>
+																									<DefinedValue>
+																										<ColumnReference Column="Expr1027"></ColumnReference>
+																										<ScalarOperator ScalarString="CASE WHEN [Expr1013] AND [Expr1014] AND [Expr1015] THEN (0) ELSE (1) END">
+																											<IF>
+																												<Condition>
+																													<ScalarOperator>
+																														<Logical Operation="AND">
+																															<ScalarOperator>
+																																<Identifier>
+																																	<ColumnReference Column="Expr1013"></ColumnReference>
+																																</Identifier>
+																															</ScalarOperator>
+																															<ScalarOperator>
+																																<Identifier>
+																																	<ColumnReference Column="Expr1014"></ColumnReference>
+																																</Identifier>
+																															</ScalarOperator>
+																															<ScalarOperator>
+																																<Identifier>
+																																	<ColumnReference Column="Expr1015"></ColumnReference>
+																																</Identifier>
+																															</ScalarOperator>
+																														</Logical>
+																													</ScalarOperator>
+																												</Condition>
+																												<Then>
+																													<ScalarOperator>
+																														<Const ConstValue="(0)"></Const>
+																													</ScalarOperator>
+																												</Then>
+																												<Else>
+																													<ScalarOperator>
+																														<Const ConstValue="(1)"></Const>
+																													</ScalarOperator>
+																												</Else>
+																											</IF>
+																										</ScalarOperator>
+																									</DefinedValue>
+																									<DefinedValue>
+																										<ColumnReference Column="Expr1028"></ColumnReference>
+																										<ScalarOperator ScalarString="CASE WHEN [Expr1013] AND [Expr1014] AND [Expr1015] AND [Expr1016] AND [Expr1017] THEN (0) ELSE (1) END">
+																											<IF>
+																												<Condition>
+																													<ScalarOperator>
+																														<Logical Operation="AND">
+																															<ScalarOperator>
+																																<Identifier>
+																																	<ColumnReference Column="Expr1013"></ColumnReference>
+																																</Identifier>
+																															</ScalarOperator>
+																															<ScalarOperator>
+																																<Identifier>
+																																	<ColumnReference Column="Expr1014"></ColumnReference>
+																																</Identifier>
+																															</ScalarOperator>
+																															<ScalarOperator>
+																																<Identifier>
+																																	<ColumnReference Column="Expr1015"></ColumnReference>
+																																</Identifier>
+																															</ScalarOperator>
+																															<ScalarOperator>
+																																<Identifier>
+																																	<ColumnReference Column="Expr1016"></ColumnReference>
+																																</Identifier>
+																															</ScalarOperator>
+																															<ScalarOperator>
+																																<Identifier>
+																																	<ColumnReference Column="Expr1017"></ColumnReference>
+																																</Identifier>
+																															</ScalarOperator>
+																														</Logical>
+																													</ScalarOperator>
+																												</Condition>
+																												<Then>
+																													<ScalarOperator>
+																														<Const ConstValue="(0)"></Const>
+																													</ScalarOperator>
+																												</Then>
+																												<Else>
+																													<ScalarOperator>
+																														<Const ConstValue="(1)"></Const>
+																													</ScalarOperator>
+																												</Else>
+																											</IF>
+																										</ScalarOperator>
+																									</DefinedValue>
+																									<DefinedValue>
+																										<ColumnReference Column="Expr1029"></ColumnReference>
+																										<ScalarOperator ScalarString="CASE WHEN [Expr1014] AND [Expr1015] THEN (0) ELSE (1) END">
+																											<IF>
+																												<Condition>
+																													<ScalarOperator>
+																														<Logical Operation="AND">
+																															<ScalarOperator>
+																																<Identifier>
+																																	<ColumnReference Column="Expr1014"></ColumnReference>
+																																</Identifier>
+																															</ScalarOperator>
+																															<ScalarOperator>
+																																<Identifier>
+																																	<ColumnReference Column="Expr1015"></ColumnReference>
+																																</Identifier>
+																															</ScalarOperator>
+																														</Logical>
+																													</ScalarOperator>
+																												</Condition>
+																												<Then>
+																													<ScalarOperator>
+																														<Const ConstValue="(0)"></Const>
+																													</ScalarOperator>
+																												</Then>
+																												<Else>
+																													<ScalarOperator>
+																														<Const ConstValue="(1)"></Const>
+																													</ScalarOperator>
+																												</Else>
+																											</IF>
+																										</ScalarOperator>
+																									</DefinedValue>
+																								</DefinedValues>
+																								<RelOp NodeId="10" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="1e-07" AvgRowSize="325" EstimatedTotalSubtreeCost="0.0032832" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																									<OutputList>
+																										<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																										<ColumnReference Column="Expr1002"></ColumnReference>
+																										<ColumnReference Column="Expr1003"></ColumnReference>
+																										<ColumnReference Column="Expr1004"></ColumnReference>
+																										<ColumnReference Column="Expr1013"></ColumnReference>
+																										<ColumnReference Column="Expr1014"></ColumnReference>
+																										<ColumnReference Column="Expr1015"></ColumnReference>
+																										<ColumnReference Column="Expr1016"></ColumnReference>
+																										<ColumnReference Column="Expr1017"></ColumnReference>
+																									</OutputList>
+																									<ComputeScalar>
+																										<DefinedValues>
+																											<DefinedValue>
+																												<ColumnReference Column="Expr1002"></ColumnReference>
+																												<ScalarOperator ScalarString="CONVERT_IMPLICIT(char(1),[@roleType],0)">
+																													<Convert DataType="char" Length="1" Style="0" Implicit="1">
+																														<ScalarOperator>
+																															<Identifier>
+																																<ColumnReference Column="@roleType"></ColumnReference>
+																															</Identifier>
+																														</ScalarOperator>
+																													</Convert>
+																												</ScalarOperator>
+																											</DefinedValue>
+																											<DefinedValue>
+																												<ColumnReference Column="Expr1003"></ColumnReference>
+																												<ScalarOperator ScalarString="CONVERT_IMPLICIT(nvarchar(50),[@roleValue],0)">
+																													<Convert DataType="nvarchar" Length="100" Style="0" Implicit="1">
+																														<ScalarOperator>
+																															<Identifier>
+																																<ColumnReference Column="@roleValue"></ColumnReference>
+																															</Identifier>
+																														</ScalarOperator>
+																													</Convert>
+																												</ScalarOperator>
+																											</DefinedValue>
+																											<DefinedValue>
+																												<ColumnReference Column="Expr1004"></ColumnReference>
+																												<ScalarOperator ScalarString="CONVERT_IMPLICIT(nvarchar(255),[@name],0)">
+																													<Convert DataType="nvarchar" Length="510" Style="0" Implicit="1">
+																														<ScalarOperator>
+																															<Identifier>
+																																<ColumnReference Column="@name"></ColumnReference>
+																															</Identifier>
+																														</ScalarOperator>
+																													</Convert>
+																												</ScalarOperator>
+																											</DefinedValue>
+																											<DefinedValue>
+																												<ColumnReference Column="Expr1013"></ColumnReference>
+																												<ScalarOperator ScalarString="CASE WHEN [P-INF-Admittance].[dbo].[Role].[ParentRoleId] = [@parentRoleId] THEN (1) ELSE (0) END">
+																													<IF>
+																														<Condition>
+																															<ScalarOperator>
+																																<Compare CompareOp="BINARY IS">
+																																	<ScalarOperator>
+																																		<Identifier>
+																																			<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																																		</Identifier>
+																																	</ScalarOperator>
+																																	<ScalarOperator>
+																																		<Identifier>
+																																			<ColumnReference Column="@parentRoleId"></ColumnReference>
+																																		</Identifier>
+																																	</ScalarOperator>
+																																</Compare>
+																															</ScalarOperator>
+																														</Condition>
+																														<Then>
+																															<ScalarOperator>
+																																<Const ConstValue="(1)"></Const>
+																															</ScalarOperator>
+																														</Then>
+																														<Else>
+																															<ScalarOperator>
+																																<Const ConstValue="(0)"></Const>
+																															</ScalarOperator>
+																														</Else>
+																													</IF>
+																												</ScalarOperator>
+																											</DefinedValue>
+																											<DefinedValue>
+																												<ColumnReference Column="Expr1014"></ColumnReference>
+																												<ScalarOperator ScalarString="CASE WHEN [P-INF-Admittance].[dbo].[Role].[RoleType] = CONVERT_IMPLICIT(char(1),[@roleType],0) THEN (1) ELSE (0) END">
+																													<IF>
+																														<Condition>
+																															<ScalarOperator>
+																																<Compare CompareOp="BINARY IS">
+																																	<ScalarOperator>
+																																		<Identifier>
+																																			<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="RoleType"></ColumnReference>
+																																		</Identifier>
+																																	</ScalarOperator>
+																																	<ScalarOperator>
+																																		<Convert DataType="char" Length="1" Style="0" Implicit="1">
+																																			<ScalarOperator>
+																																				<Identifier>
+																																					<ColumnReference Column="@roleType"></ColumnReference>
+																																				</Identifier>
+																																			</ScalarOperator>
+																																		</Convert>
+																																	</ScalarOperator>
+																																</Compare>
+																															</ScalarOperator>
+																														</Condition>
+																														<Then>
+																															<ScalarOperator>
+																																<Const ConstValue="(1)"></Const>
+																															</ScalarOperator>
+																														</Then>
+																														<Else>
+																															<ScalarOperator>
+																																<Const ConstValue="(0)"></Const>
+																															</ScalarOperator>
+																														</Else>
+																													</IF>
+																												</ScalarOperator>
+																											</DefinedValue>
+																											<DefinedValue>
+																												<ColumnReference Column="Expr1015"></ColumnReference>
+																												<ScalarOperator ScalarString="CASE WHEN [P-INF-Admittance].[dbo].[Role].[RoleValue] = CONVERT_IMPLICIT(nvarchar(50),[@roleValue],0) THEN (1) ELSE (0) END">
+																													<IF>
+																														<Condition>
+																															<ScalarOperator>
+																																<Compare CompareOp="BINARY IS">
+																																	<ScalarOperator>
+																																		<Identifier>
+																																			<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="RoleValue"></ColumnReference>
+																																		</Identifier>
+																																	</ScalarOperator>
+																																	<ScalarOperator>
+																																		<Convert DataType="nvarchar" Length="100" Style="0" Implicit="1">
+																																			<ScalarOperator>
+																																				<Identifier>
+																																					<ColumnReference Column="@roleValue"></ColumnReference>
+																																				</Identifier>
+																																			</ScalarOperator>
+																																		</Convert>
+																																	</ScalarOperator>
+																																</Compare>
+																															</ScalarOperator>
+																														</Condition>
+																														<Then>
+																															<ScalarOperator>
+																																<Const ConstValue="(1)"></Const>
+																															</ScalarOperator>
+																														</Then>
+																														<Else>
+																															<ScalarOperator>
+																																<Const ConstValue="(0)"></Const>
+																															</ScalarOperator>
+																														</Else>
+																													</IF>
+																												</ScalarOperator>
+																											</DefinedValue>
+																											<DefinedValue>
+																												<ColumnReference Column="Expr1016"></ColumnReference>
+																												<ScalarOperator ScalarString="CASE WHEN [P-INF-Admittance].[dbo].[Role].[Name] = CONVERT_IMPLICIT(nvarchar(255),[@name],0) THEN (1) ELSE (0) END">
+																													<IF>
+																														<Condition>
+																															<ScalarOperator>
+																																<Compare CompareOp="BINARY IS">
+																																	<ScalarOperator>
+																																		<Identifier>
+																																			<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Name"></ColumnReference>
+																																		</Identifier>
+																																	</ScalarOperator>
+																																	<ScalarOperator>
+																																		<Convert DataType="nvarchar" Length="510" Style="0" Implicit="1">
+																																			<ScalarOperator>
+																																				<Identifier>
+																																					<ColumnReference Column="@name"></ColumnReference>
+																																				</Identifier>
+																																			</ScalarOperator>
+																																		</Convert>
+																																	</ScalarOperator>
+																																</Compare>
+																															</ScalarOperator>
+																														</Condition>
+																														<Then>
+																															<ScalarOperator>
+																																<Const ConstValue="(1)"></Const>
+																															</ScalarOperator>
+																														</Then>
+																														<Else>
+																															<ScalarOperator>
+																																<Const ConstValue="(0)"></Const>
+																															</ScalarOperator>
+																														</Else>
+																													</IF>
+																												</ScalarOperator>
+																											</DefinedValue>
+																											<DefinedValue>
+																												<ColumnReference Column="Expr1017"></ColumnReference>
+																												<ScalarOperator ScalarString="CASE WHEN [P-INF-Admittance].[dbo].[Role].[Hidden] = [@hidden] THEN (1) ELSE (0) END">
+																													<IF>
+																														<Condition>
+																															<ScalarOperator>
+																																<Compare CompareOp="BINARY IS">
+																																	<ScalarOperator>
+																																		<Identifier>
+																																			<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Hidden"></ColumnReference>
+																																		</Identifier>
+																																	</ScalarOperator>
+																																	<ScalarOperator>
+																																		<Identifier>
+																																			<ColumnReference Column="@hidden"></ColumnReference>
+																																		</Identifier>
+																																	</ScalarOperator>
+																																</Compare>
+																															</ScalarOperator>
+																														</Condition>
+																														<Then>
+																															<ScalarOperator>
+																																<Const ConstValue="(1)"></Const>
+																															</ScalarOperator>
+																														</Then>
+																														<Else>
+																															<ScalarOperator>
+																																<Const ConstValue="(0)"></Const>
+																															</ScalarOperator>
+																														</Else>
+																													</IF>
+																												</ScalarOperator>
+																											</DefinedValue>
+																										</DefinedValues>
+																										<RelOp NodeId="11" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="328" EstimatedTotalSubtreeCost="0.0032831" TableCardinality="93069" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																											<OutputList>
+																												<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																												<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																												<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="RoleType"></ColumnReference>
+																												<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="RoleValue"></ColumnReference>
+																												<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Name"></ColumnReference>
+																												<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Hidden"></ColumnReference>
+																											</OutputList>
+																											<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																												<DefinedValues>
+																													<DefinedValue>
+																														<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																													</DefinedValue>
+																													<DefinedValue>
+																														<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																													</DefinedValue>
+																													<DefinedValue>
+																														<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="RoleType"></ColumnReference>
+																													</DefinedValue>
+																													<DefinedValue>
+																														<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="RoleValue"></ColumnReference>
+																													</DefinedValue>
+																													<DefinedValue>
+																														<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Name"></ColumnReference>
+																													</DefinedValue>
+																													<DefinedValue>
+																														<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Hidden"></ColumnReference>
+																													</DefinedValue>
+																												</DefinedValues>
+																												<Object Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Index="[PK_Role]" IndexKind="Clustered" Storage="RowStore"></Object>
+																												<SeekPredicates>
+																													<SeekPredicateNew>
+																														<SeekKeys>
+																															<Prefix ScanType="EQ">
+																																<RangeColumns>
+																																	<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																																</RangeColumns>
+																																<RangeExpressions>
+																																	<ScalarOperator ScalarString="[@roleId]">
+																																		<Identifier>
+																																			<ColumnReference Column="@roleId"></ColumnReference>
+																																		</Identifier>
+																																	</ScalarOperator>
+																																</RangeExpressions>
+																															</Prefix>
+																														</SeekKeys>
+																													</SeekPredicateNew>
+																												</SeekPredicates>
+																											</IndexScan>
+																										</RelOp>
+																									</ComputeScalar>
+																								</RelOp>
+																							</ComputeScalar>
+																						</RelOp>
+																					</ComputeScalar>
+																				</RelOp>
+																			</Update>
+																		</RelOp>
+																		<RelOp NodeId="12" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="9" EstimatedTotalSubtreeCost="0.0032831" TableCardinality="47152" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																			<OutputList></OutputList>
+																			<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="1" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																				<DefinedValues></DefinedValues>
+																				<Object Database="[P-INF-Admittance]" Schema="[dbo]" Table="[User]" Index="[PK_User]" IndexKind="Clustered" Storage="RowStore"></Object>
+																				<SeekPredicates>
+																					<SeekPredicateNew>
+																						<SeekKeys>
+																							<Prefix ScanType="EQ">
+																								<RangeColumns>
+																									<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[User]" Column="PrincipalId"></ColumnReference>
+																								</RangeColumns>
+																								<RangeExpressions>
+																									<ScalarOperator ScalarString="[P-INF-Admittance].[dbo].[Role].[LastModifiedBy]">
+																										<Identifier>
+																											<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="LastModifiedBy"></ColumnReference>
+																										</Identifier>
+																									</ScalarOperator>
+																								</RangeExpressions>
+																							</Prefix>
+																						</SeekKeys>
+																					</SeekPredicateNew>
+																				</SeekPredicates>
+																			</IndexScan>
+																		</RelOp>
+																	</NestedLoops>
+																</RelOp>
+																<RelOp NodeId="13" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="9" EstimatedTotalSubtreeCost="0.0032831" TableCardinality="6" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																	<OutputList></OutputList>
+																	<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="1" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																		<DefinedValues></DefinedValues>
+																		<Object Database="[P-INF-Admittance]" Schema="[dbo]" Table="[RoleType]" Index="[PK_RoleType_1]" IndexKind="Clustered" Storage="RowStore"></Object>
+																		<SeekPredicates>
+																			<SeekPredicateNew>
+																				<SeekKeys>
+																					<Prefix ScanType="EQ">
+																						<RangeColumns>
+																							<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[RoleType]" Column="Id"></ColumnReference>
+																						</RangeColumns>
+																						<RangeExpressions>
+																							<ScalarOperator ScalarString="[P-INF-Admittance].[dbo].[Role].[RoleType]">
+																								<Identifier>
+																									<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="RoleType"></ColumnReference>
+																								</Identifier>
+																							</ScalarOperator>
+																						</RangeExpressions>
+																					</Prefix>
+																				</SeekKeys>
+																			</SeekPredicateNew>
+																		</SeekPredicates>
+																	</IndexScan>
+																</RelOp>
+															</NestedLoops>
+														</RelOp>
+														<Predicate>
+															<ScalarOperator ScalarString="CASE WHEN [Expr1030] IS NULL THEN (0) ELSE CASE WHEN [Expr1031] IS NULL THEN (1) ELSE NULL END END">
+																<IF>
+																	<Condition>
+																		<ScalarOperator>
+																			<Logical Operation="IS NULL">
+																				<ScalarOperator>
+																					<Identifier>
+																						<ColumnReference Column="Expr1030"></ColumnReference>
+																					</Identifier>
+																				</ScalarOperator>
+																			</Logical>
+																		</ScalarOperator>
+																	</Condition>
+																	<Then>
+																		<ScalarOperator>
+																			<Const ConstValue="(0)"></Const>
+																		</ScalarOperator>
+																	</Then>
+																	<Else>
+																		<ScalarOperator>
+																			<IF>
+																				<Condition>
+																					<ScalarOperator>
+																						<Logical Operation="IS NULL">
+																							<ScalarOperator>
+																								<Identifier>
+																									<ColumnReference Column="Expr1031"></ColumnReference>
+																								</Identifier>
+																							</ScalarOperator>
+																						</Logical>
+																					</ScalarOperator>
+																				</Condition>
+																				<Then>
+																					<ScalarOperator>
+																						<Const ConstValue="(1)"></Const>
+																					</ScalarOperator>
+																				</Then>
+																				<Else>
+																					<ScalarOperator>
+																						<Const ConstValue="NULL"></Const>
+																					</ScalarOperator>
+																				</Else>
+																			</IF>
+																		</ScalarOperator>
+																	</Else>
+																</IF>
+															</ScalarOperator>
+														</Predicate>
+													</Assert>
+												</RelOp>
+											</Split>
+										</RelOp>
+									</Spool>
+								</RelOp>
+								<RelOp NodeId="14" PhysicalOp="Assert" LogicalOp="Assert" EstimateRows="2" EstimateIO="0" EstimateCPU="1.56e-06" AvgRowSize="9" EstimatedTotalSubtreeCost="0.0295258" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+									<OutputList></OutputList>
+									<Assert StartupExpression="0">
+										<RelOp NodeId="15" PhysicalOp="Nested Loops" LogicalOp="Left Semi Join" EstimateRows="2" EstimateIO="0" EstimateCPU="8.36e-06" AvgRowSize="9" EstimatedTotalSubtreeCost="0.0295243" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+											<OutputList>
+												<ColumnReference Column="Expr1034"></ColumnReference>
+												<ColumnReference Column="Pass1035"></ColumnReference>
+											</OutputList>
+											<NestedLoops Optimized="0">
+												<DefinedValues>
+													<DefinedValue>
+														<ColumnReference Column="Expr1034"></ColumnReference>
+													</DefinedValue>
+													<DefinedValue>
+														<ColumnReference Column="Pass1035"></ColumnReference>
+													</DefinedValue>
+												</DefinedValues>
+												<PassThru>
+													<ScalarOperator ScalarString="[Act1032]&lt;&gt;(4) OR [P-INF-Admittance].[dbo].[Role].[ParentRoleId] IS NULL">
+														<Logical Operation="OR">
+															<ScalarOperator>
+																<Compare CompareOp="NE">
+																	<ScalarOperator>
+																		<Identifier>
+																			<ColumnReference Column="Act1032"></ColumnReference>
+																		</Identifier>
+																	</ScalarOperator>
+																	<ScalarOperator>
+																		<Const ConstValue="(4)"></Const>
+																	</ScalarOperator>
+																</Compare>
+															</ScalarOperator>
+															<ScalarOperator>
+																<Logical Operation="IS NULL">
+																	<ScalarOperator>
+																		<Identifier>
+																			<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																		</Identifier>
+																	</ScalarOperator>
+																</Logical>
+															</ScalarOperator>
+														</Logical>
+													</ScalarOperator>
+												</PassThru>
+												<OuterReferences>
+													<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+												</OuterReferences>
+												<ProbeColumn>
+													<ColumnReference Column="Expr1034"></ColumnReference>
+												</ProbeColumn>
+												<RelOp NodeId="16" PhysicalOp="Table Spool" LogicalOp="Eager Spool" EstimateRows="2" EstimateIO="0" EstimateCPU="5.02005e-05" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0250322" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+													<OutputList>
+														<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+														<ColumnReference Column="Act1032"></ColumnReference>
+													</OutputList>
+													<Spool PrimaryNodeId="2"></Spool>
+												</RelOp>
+												<RelOp NodeId="17" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="9" EstimatedTotalSubtreeCost="0.00448248" TableCardinality="93069" Parallel="0" EstimateRebinds="1" EstimateRewinds="0" EstimatedExecutionMode="Row">
+													<OutputList></OutputList>
+													<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="1" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+														<DefinedValues></DefinedValues>
+														<Object Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Index="[PK_Role]" IndexKind="Clustered" Storage="RowStore"></Object>
+														<SeekPredicates>
+															<SeekPredicateNew>
+																<SeekKeys>
+																	<Prefix ScanType="EQ">
+																		<RangeColumns>
+																			<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																		</RangeColumns>
+																		<RangeExpressions>
+																			<ScalarOperator ScalarString="[P-INF-Admittance].[dbo].[Role].[ParentRoleId]">
+																				<Identifier>
+																					<ColumnReference Database="[P-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																				</Identifier>
+																			</ScalarOperator>
+																		</RangeExpressions>
+																	</Prefix>
+																</SeekKeys>
+															</SeekPredicateNew>
+														</SeekPredicates>
+													</IndexScan>
+												</RelOp>
+											</NestedLoops>
+										</RelOp>
+										<Predicate>
+											<ScalarOperator ScalarString="CASE WHEN NOT [Pass1035] AND [Expr1034] IS NULL THEN (0) ELSE NULL END">
+												<IF>
+													<Condition>
+														<ScalarOperator>
+															<Logical Operation="AND">
+																<ScalarOperator>
+																	<Logical Operation="NOT">
+																		<ScalarOperator>
+																			<Identifier>
+																				<ColumnReference Column="Pass1035"></ColumnReference>
+																			</Identifier>
+																		</ScalarOperator>
+																	</Logical>
+																</ScalarOperator>
+																<ScalarOperator>
+																	<Logical Operation="IS NULL">
+																		<ScalarOperator>
+																			<Identifier>
+																				<ColumnReference Column="Expr1034"></ColumnReference>
+																			</Identifier>
+																		</ScalarOperator>
+																	</Logical>
+																</ScalarOperator>
+															</Logical>
+														</ScalarOperator>
+													</Condition>
+													<Then>
+														<ScalarOperator>
+															<Const ConstValue="(0)"></Const>
+														</ScalarOperator>
+													</Then>
+													<Else>
+														<ScalarOperator>
+															<Const ConstValue="NULL"></Const>
+														</ScalarOperator>
+													</Else>
+												</IF>
+											</ScalarOperator>
+										</Predicate>
+									</Assert>
+								</RelOp>
+							</Sequence>
+						</RelOp>
+						<ParameterList>
+							<ColumnReference Column="@byUserId" ParameterDataType="int" ParameterCompiledValue="(26131)"></ColumnReference>
+							<ColumnReference Column="@hidden" ParameterDataType="bit" ParameterCompiledValue="(0)"></ColumnReference>
+							<ColumnReference Column="@name" ParameterDataType="nvarchar(13)" ParameterCompiledValue="N&apos;TICPRO.COM/SE&apos;"></ColumnReference>
+							<ColumnReference Column="@roleValue" ParameterDataType="nvarchar(9)" ParameterCompiledValue="N&apos;201920215&apos;"></ColumnReference>
+							<ColumnReference Column="@roleType" ParameterDataType="varchar(1)" ParameterCompiledValue="&apos;K&apos;"></ColumnReference>
+							<ColumnReference Column="@parentRoleId" ParameterDataType="int" ParameterCompiledValue="(52)"></ColumnReference>
+							<ColumnReference Column="@roleId" ParameterDataType="int" ParameterCompiledValue="(87176)"></ColumnReference>
+						</ParameterList>
+					</QueryPlan>
+				</StmtSimple>
+			</Statements>
+		</Batch>
+	</BatchSequence>
+</ShowPlanXML>
