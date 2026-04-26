@@ -236,6 +236,9 @@ let parseColumnReferenceType (columnReference : Linq.XElement) : Result<ColumnRe
         }
     }
 
+let parseColumnReferenceListType (columnReferenceList : Linq.XElement) : Result<ColumnReferenceType list, _> =
+    xElements ("Columns", ns) columnReferenceList |> forAll parseColumnReferenceType
+
 let parseLogicalOp (s : string) : Result<LogicalOpType, _> =
     match s with
     | "Aggregate" -> Ok LogicalOpType.Aggregate
@@ -440,7 +443,7 @@ let parseExecutionMode (s : string) : Result<ExecutionModeType, _> =
 
 let parseRelOpType (relOp : Linq.XElement) : Result<RelOpType, _> =
     Result.builder {
-        let! outputList = xElements ("OutputList", ns) relOp |> forAll parseColumnReferenceType
+        let! outputList = xElementRequire ("OutputList", ns) relOp |> Result.bind parseColumnReferenceListType
         let! warnings = xElementOptional parseWarningsType ("Warnings", ns) relOp
         let! memoryFractions = xElementOptional parseMemoryFractionsType ("MemoryFractions", ns) relOp
 
@@ -511,14 +514,6 @@ let parseRelOpType (relOp : Linq.XElement) : Result<RelOpType, _> =
         }
     }
 
-
-
-let parseParameterList (parameterList : Linq.XElement) : Result<ColumnReferenceType list, _> =
-    Result.builder {
-        let! columnReferenceTypes = xElementsAll parameterList |> forAll parseColumnReferenceType
-        return columnReferenceTypes
-    }
-
 let parseQueryPlanType (queryPlan : Linq.XElement) : Result<QueryPlanType, _> =
     Result.builder {
         // Attributes
@@ -536,7 +531,7 @@ let parseQueryPlanType (queryPlan : Linq.XElement) : Result<QueryPlanType, _> =
         let! optimizerStatsUsage = xElementOptional parseOptimizerStatsUsage ("OptimizerStatsUsage", ns) queryPlan
         let! relOpType' = xElementRequire ("RelOp", ns) queryPlan
         let! relOpType = parseRelOpType relOpType'
-        let! columnReferenceType = xElementOptional parseParameterList ("ParameterList", ns) queryPlan
+        let! columnReferenceType = xElementOptional parseColumnReferenceListType ("ParameterList", ns) queryPlan
         
         return {
             DegreeOfParallelism = degreeOfParallelism

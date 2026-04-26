@@ -2,6 +2,10 @@ module DbFlow.Test.XmlParser
 
 open DbFlow
 
+let Failf fmt = 
+    //failwithf fmt
+    Printf.ksprintf (fun s -> Error s) fmt
+
 type XName =
       Name of string
     | NSName of string * string 
@@ -39,18 +43,29 @@ let xElementRequire' (c : #System.Xml.Linq.XContainer) =
     let nsname2element (c' : #System.Xml.Linq.XContainer) (name, ns) =
         c'.Element (System.Xml.Linq.XName.Get (name,ns)) |> nullGuard
         
-    function XName (Name name) -> match name2element c name with Some e -> Ok e | None -> Result.Errorf "Expected %s not found" name
-           | XName (NSName (name, ns)) -> match nsname2element c (name, ns) with Some e -> Ok e | None -> Result.Errorf "Expected %s (ns: %s) not found" name ns
-           | NSPath path -> let rec followPath (c' : System.Xml.Linq.XContainer) =
-                                function []      -> Error "Nej, jättedålig input" 
-                                       | [last]  -> 
-                                            match nsname2element c' last with
-                                            | Some e -> Ok e
-                                            | None -> let (name, ns) = last in Result.Errorf "Expected %s (ns: %s) not found" name ns
-                                       | p :: ps -> match nsname2element c' p with
-                                                    | Some c'' -> followPath (c'' :> System.Xml.Linq.XContainer) ps
-                                                    | None     -> let (name, ns) = p in Result.Errorf "Expected %s (ns: %s) not found" name ns
-                            followPath c path
+    function 
+    | XName (Name name) -> 
+        match name2element c name with 
+        | Some e -> Ok e 
+        | None -> 
+            Failf "Expected %s not found" name 
+    | XName (NSName (name, ns)) -> 
+        match nsname2element c (name, ns) with 
+        | Some e -> Ok e 
+        | None -> Failf "Expected %s (ns: %s) not found" name ns
+    | NSPath path -> 
+        let rec followPath (c' : System.Xml.Linq.XContainer) =
+            function 
+            | [] -> Failf "Nej, jättedålig input" 
+            | [last]  -> 
+                match nsname2element c' last with
+                | Some e -> Ok e
+                | None -> let (name, ns) = last in Failf "Expected %s (ns: %s) not found" name ns
+            | p :: ps -> 
+                match nsname2element c' p with
+                | Some c'' -> followPath (c'' :> System.Xml.Linq.XContainer) ps
+                | None     -> let (name, ns) = p in Failf "Expected %s (ns: %s) not found" name ns
+        followPath c path
 
 
 let xElementOptional' (c : #System.Xml.Linq.XContainer) =
@@ -99,24 +114,24 @@ module XmlReaders =
         match s with
         | "true" | "1" -> Ok true
         | "false" | "0" -> Ok false
-        | _ -> Result.Errorf "Invalid boolean value: %s" s
+        | _ -> Failf "Invalid boolean value: %s" s
 
     let readString  (s : string) : Result<string, string> = s |> Ok
 
     let readInt32   (s : string) = 
         match System.Int32.TryParse s with
         | true, v -> Ok v
-        | false, _ -> Result.Errorf "Invalid int32 value: %s" s
+        | false, _ -> Failf "Invalid int32 value: %s" s
 
     let readUInt64  (s : string) = 
         match System.UInt64.TryParse s with
         | true, v -> Ok v
-        | false, _ -> Result.Errorf "Invalid uint64 value: %s" s
+        | false, _ -> Failf "Invalid uint64 value: %s" s
 
     let readFloat   (s : string) = 
         match System.Double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture) with
         | true, v -> Ok v
-        | false, _ -> Result.Errorf "Invalid float value: %s" s
+        | false, _ -> Failf "Invalid float value: %s" s
         
     //let optionReader (reader : System.Xml.Linq.XAttribute -> Result<'a, string>) (a : System.Xml.Linq.XAttribute) =
     //    match a..ValueKind with
@@ -158,7 +173,8 @@ let inline xAttrTr t name (e : #System.Xml.Linq.XElement) =
 let inline xAttrRequire name (e : #System.Xml.Linq.XElement) = 
     match xAttr' name e with
     | Some v -> resolveAttr v
-    | None -> Result.Errorf "Expected attribute %A not found" name
+    | None -> 
+        Failf "Expected attribute %A not found" name
 
 ///<summary>xVal : XElement -> string</summary>
 let inline xVal (e : #System.Xml.Linq.XElement) = e.Value
