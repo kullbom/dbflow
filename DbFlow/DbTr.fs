@@ -10,6 +10,7 @@ module Readers =
     let readByte n (r : System.Data.IDataReader) = r.GetByte (r.GetOrdinal n)
     let readInt16 n (r : System.Data.IDataReader) = r.GetInt16 (r.GetOrdinal n)
     let readInt32 n (r : System.Data.IDataReader) = r.GetInt32 (r.GetOrdinal n)
+    let readInt64 n (r : System.Data.IDataReader) = r.GetInt64 (r.GetOrdinal n)
     let readDateTime n (r : System.Data.IDataReader) = r.GetDateTime (r.GetOrdinal n)
     let nullable n f (r : System.Data.IDataReader) = if r.IsDBNull (r.GetOrdinal n) then None else Some (f n r)
 
@@ -60,11 +61,12 @@ module DbTr =
                     raise (Exception($"Batch failed: {cmdText}", e)))
 
     /// Custom reader - traversing the data reader is up to the user    
-    let reader' cmdText parameters f =
+    let reader' cmdText cmdType parameters f =
         DbTr
             (fun ctx -> 
                 let cmd = ctx.Connection.CreateCommand()
                 cmd.CommandText <- cmdText
+                cmd.CommandType <- cmdType
                 match ctx.Transaction with 
                 | Some t -> cmd.Transaction <- t
                 | None -> ()
@@ -76,15 +78,18 @@ module DbTr =
                 use dataReader = cmd.ExecuteReader() 
                 f dataReader)
 
-    /// Reader - folds that data of the data reader calling the fold function once per row of data
-    let reader cmdText parameters f seed =
-        reader' cmdText parameters
+    let foldResult cmdText cmdType parameters f seed =
+        reader' cmdText cmdType parameters
             (fun dataReader ->
                 let mutable acc = seed
                 let f' = OptimizedClosures.FSharpFunc<_,_,_>.Adapt(f)
                 while (dataReader.Read()) do
                     acc <- f'.Invoke(acc, dataReader)
                 acc)
+
+    /// Reader - folds that data of the data reader calling the fold function once per row of data
+    let reader cmdText parameters f seed =
+        foldResult cmdText CommandType.Text parameters f seed
 
     let readList cmdText parameters f =
         reader cmdText parameters (fun acc r -> f r :: acc) [] |> map List.rev
@@ -98,6 +103,22 @@ module DbTr =
     let readSet cmdText parameters f =
         reader cmdText parameters (fun s r -> Set.add (f r) s) Set.empty
 
+
+    let readerSP spName parameters f seed =
+        foldResult spName CommandType.StoredProcedure parameters f seed
+
+    let readListSP spName parameters f =
+        readerSP spName parameters (fun acc r -> f r :: acc) [] |> map List.rev
+
+    let readArraySP spName parameters f =
+        readListSP spName parameters f |> map List.toArray
+    
+    let readMapSP spName parameters f =
+        readerSP spName parameters (fun m r -> let (k, v) = f r in Map.add k v m) Map.empty
+
+    let readSetSP spName parameters f =
+        readerSP spName parameters (fun s r -> Set.add (f r) s) Set.empty
+
     /// Commit a transaction
     let commit (c : IDbConnection) (i : System.Data.IsolationLevel) (DbTr t) =
         let tr = c.BeginTransaction(i)
@@ -110,11 +131,25 @@ module DbTr =
         finally
             if not success
             then tr.Rollback ()
+
+    let tryCommit (c : IDbConnection) (i : System.Data.IsolationLevel) (DbTr t) =
+        let tr = c.BeginTransaction(i)
+        let mutable success = false
+        try 
+            let res = t { Connection = c; Transaction = Some tr }
+            tr.Commit ()
+            Ok res
+        with e -> 
+            tr.Rollback ()
+            Error e
+            
         
     /// Commit a transaction with isolation level READ COMMITED
     let commit_ c t = commit c System.Data.IsolationLevel.ReadCommitted t
 
-    /// Execute a transaction {t} without an actual database transaction
+    let tryCommit_ c t = tryCommit c System.Data.IsolationLevel.ReadCommitted t
+
+    /// Execute a transaction without an actual database transaction
     let exe (c : IDbConnection) (DbTr t) =
         t { Connection = c; Transaction = None }
 

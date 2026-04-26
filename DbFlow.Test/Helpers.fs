@@ -124,10 +124,10 @@ module Helpers =
         Logger.infoWithTime $"New local db: {localDbConnectionString}" logger
         f localDbConnectionString
 
-    let withLocalDbFromScripts logger options initScript scriptFolder f =
+    let withLocalDbFromScripts logger options additionalInitializationScript scriptFolder f =
         withLocalDb logger options
             (fun connectionStr ->
-                match initScript with
+                match additionalInitializationScript with
                 | None -> ()
                 | Some s -> 
                     use dbConn = new SqlConnection(connectionStr)
