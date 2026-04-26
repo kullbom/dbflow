@@ -112,6 +112,7 @@ module Internal =
                     $"SELECT {allColumnsStr}
                       FROM #{tempTableName} keys
                       INNER JOIN {sourceTableName} source ON {joinCondition}"
+                    System.Data.CommandType.Text
                     []
                     (fun dataReader ->            
                         // Now use the reader to pass data to the bulk insert 
@@ -255,7 +256,7 @@ let copyData (logger : Logger) (options : ScriptOptions) (schema : Schema.Databa
                             dr.Table.ForeignKeys 
                             |> Array.fold (fun acc' fk -> fk.Referenced.ObjectId :: acc') acc)
                         []
-                Dependent.create (table_object_id, drs) contains dependsOn 0)
+                Dependent.create (table_object_id, drs) contains dependsOn 0 0)
         |> Dependent.resolveOrder (fun d -> fst d.Content) Map.empty 
             
     for x in dependentDataRefs do

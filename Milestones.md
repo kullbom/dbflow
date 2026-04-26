@@ -103,10 +103,37 @@
 
 - [x] Added possibility to control the internal connection string used to connect to a local SqlServer database
 
+## Version 0.10.1 - 2026-04-xx
+
+- [x] BUGFIX: There is a problem with the order of scripts when no dependencies can be read. 
+
+## Version 0.11.0 - 2026-xx-xx
+
+- [x] Add support for ShowPlanXml 
+    - [x] Add support for parsing ShowPlanXml
+    - [x] Change the XmlParser to always select all elements - and then apply som kind of parser to that based on the expectations (in the xsd...)
+    - [x] Go through all xsd:choice-elements of the xsd and make sure they are handled.
+        - [x] Add some kind of support xsd:choice-elements to the XmlParser. "xsd:choice" means that the element IS ONE of cases.
+    - [x] Go through all xsd:restriction elements of the xsd and make sure they are handled.
+- [x] Add support for fetching input and output of a query using `sys.sp_describe_first_result_set` and `sys.sp_describe_undeclared_parameters`
+- [x] BUGFIX: There was a problem with order of scripts when no dependencies could be read. I fixed that with a new priority. That introduced a new problem. The AW tests shows the problem.  
+- [x] BUGFIX: The comparision of schemas did not handle procedures with the same name but in different schemas.
+
+
 ## ...
+
+- [ ] Fix async problem with System.IO.Directory.Delete. Sometimes the test fails. Use some kind of "global locking" or similar to avoid this problem.
+- [ ] Improved support for ShowPlanXml 
+    - [ ] Extract all xsd:annotation elements as documentation 
+    - [ ] Add support for writing ShowPlanXml
+    - [ ] Add tests to validate ShowPlanXml
+    - [ ] Make sure the performance is usable for code generation
+- [ ] Investigate https://github.com/microsoft/SqlScriptDOM
+- [ ] Make sure query parameters from dbflow have correct types and lengths
 
 ## Version 1.0.0
 
+- [ ] Support for caching latest data change of a table in a xproperty (using triggers) - to be able to quickly check if data has changed since last clone or similar
 - [ ] Instead of generating failing XML scripts: output warning and "scripts" with comments that it is not yet supported. 
 - [ ] There is a problem with XML indexes... see failing test for "AdventureWorks 2014-2022"" - or search for "[XMLPATH_Person_Demographics]"
 - [ ] Investigate/play with improved interface to connections
@@ -130,6 +157,7 @@
 - [ ] Generate documentation using something like literate programming... 
 - [ ] ANSI PADDING is not supported. It is not considered in the db comparison and is not part of generated scripts.
 - [ ] Support for generating documentation
+- [ ] It would be great if the documentation site could allow edits and be able export a script for incorporating "pending documentation additions"  
 - [ ] Support (model) for query input/output
 - [ ] Investigate how a "health report" can be constructed (on deploy?) (Validate Rules, compare to "dbup" scripts)
 - [ ] Support for generating cached snapshots for update-scripts - to save time on cloning
@@ -151,3 +179,15 @@ Since the name "dbflow" is in use by a fairly known other software I am consider
 - "DbSchemata"?
 - "Skemo" / "DbSkemo" (esperanto for schema)
 - "Fluo" / "DbFluo" (esperanto for flow) 
+- DbSharp
+- Something about "relation"...
+
+## Apropos dokumentation
+
+Jag funderar på möjligheten att generera en dokumentations site för en databas. Jag tänker att publiceringen skulle ske i samband med att något ändras - dvs att man kör sina dbup-script.
+
+Jag tänker att jag skulle åstadkomma detta i två steg:
+1. Bygga en react site som visualiserar en databas utifrån statiska json-filer
+2. Kunna generera sådana statiska json-filer från dbup-projektet.
+
+Låter det som en rimlig plan eller ser du några uppenbara fallgropar?
