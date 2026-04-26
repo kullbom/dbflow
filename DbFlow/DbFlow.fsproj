@@ -22,6 +22,7 @@
   <ItemGroup>
     <Compile Include="Utils.fs" />
     <Compile Include="SqlParser.fs" />
+    <Compile Include="XmlParser.fs" />
     <Compile Include="DbTr.fs" />
     <Compile Include="DbFlow.fs" />
     <Compile Include="Dependent.fs" />
@@ -38,12 +39,21 @@
     <Compile Include="SqlServer\Schema\Database.fs" />
     <Compile Include="SqlServer\Schema\Compare.fs" />
     <Compile Include="SqlServer\Schema\CompareGen.fs" />
+    <Content Include="SqlServer\ShowPlanXml\Examples\Plan01.xml" />
+    <None Include="SqlServer\ShowPlanXml\showplanxml.xsd" />
+    <Compile Include="SqlServer\ShowPlanXml\Enums.fs" />
+    <Compile Include="SqlServer\ShowPlanXml\Types.fs" />
+    <Compile Include="SqlServer\ShowPlanXml\Parsers.Primitives.fs" />
+    <Compile Include="SqlServer\ShowPlanXml\Parsers.fs" />
+    <Compile Include="sqlserver\showplanxml\Plan.fs" />
     <Compile Include="SqlServer\Scripts\Generate.fs" />
     <Compile Include="SqlServer\LocalDatabase.fs" />
     <Compile Include="SqlServer\CopyData.fs" />
     <Compile Include="SqlServer\Execute.fs" />
     <Compile Include="SqlServer\Rules.fs" />
   </ItemGroup>
+
+  <ItemGroup />
 
   <ItemGroup>
     <None Include="..\README.md">
