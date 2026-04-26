@@ -180,11 +180,35 @@ let parseOptimizerStatsUsage (optimizerStatsUsage : Linq.XElement) : Result<Opti
         return { StatisticsInfo = statisticsInfo }
     }
 
-let parseRelOpType (relOp : Linq.XElement) : Result<RelOpType, _> =
-    failwith "Not implemented yet"
+let parseMemoryFractionsType (memoryFractions : Linq.XElement) : Result<MemoryFractionsType, _> =
+    Result.builder {
+        let! input = xAttrRequire "Input" memoryFractions
+        let! output = xAttrRequire "Output" memoryFractions
+        return { Input = input; Output = output }
+    }
+
+let parseScalarType (scalarOperator : Linq.XElement) : Result<ScalarType, _> =
+    Result.builder {
+        // Placeholder for scalar operator parsing
+        // TODO: Implement full scalar operator type parsing based on XSD
+        return { Value = None }
+    }
+
+let parseInternalInfoType (internalInfo : Linq.XElement) : Result<InternalInfoType, _> =
+    Result.builder {
+        // Capture the raw XML content as string
+        // InternalInfoType can contain arbitrary XML content
+        let content = internalInfo.ToString() |> Some
+        return { Content = content }
+    }
 
 let parseColumnReferenceType (columnReference : Linq.XElement) : Result<ColumnReferenceType, _> =
     Result.builder {
+        // Sequence elements
+        let! scalarOperator = xElementOptional parseScalarType ("ScalarOperator", ns) columnReference
+        let! internalInfo = xElementOptional parseInternalInfoType ("InternalInfo", ns) columnReference
+
+        // Attributes
         let! server = xAttr "Server" columnReference
         let! database = xAttr "Database" columnReference
         let! table = xAttr "Table" columnReference
@@ -197,6 +221,8 @@ let parseColumnReferenceType (columnReference : Linq.XElement) : Result<ColumnRe
         let! parameterRuntimeValue = xAttr "ParameterRuntimeValue" columnReference
 
         return {
+            ScalarOperator = scalarOperator
+            InternalInfo = internalInfo
             Server = server
             Database = database
             Schema = schema
@@ -209,6 +235,283 @@ let parseColumnReferenceType (columnReference : Linq.XElement) : Result<ColumnRe
             ParameterRuntimeValue = parameterRuntimeValue   
         }
     }
+
+let parseLogicalOp (s : string) : Result<LogicalOpType, _> =
+    match s with
+    | "Aggregate" -> Ok LogicalOpType.Aggregate
+    | "AntiDiff" -> Ok LogicalOpType.AntiDiff
+    | "Assert" -> Ok LogicalOpType.Assert
+    | "AsyncConcat" -> Ok LogicalOpType.AsyncConcat
+    | "BatchHashTableBuild" -> Ok LogicalOpType.BatchHashTableBuild
+    | "BitmapCreate" -> Ok LogicalOpType.BitmapCreate
+    | "ClusteredIndexScan" -> Ok LogicalOpType.ClusteredIndexScan
+    | "ClusteredIndexSeek" -> Ok LogicalOpType.ClusteredIndexSeek
+    | "ClusteredUpdate" -> Ok LogicalOpType.ClusteredUpdate
+    | "Collapse" -> Ok LogicalOpType.Collapse
+    | "ComputeScalar" -> Ok LogicalOpType.ComputeScalar
+    | "Concatenation" -> Ok LogicalOpType.Concatenation
+    | "ConstantScan" -> Ok LogicalOpType.ConstantScan
+    | "ConstantTableGet" -> Ok LogicalOpType.ConstantTableGet
+    | "CrossJoin" -> Ok LogicalOpType.CrossJoin
+    | "Delete" -> Ok LogicalOpType.Delete
+    | "DeletedScan" -> Ok LogicalOpType.DeletedScan
+    | "DistinctSort" -> Ok LogicalOpType.DistinctSort
+    | "Distinct" -> Ok LogicalOpType.Distinct
+    | "DistributeStreams" -> Ok LogicalOpType.DistributeStreams
+    | "EagerSpool" -> Ok LogicalOpType.EagerSpool
+    | "ExternalExtractionScan" -> Ok LogicalOpType.ExternalExtractionScan
+    | "ExternalSelect" -> Ok LogicalOpType.ExternalSelect
+    | "Filter" -> Ok LogicalOpType.Filter
+    | "FlowDistinct" -> Ok LogicalOpType.FlowDistinct
+    | "ForeignKeyReferencesCheck" -> Ok LogicalOpType.ForeignKeyReferencesCheck
+    | "FullOuterJoin" -> Ok LogicalOpType.FullOuterJoin
+    | "GatherStreams" -> Ok LogicalOpType.GatherStreams
+    | "GbAgg" -> Ok LogicalOpType.GbAgg
+    | "GbApply" -> Ok LogicalOpType.GbApply
+    | "Get" -> Ok LogicalOpType.Get
+    | "Generic" -> Ok LogicalOpType.Generic
+    | "InnerApply" -> Ok LogicalOpType.InnerApply
+    | "IndexScan" -> Ok LogicalOpType.IndexScan
+    | "IndexSeek" -> Ok LogicalOpType.IndexSeek
+    | "InnerJoin" -> Ok LogicalOpType.InnerJoin
+    | "Insert" -> Ok LogicalOpType.Insert
+    | "InsertedScan" -> Ok LogicalOpType.InsertedScan
+    | "Intersect" -> Ok LogicalOpType.Intersect
+    | "IntersectAll" -> Ok LogicalOpType.IntersectAll
+    | "LazySpool" -> Ok LogicalOpType.LazySpool
+    | "LeftAntiSemiApply" -> Ok LogicalOpType.LeftAntiSemiApply
+    | "LeftSemiApply" -> Ok LogicalOpType.LeftSemiApply
+    | "LeftOuterApply" -> Ok LogicalOpType.LeftOuterApply
+    | "LeftAntiSemiJoin" -> Ok LogicalOpType.LeftAntiSemiJoin
+    | "LeftDiff" -> Ok LogicalOpType.LeftDiff
+    | "LeftDiffAll" -> Ok LogicalOpType.LeftDiffAll
+    | "LeftOuterJoin" -> Ok LogicalOpType.LeftOuterJoin
+    | "LeftSemiJoin" -> Ok LogicalOpType.LeftSemiJoin
+    | "LocalCube" -> Ok LogicalOpType.LocalCube
+    | "LogRowScan" -> Ok LogicalOpType.LogRowScan
+    | "Merge" -> Ok LogicalOpType.Merge
+    | "MergeInterval" -> Ok LogicalOpType.MergeInterval
+    | "MergeStats" -> Ok LogicalOpType.MergeStats
+    | "Move" -> Ok LogicalOpType.Move
+    | "ParameterTableScan" -> Ok LogicalOpType.ParameterTableScan
+    | "PartialAggregate" -> Ok LogicalOpType.PartialAggregate
+    | "Print" -> Ok LogicalOpType.Print
+    | "Project" -> Ok LogicalOpType.Project
+    | "Put" -> Ok LogicalOpType.Put
+    | "Rank" -> Ok LogicalOpType.Rank
+    | "RemoteDelete" -> Ok LogicalOpType.RemoteDelete
+    | "RemoteIndexScan" -> Ok LogicalOpType.RemoteIndexScan
+    | "RemoteIndexSeek" -> Ok LogicalOpType.RemoteIndexSeek
+    | "RemoteInsert" -> Ok LogicalOpType.RemoteInsert
+    | "RemoteQuery" -> Ok LogicalOpType.RemoteQuery
+    | "RemoteScan" -> Ok LogicalOpType.RemoteScan
+    | "RemoteUpdate" -> Ok LogicalOpType.RemoteUpdate
+    | "RepartitionStreams" -> Ok LogicalOpType.RepartitionStreams
+    | "RIDLookup" -> Ok LogicalOpType.RIDLookup
+    | "RightAntiSemiJoin" -> Ok LogicalOpType.RightAntiSemiJoin
+    | "RightDiff" -> Ok LogicalOpType.RightDiff
+    | "RightDiffAll" -> Ok LogicalOpType.RightDiffAll
+    | "RightOuterJoin" -> Ok LogicalOpType.RightOuterJoin
+    | "RightSemiJoin" -> Ok LogicalOpType.RightSemiJoin
+    | "Segment" -> Ok LogicalOpType.Segment
+    | "Sequence" -> Ok LogicalOpType.Sequence
+    | "Sort" -> Ok LogicalOpType.Sort
+    | "Split" -> Ok LogicalOpType.Split
+    | "Switch" -> Ok LogicalOpType.Switch
+    | "TableValuedFunction" -> Ok LogicalOpType.TableValuedFunction
+    | "TableScan" -> Ok LogicalOpType.TableScan
+    | "Top" -> Ok LogicalOpType.Top
+    | "TopNSort" -> Ok LogicalOpType.TopNSort
+    | "UDX" -> Ok LogicalOpType.UDX
+    | "Union" -> Ok LogicalOpType.Union
+    | "UnionAll" -> Ok LogicalOpType.UnionAll
+    | "Update" -> Ok LogicalOpType.Update
+    | "LocalStats" -> Ok LogicalOpType.LocalStats
+    | "WindowSpool" -> Ok LogicalOpType.WindowSpool
+    | "WindowAggregate" -> Ok LogicalOpType.WindowAggregate
+    | "KeyLookup" -> Ok LogicalOpType.KeyLookup
+    | "ExtensibleColumnStoreScan" -> Ok LogicalOpType.ExtensibleColumnStoreScan
+    | other -> Result.Errorf "Unknown LogicalOp type: '%s'" other
+
+let parsePhysicalOp (s : string) : Result<PhysicalOpType, _> =
+    match s with
+    | "AdaptiveJoin" -> Ok PhysicalOpType.AdaptiveJoin
+    | "Apply" -> Ok PhysicalOpType.Apply
+    | "Assert" -> Ok PhysicalOpType.Assert
+    | "BatchHashTableBuild" -> Ok PhysicalOpType.BatchHashTableBuild
+    | "Bitmap" -> Ok PhysicalOpType.Bitmap
+    | "Broadcast" -> Ok PhysicalOpType.Broadcast
+    | "ClusteredIndexDelete" -> Ok PhysicalOpType.ClusteredIndexDelete
+    | "ClusteredIndexInsert" -> Ok PhysicalOpType.ClusteredIndexInsert
+    | "ClusteredIndexScan" -> Ok PhysicalOpType.ClusteredIndexScan
+    | "ClusteredIndexSeek" -> Ok PhysicalOpType.ClusteredIndexSeek
+    | "ClusteredIndexUpdate" -> Ok PhysicalOpType.ClusteredIndexUpdate
+    | "ClusteredIndexMerge" -> Ok PhysicalOpType.ClusteredIndexMerge
+    | "ClusteredUpdate" -> Ok PhysicalOpType.ClusteredUpdate
+    | "Collapse" -> Ok PhysicalOpType.Collapse
+    | "ColumnstoreIndexDelete" -> Ok PhysicalOpType.ColumnstoreIndexDelete
+    | "ColumnstoreIndexInsert" -> Ok PhysicalOpType.ColumnstoreIndexInsert
+    | "ColumnstoreIndexMerge" -> Ok PhysicalOpType.ColumnstoreIndexMerge
+    | "ColumnstoreIndexScan" -> Ok PhysicalOpType.ColumnstoreIndexScan
+    | "ColumnstoreIndexUpdate" -> Ok PhysicalOpType.ColumnstoreIndexUpdate
+    | "ComputeScalar" -> Ok PhysicalOpType.ComputeScalar
+    | "ComputeToControlNode" -> Ok PhysicalOpType.ComputeToControlNode
+    | "Concatenation" -> Ok PhysicalOpType.Concatenation
+    | "ConstantScan" -> Ok PhysicalOpType.ConstantScan
+    | "ConstantTableGet" -> Ok PhysicalOpType.ConstantTableGet
+    | "ControlToComputeNodes" -> Ok PhysicalOpType.ControlToComputeNodes
+    | "Delete" -> Ok PhysicalOpType.Delete
+    | "DeletedScan" -> Ok PhysicalOpType.DeletedScan
+    | "ExternalBroadcast" -> Ok PhysicalOpType.ExternalBroadcast
+    | "ExternalExtractionScan" -> Ok PhysicalOpType.ExternalExtractionScan
+    | "ExternalLocalStreaming" -> Ok PhysicalOpType.ExternalLocalStreaming
+    | "ExternalRoundRobin" -> Ok PhysicalOpType.ExternalRoundRobin
+    | "ExternalSelect" -> Ok PhysicalOpType.ExternalSelect
+    | "ExternalShuffle" -> Ok PhysicalOpType.ExternalShuffle
+    | "Filter" -> Ok PhysicalOpType.Filter
+    | "ForeignKeyReferencesCheck" -> Ok PhysicalOpType.ForeignKeyReferencesCheck
+    | "GbAgg" -> Ok PhysicalOpType.GbAgg
+    | "GbApply" -> Ok PhysicalOpType.GbApply
+    | "Get" -> Ok PhysicalOpType.Get
+    | "Generic" -> Ok PhysicalOpType.Generic
+    | "HashMatch" -> Ok PhysicalOpType.HashMatch
+    | "IndexDelete" -> Ok PhysicalOpType.IndexDelete
+    | "IndexInsert" -> Ok PhysicalOpType.IndexInsert
+    | "IndexScan" -> Ok PhysicalOpType.IndexScan
+    | "Insert" -> Ok PhysicalOpType.Insert
+    | "Join" -> Ok PhysicalOpType.Join
+    | "IndexSeek" -> Ok PhysicalOpType.IndexSeek
+    | "IndexSpool" -> Ok PhysicalOpType.IndexSpool
+    | "IndexUpdate" -> Ok PhysicalOpType.IndexUpdate
+    | "InsertedScan" -> Ok PhysicalOpType.InsertedScan
+    | "LocalCube" -> Ok PhysicalOpType.LocalCube
+    | "LogRowScan" -> Ok PhysicalOpType.LogRowScan
+    | "MergeInterval" -> Ok PhysicalOpType.MergeInterval
+    | "MergeJoin" -> Ok PhysicalOpType.MergeJoin
+    | "NestedLoops" -> Ok PhysicalOpType.NestedLoops
+    | "OnlineIndexInsert" -> Ok PhysicalOpType.OnlineIndexInsert
+    | "Parallelism" -> Ok PhysicalOpType.Parallelism
+    | "ParameterTableScan" -> Ok PhysicalOpType.ParameterTableScan
+    | "Print" -> Ok PhysicalOpType.Print
+    | "Project" -> Ok PhysicalOpType.Project
+    | "Put" -> Ok PhysicalOpType.Put
+    | "Rank" -> Ok PhysicalOpType.Rank
+    | "RemoteDelete" -> Ok PhysicalOpType.RemoteDelete
+    | "RemoteIndexScan" -> Ok PhysicalOpType.RemoteIndexScan
+    | "RemoteIndexSeek" -> Ok PhysicalOpType.RemoteIndexSeek
+    | "RemoteInsert" -> Ok PhysicalOpType.RemoteInsert
+    | "RemoteQuery" -> Ok PhysicalOpType.RemoteQuery
+    | "RemoteScan" -> Ok PhysicalOpType.RemoteScan
+    | "RemoteUpdate" -> Ok PhysicalOpType.RemoteUpdate
+    | "RIDLookup" -> Ok PhysicalOpType.RIDLookup
+    | "RowCountSpool" -> Ok PhysicalOpType.RowCountSpool
+    | "Segment" -> Ok PhysicalOpType.Segment
+    | "Sequence" -> Ok PhysicalOpType.Sequence
+    | "SequenceProject" -> Ok PhysicalOpType.SequenceProject
+    | "Shuffle" -> Ok PhysicalOpType.Shuffle
+    | "SingleSourceRoundRobinMove" -> Ok PhysicalOpType.SingleSourceRoundRobinMove
+    | "Sort" -> Ok PhysicalOpType.Sort
+    | "Split" -> Ok PhysicalOpType.Split
+    | "StreamAggregate" -> Ok PhysicalOpType.StreamAggregate
+    | "Switch" -> Ok PhysicalOpType.Switch
+    | "TableDelete" -> Ok PhysicalOpType.TableDelete
+    | "TableInsert" -> Ok PhysicalOpType.TableInsert
+    | "TableMerge" -> Ok PhysicalOpType.TableMerge
+    | "TableScan" -> Ok PhysicalOpType.TableScan
+    | "TableSpool" -> Ok PhysicalOpType.TableSpool
+    | "TableUpdate" -> Ok PhysicalOpType.TableUpdate
+    | "TableValuedFunction" -> Ok PhysicalOpType.TableValuedFunction
+    | "Top" -> Ok PhysicalOpType.Top
+    | "Trim" -> Ok PhysicalOpType.Trim
+    | "UDX" -> Ok PhysicalOpType.UDX
+    | "Union" -> Ok PhysicalOpType.Union
+    | "UnionAll" -> Ok PhysicalOpType.UnionAll
+    | "WindowAggregate" -> Ok PhysicalOpType.WindowAggregate
+    | "WindowSpool" -> Ok PhysicalOpType.WindowSpool
+    | "KeyLookup" -> Ok PhysicalOpType.KeyLookup
+    | "ExtensibleColumnStoreScan" -> Ok PhysicalOpType.ExtensibleColumnStoreScan
+    | other -> Result.Errorf "Unknown PhysicalOp type: '%s'" other
+
+let parseExecutionMode (s : string) : Result<ExecutionModeType, _> =
+    match s with
+    | "Row" -> Ok ExecutionModeType.Row
+    | "Batch" -> Ok ExecutionModeType.Batch
+    | other -> Result.Errorf "Unknown ExecutionModeType type: '%s'" other
+
+let parseRelOpType (relOp : Linq.XElement) : Result<RelOpType, _> =
+    Result.builder {
+        let! outputList = xElements ("OutputList", ns) relOp |> forAll parseColumnReferenceType
+        let! warnings = xElementOptional parseWarningsType ("Warnings", ns) relOp
+        let! memoryFractions = xElementOptional parseMemoryFractionsType ("MemoryFractions", ns) relOp
+
+        let! avgRowSize = xAttrRequire "AvgRowSize" relOp
+        let! estimateCPU = xAttrRequire "EstimateCPU" relOp
+        let! estimateIO = xAttrRequire "EstimateIO" relOp
+        let! estimateRebinds = xAttrRequire "EstimateRebinds" relOp
+        let! estimateRewinds = xAttrRequire "EstimateRewinds" relOp
+        let! estimateRows = xAttrRequire "EstimateRows" relOp
+        let! logicalOp = xAttrRequire "LogicalOp" relOp |> Result.bind parseLogicalOp
+        let! parallel_ = xAttrRequire "Parallel" relOp
+        let! physicalOp = xAttrRequire "PhysicalOp" relOp |> Result.bind parsePhysicalOp
+        let! estimatedTotalSubtreeCost = xAttrRequire "EstimatedTotalSubtreeCost" relOp
+
+        let! estimatedExecutionMode = xAttrTr parseExecutionMode "EstimatedExecutionMode" relOp
+        let! groupExecuted = xAttr "GroupExecuted" relOp
+        let! estimateRowsWithoutRowGoal = xAttr "EstimateRowsWithoutRowGoal" relOp
+        let! estimatedRowsRead = xAttr "EstimatedRowsRead" relOp
+        let! nodeId = xAttr "NodeId" relOp
+        let! remoteDataAccess = xAttr "RemoteDataAccess" relOp
+        let! partitioned = xAttr "Partitioned" relOp
+        let! isAdaptive = xAttr "IsAdaptive" relOp
+        let! adaptiveThresholdRows = xAttr "AdaptiveThresholdRows" relOp
+        let! tableCardinality = xAttr "TableCardinality" relOp
+        let! statsCollectionId = xAttr "StatsCollectionId" relOp
+        let! estimatedJoinType = xAttrTr parsePhysicalOp "EstimatedJoinType" relOp
+        let! hyperScaleOptimizedQueryProcessing = xAttr "HyperScaleOptimizedQueryProcessing" relOp
+        let! hyperScaleOptimizedQueryProcessingUnusedReason = xAttr "HyperScaleOptimizedQueryProcessingUnusedReason" relOp
+        let! pdwAccumulativeCost = xAttr "PDWAccumulativeCost" relOp
+
+        return {
+            // Sequence elements
+            OutputList = outputList
+            Warnings = warnings
+            MemoryFractions = memoryFractions
+            RunTimeInformation = None // NYI
+            RunTimePartitionSummary = None // NYI
+            InternalInfo = None // NYI
+
+            // Required attributes
+            AvgRowSize = avgRowSize
+            EstimateCPU = estimateCPU
+            EstimateIO = estimateIO
+            EstimateRebinds = estimateRebinds
+            EstimateRewinds = estimateRewinds
+            EstimateRows = estimateRows
+            LogicalOp = logicalOp
+            Parallel = parallel_
+            PhysicalOp = physicalOp
+            EstimatedTotalSubtreeCost = estimatedTotalSubtreeCost
+
+            // Optional attributes
+            EstimatedExecutionMode = estimatedExecutionMode
+            GroupExecuted = groupExecuted
+            EstimateRowsWithoutRowGoal = estimateRowsWithoutRowGoal
+            EstimatedRowsRead = estimatedRowsRead
+            NodeId = nodeId
+            RemoteDataAccess = remoteDataAccess
+            Partitioned = partitioned
+            IsAdaptive = isAdaptive
+            AdaptiveThresholdRows = adaptiveThresholdRows
+            TableCardinality = tableCardinality
+            StatsCollectionId = statsCollectionId
+            EstimatedJoinType = estimatedJoinType
+            HyperScaleOptimizedQueryProcessing = hyperScaleOptimizedQueryProcessing
+            HyperScaleOptimizedQueryProcessingUnusedReason = hyperScaleOptimizedQueryProcessingUnusedReason
+            PDWAccumulativeCost = pdwAccumulativeCost
+        }
+    }
+
+
 
 let parseParameterList (parameterList : Linq.XElement) : Result<ColumnReferenceType list, _> =
     Result.builder {

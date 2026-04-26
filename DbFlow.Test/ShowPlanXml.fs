@@ -290,7 +290,23 @@ type ObjectType = {
     Storage: StorageType option
 }
 
+[<System.ObsoleteAttribute("Not yet implemented")>]
+type ScalarType = {
+    // Placeholder - complex scalar operator type
+    Value: string option
+}
+
+type InternalInfoType = {
+    // Arbitrary XML content - can contain any child elements or attributes
+    Content: string option
+}
+
 type ColumnReferenceType = {
+    // Sequence elements
+    ScalarOperator: ScalarType option
+    InternalInfo: InternalInfoType option
+
+    // Attributes
     Server: string option
     Database: string option
     Schema: string option
@@ -368,33 +384,66 @@ type RunTimeInformationType = {
     RunTimeCountersPerThread: RunTimeCountersPerThread list
 }
 
+type MemoryFractionsType = {
+    Input: float
+    Output: float
+}
+
+type PartitionRangeType = {
+    Start: uint64
+    End: uint64
+}
+
+type PartitionsAccessedType = {
+    PartitionCount: uint64
+    PartitionRange: PartitionRangeType list
+}
+
+type RunTimePartitionSummaryType = {
+    PartitionsAccessed: PartitionsAccessedType
+}
+
 // ========================================
 // Relational Operators
 // ========================================
 
-[<System.ObsoleteAttribute("Not complete - needs more work")>]
 type RelOpType = {
+    // Sequence elements
     OutputList: ColumnReferenceType list
     Warnings: WarningsType option
-    //MemoryFractions : MemoryFractionsType option
+    MemoryFractions: MemoryFractionsType option
     RunTimeInformation: RunTimeInformationType option
-    //RunTimePartitionSummary: RunTimePartitionSummaryType option
-    //InternalInfo : InternalInfoType option
+    RunTimePartitionSummary: RunTimePartitionSummaryType option
+    InternalInfo: InternalInfoType option
 
-    NodeId: int option
-    PhysicalOp: PhysicalOpType
-    LogicalOp: LogicalOpType
-    EstimateRows: float
-    EstimateIO: float
-    EstimateCPU: float
+    // Required attributes
     AvgRowSize: float
-    EstimatedTotalSubtreeCost: float
-    Parallel: bool
+    EstimateCPU: float
+    EstimateIO: float
     EstimateRebinds: float
     EstimateRewinds: float
+    EstimateRows: float
+    LogicalOp: LogicalOpType
+    Parallel: bool
+    PhysicalOp: PhysicalOpType
+    EstimatedTotalSubtreeCost: float
+
+    // Optional attributes
     EstimatedExecutionMode: ExecutionModeType option
-    
-    // Operator-specific details would go here
+    GroupExecuted: bool option
+    EstimateRowsWithoutRowGoal: float option
+    EstimatedRowsRead: float option
+    NodeId: int option
+    RemoteDataAccess: bool option
+    Partitioned: bool option
+    IsAdaptive: bool option
+    AdaptiveThresholdRows: float option
+    TableCardinality: float option
+    StatsCollectionId: uint64 option
+    EstimatedJoinType: PhysicalOpType option
+    HyperScaleOptimizedQueryProcessing: string option
+    HyperScaleOptimizedQueryProcessingUnusedReason: string option
+    PDWAccumulativeCost: float option
 }
 
 // ========================================
