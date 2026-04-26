@@ -372,7 +372,7 @@ type RunTimeInformationType = {
 // Relational Operators
 // ========================================
 
-[<System.ObsoleteAttribute("Dubbelkolla xsd - choice")>]
+[<System.ObsoleteAttribute("Not complete - needs more work")>]
 type RelOpType = {
     OutputList: ColumnReferenceType list
     Warnings: WarningsType option
@@ -414,7 +414,7 @@ type QueryPlanType = {
     OptimizerHardwareDependentProperties: OptimizerHardwareDependentPropertiesType option
     OptimizerStatsUsage: OptimizerStatsUsageType option
     RelOp: RelOpType
-    ParameterList: ColumnReferenceType list option
+    ParameterList: ColumnReferenceType list
 }
 
 // ========================================
@@ -479,10 +479,28 @@ type StmtUseDbType = {
     Database: string
 }
 
-// Mutually recursive types to handle cycle: StmtCondType -> StmtBlockType -> StmtType -> StmtCondType
-type StmtCondType = {
+// <xsd:complexType name="FunctionType">
+// 	<xsd:annotation>
+// 		<xsd:documentation>Shows the plan for the UDF or stored procedure</xsd:documentation>
+// 	</xsd:annotation>
+// 	<xsd:sequence>
+// 		<xsd:element name="Statements" type="shp:StmtBlockType" />
+// 	</xsd:sequence>
+// 	<xsd:attribute name="ProcName" type="xsd:string" />
+// 	<xsd:attribute name="IsNativelyCompiled" type="xsd:boolean" use="optional" />
+// </xsd:complexType>
+
+/// Shows the plan for the UDF or stored procedure
+type FunctionType = {
+    Statements : StmtBlockType list
+
+    ProcName : string
+    IsNativelyCompiled : bool option
+}
+
+and StmtCondType = {
     BaseInfo: BaseStmtInfoType
-    Condition: QueryPlanType option
+    Condition: {| QueryPlan : QueryPlanType option; UDFs : FunctionType list |}
     Then: StmtBlockType
     Else: StmtBlockType option
 }

@@ -248,7 +248,17 @@ let parseQueryPlanType (queryPlan : Linq.XElement) : Result<QueryPlanType, _> =
             OptimizerHardwareDependentProperties = optimizerHardwareDependentProperties
             OptimizerStatsUsage = optimizerStatsUsage
             RelOp = relOpType
-            ParameterList = columnReferenceType 
+            ParameterList = match columnReferenceType with Some cs -> cs | None -> []
+        }
+    }
+
+let parseReceiveOperation (receiveOperation : Linq.XElement) : Result<ReceiveOperationType, _> =
+    Result.builder {
+        let! operationType = xAttrRequire "OperationType" receiveOperation
+        let! queryPlan = xElementRequire ("QueryPlan", ns) receiveOperation |> Result.bind parseQueryPlanType
+        return {
+            OperationType = operationType
+            QueryPlan = queryPlan
         }
     }
 
@@ -260,22 +270,72 @@ let parseStmtSimple (stmtSimple : Linq.XElement) : Result<StmtSimpleType, _> =
         return { BaseInfo = baseInfo; QueryPlan = queryPlanType }
     }
 
-let parseStmtCond (stmtSimple : Linq.XElement) : Result<StmtCondType, _> =
-    failwith "Not implemented yet"
+let parseStmtCursor (stmtCursor : Linq.XElement) : Result<StmtCursorType, _> =
+    Result.builder {
+        let! baseInfo = parseBaseStmtInfoType stmtCursor
+        //return { 
+        //    BaseInfo = baseInfo
+        //}
+        return failwith "NYI"
+    }
 
-let parseStmtCursor (stmtSimple : Linq.XElement) : Result<StmtCursorType, _> =
-    failwith "Not implemented yet"
+let parseStmtReceive (stmtReceive : Linq.XElement) : Result<StmtReceiveType, _> =
+    Result.builder {
+        let! baseInfo = parseBaseStmtInfoType stmtReceive
+        let! operations = xElements ("ReceiveOperationType", ns) stmtReceive |> forAll parseReceiveOperation
+        return { 
+            BaseInfo = baseInfo
+            Operations = operations
+        }
+    }    
 
-let parseStmtReceive (stmtSimple : Linq.XElement) : Result<StmtReceiveType, _> =
-    failwith "Not implemented yet"
+let parseStmtUseDb (stmtUseDb : Linq.XElement) : Result<StmtUseDbType, _> =
+        Result.builder {
+        let! baseInfo = parseBaseStmtInfoType stmtUseDb
+        let! database = xAttrRequire ("Database", ns) stmtUseDb
+        return { 
+            BaseInfo = baseInfo
+            Database = database
+        }
+    }
 
-let parseStmtUseDb (stmtSimple : Linq.XElement) : Result<StmtUseDbType, _> =
-    failwith "Not implemented yet"
+let parseExternalDistributedComputation (externalDistributedComputation : Linq.XElement) : Result<ExternalDistributedComputationType, _> =
+    Result.builder {
+        let! edcShowplanXml = xAttrRequire ("EdcShowplanXml", ns) externalDistributedComputation
+        return { 
+            EdcShowplanXml = edcShowplanXml 
+        }
+    }
 
-let parseExternalDistributedComputation (stmtSimple : Linq.XElement) : Result<ExternalDistributedComputationType, _> =
-    failwith "Not implemented yet"
+let rec parseFunctionType (functionType : Linq.XElement) : Result<FunctionType, _> =
+    Result.builder {
+        let! statements = xElements ("Statements", ns) functionType |> forAll parseStmtBlockType
+        let! procName = xAttrRequire "ProcName" functionType
+        let! isNativelyCompiled = xAttr "IsNativelyCompiled" functionType
+        return {
+            Statements = statements
+            ProcName = procName
+            IsNativelyCompiled = isNativelyCompiled 
+        }
+    }
 
-let parseStmtBlockType (stmtType : Linq.XElement) : Result<StmtBlockType, _> =
+and parseStmtCond (stmtCond: Linq.XElement) : Result<StmtCondType, _> =
+    Result.builder {
+        let! baseInfo = parseBaseStmtInfoType stmtCond
+        let! condition' = xElementRequire ("Condition", ns) stmtCond
+        let! queryPlan = xElementOptional parseQueryPlanType ("QueryPlan", ns) condition' 
+        let! udfFunctions = xElements ("UDF", ns) condition' |> forAll parseFunctionType
+        let! thenStmt = xElementRequire ("Then", ns) stmtCond |> Result.bind parseStmtBlockType
+        let! elseStmt = xElementOptional parseStmtBlockType ("Else", ns) stmtCond 
+        return { 
+            BaseInfo = baseInfo
+            Condition = {| QueryPlan = queryPlan; UDFs = udfFunctions |}
+            Then = thenStmt
+            Else = elseStmt
+        }
+    }
+
+and parseStmtBlockType (stmtType : Linq.XElement) : Result<StmtBlockType, _> =
     match stmtType.Name.LocalName with
     | "StmtSimple" -> parseStmtSimple stmtType |> Result.map StmtSimple 
     | "StmtCond" -> parseStmtCond stmtType |> Result.map StmtCond 
