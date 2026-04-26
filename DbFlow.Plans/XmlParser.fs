@@ -1,4 +1,4 @@
-module DbFlow.Test.XmlParser
+module DbFlow.XmlParser
 
 open DbFlow
 

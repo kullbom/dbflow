@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<Title>DbFlow.Plans</Title>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Content Include="Plan01.xml">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+		<Content Include="showplanxml.xsd">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+		
+		<Compile Include="Enumerations.fs" />
+		<Compile Include="ShowPlanXml.fs" />
+		<Compile Include="XmlParser.fs" />
+		<Compile Include="PlanParser.Enumerations.fs" />
+		<Compile Include="PlanParser.fs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\DbFlow\DbFlow.fsproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Update="FSharp.Core" Version="10.0.102" />
+	</ItemGroup>
+
+</Project>

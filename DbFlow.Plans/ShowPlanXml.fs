@@ -1,266 +1,5 @@
-﻿module DbFlow.Test.ShowPlanXml
+﻿namespace DbFlow.ShowPlanXml
 
-// ========================================
-// Enumerations (SimpleTypes)
-// ========================================
-
-type StorageType =
-    | RowStore
-    | ColumnStore
-    | MemoryOptimized
-
-type ExecutionModeType =
-    | Row
-    | Batch
-
-type CursorType =
-    | Dynamic
-    | FastForward
-    | Keyset
-    | SnapShot
-
-type OrderType =
-    | BACKWARD
-    | FORWARD
-
-type PartitionType =
-    | Broadcast
-    | Demand
-    | Hash
-    | NoPartitioning
-    | Range
-    | RoundRobin
-    | CloneLocation
-
-type CompareOpType =
-    | BINARY_IS
-    | BOTH_NULL
-    | EQ
-    | GE
-    | GT
-    | IS
-    | IS_NOT
-    | IS_NOT_NULL
-    | IS_NULL
-    | LE
-    | LT
-    | NE
-    | ONE_NULL
-
-type IndexKindType =
-    | Heap
-    | Clustered
-    | FTSChangeTracking
-    | FTSMapping
-    | NonClustered
-    | PrimaryXML
-    | SecondaryXML
-    | Spatial
-    | ViewClustered
-    | ViewNonClustered
-    | NonClusteredHash
-    | SelectiveXML
-    | SecondarySelectiveXML
-
-type CloneAccessScopeType =
-    | Primary
-    | Secondary
-    | Both
-    | Either
-    | ExactMatch
-    | Local
-
-type LogicalOpType =
-    | Aggregate
-    | AntiDiff
-    | Assert
-    | AsyncConcat
-    | BatchHashTableBuild
-    | BitmapCreate
-    | ClusteredIndexScan
-    | ClusteredIndexSeek
-    | ClusteredUpdate
-    | Collapse
-    | ComputeScalar
-    | Concatenation
-    | ConstantScan
-    | ConstantTableGet
-    | CrossJoin
-    | Delete
-    | DeletedScan
-    | DistinctSort
-    | Distinct
-    | DistributeStreams
-    | EagerSpool
-    | ExternalExtractionScan
-    | ExternalSelect
-    | Filter
-    | FlowDistinct
-    | ForeignKeyReferencesCheck
-    | FullOuterJoin
-    | GatherStreams
-    | GbAgg
-    | GbApply
-    | Get
-    | Generic
-    | InnerApply
-    | IndexScan
-    | IndexSeek
-    | InnerJoin
-    | Insert
-    | InsertedScan
-    | Intersect
-    | IntersectAll
-    | LazySpool
-    | LeftAntiSemiApply
-    | LeftSemiApply
-    | LeftOuterApply
-    | LeftAntiSemiJoin
-    | LeftDiff
-    | LeftDiffAll
-    | LeftOuterJoin
-    | LeftSemiJoin
-    | LocalCube
-    | LogRowScan
-    | Merge
-    | MergeInterval
-    | MergeStats
-    | Move
-    | ParameterTableScan
-    | PartialAggregate
-    | Print
-    | Project
-    | Put
-    | Rank
-    | RemoteDelete
-    | RemoteIndexScan
-    | RemoteIndexSeek
-    | RemoteInsert
-    | RemoteQuery
-    | RemoteScan
-    | RemoteUpdate
-    | RepartitionStreams
-    | RIDLookup
-    | RightAntiSemiJoin
-    | RightDiff
-    | RightDiffAll
-    | RightOuterJoin
-    | RightSemiJoin
-    | Segment
-    | Sequence
-    | Sort
-    | Split
-    | Switch
-    | TableValuedFunction
-    | TableScan
-    | Top
-    | TopNSort
-    | UDX
-    | Union
-    | UnionAll
-    | Update
-    | LocalStats
-    | WindowSpool
-    | WindowAggregate
-    | KeyLookup
-    | ExtensibleColumnStoreScan
-
-type PhysicalOpType =
-    | AdaptiveJoin
-    | Apply
-    | Assert
-    | BatchHashTableBuild
-    | Bitmap
-    | Broadcast
-    | ClusteredIndexDelete
-    | ClusteredIndexInsert
-    | ClusteredIndexScan
-    | ClusteredIndexSeek
-    | ClusteredIndexUpdate
-    | ClusteredIndexMerge
-    | ClusteredUpdate
-    | Collapse
-    | ColumnstoreIndexDelete
-    | ColumnstoreIndexInsert
-    | ColumnstoreIndexMerge
-    | ColumnstoreIndexScan
-    | ColumnstoreIndexUpdate
-    | ComputeScalar
-    | ComputeToControlNode
-    | Concatenation
-    | ConstantScan
-    | ConstantTableGet
-    | ControlToComputeNodes
-    | Delete
-    | DeletedScan
-    | ExternalBroadcast
-    | ExternalExtractionScan
-    | ExternalLocalStreaming
-    | ExternalRoundRobin
-    | ExternalSelect
-    | ExternalShuffle
-    | Filter
-    | ForeignKeyReferencesCheck
-    | GbAgg
-    | GbApply
-    | Get
-    | Generic
-    | HashMatch
-    | IndexDelete
-    | IndexInsert
-    | IndexScan
-    | Insert
-    | Join
-    | IndexSeek
-    | IndexSpool
-    | IndexUpdate
-    | InsertedScan
-    | LocalCube
-    | LogRowScan
-    | MergeInterval
-    | MergeJoin
-    | NestedLoops
-    | OnlineIndexInsert
-    | Parallelism
-    | ParameterTableScan
-    | Print
-    | Project
-    | Put
-    | Rank
-    | RemoteDelete
-    | RemoteIndexScan
-    | RemoteIndexSeek
-    | RemoteInsert
-    | RemoteQuery
-    | RemoteScan
-    | RemoteUpdate
-    | RIDLookup
-    | RowCountSpool
-    | Segment
-    | Sequence
-    | SequenceProject
-    | Shuffle
-    | SingleSourceRoundRobinMove
-    | Sort
-    | Split
-    | StreamAggregate
-    | Switch
-    | TableDelete
-    | TableInsert
-    | TableMerge
-    | TableScan
-    | TableSpool
-    | TableUpdate
-    | TableValuedFunction
-    | Top
-    | Trim
-    | UDX
-    | Union
-    | UnionAll
-    | WindowAggregate
-    | WindowSpool
-    | KeyLookup
-    | ExtensibleColumnStoreScan
 
 // ========================================
 // Basic Types
@@ -290,33 +29,9 @@ type ObjectType = {
     Storage: StorageType option
 }
 
-[<System.ObsoleteAttribute("Not yet implemented")>]
-type ScalarType = {
-    // Placeholder - complex scalar operator type
-    Value: string option
-}
-
 type InternalInfoType = {
     // Arbitrary XML content - can contain any child elements or attributes
     Content: string option
-}
-
-type ColumnReferenceType = {
-    // Sequence elements
-    ScalarOperator: ScalarType option
-    InternalInfo: InternalInfoType option
-
-    // Attributes
-    Server: string option
-    Database: string option
-    Schema: string option
-    Table: string option
-    Alias: string option
-    Column: string
-    ComputedColumn: bool option
-    ParameterDataType: string option
-    ParameterCompiledValue: string option
-    ParameterRuntimeValue: string option
 }
 
 type MemoryGrantType = {
@@ -367,23 +82,6 @@ type WarningsType = {
     FullUpdateForOnlineIndexBuild: bool option
 }
 
-type RunTimeCountersPerThread = {
-    Thread: int
-    ActualRows: uint64
-    ActualEndOfScans: uint64
-    ActualExecutions: uint64
-    ActualExecutionMode: ExecutionModeType option
-    ActualElapsedms: uint64 option
-    ActualCPUms: uint64 option
-    ActualScans: uint64 option
-    ActualLogicalReads: uint64 option
-    ActualPhysicalReads: uint64 option
-}
-
-type RunTimeInformationType = {
-    RunTimeCountersPerThread: RunTimeCountersPerThread list
-}
-
 type MemoryFractionsType = {
     Input: float
     Output: float
@@ -404,10 +102,195 @@ type RunTimePartitionSummaryType = {
 }
 
 // ========================================
+// Mutually Recursive Types
+// ========================================
+
+type ColumnReferenceType = {
+    // Sequence elements
+    ScalarOperator: ScalarType option
+    InternalInfo: InternalInfoType option
+
+    // Attributes
+    Server: string option
+    Database: string option
+    Schema: string option
+    Table: string option
+    Alias: string option
+    Column: string
+    ComputedColumn: bool option
+    ParameterDataType: string option
+    ParameterCompiledValue: string option
+    ParameterRuntimeValue: string option
+}
+
+// ========================================
+// Scalar Operator Detail Types
+// ========================================
+
+and ConstType = {
+    ConstValue: string
+}
+
+and IdentType = {
+    ColumnReference: ColumnReferenceType option
+    Table: string option
+}
+
+and CompareType = {
+    CompareOp: CompareOpType
+    ScalarOperators: ScalarType list // 1-2 items
+}
+
+and ConvertType = {
+    DataType: string
+    Length: int option
+    Precision: int option
+    Scale: int option
+    Style: int
+    Implicit: bool
+    StyleExpression: ScalarExpressionType option
+    ScalarOperator: ScalarType
+}
+
+and ArithmeticType = {
+    Operation: ArithmeticOperationType
+    ScalarOperators: ScalarType list // 1-2 items
+}
+
+and LogicalType = {
+    Operation: LogicalOperationType
+    ScalarOperators: ScalarType list // 1+ items
+}
+
+and AggregateType = {
+    AggType: string
+    Distinct: bool
+    ScalarOperators: ScalarType list
+}
+
+and UDAggregateType = {
+    Distinct: bool
+    UDAggObject: ObjectType option
+    ScalarOperators: ScalarType list
+}
+
+and AssignTargetType =
+    | ColumnRef of ColumnReferenceType
+    | ScalarOp of ScalarType
+
+and AssignType = {
+    Target: AssignTargetType
+    Value: ScalarType
+    SourceColumns: ColumnReferenceType list
+    TargetColumns: ColumnReferenceType list
+}
+
+and MultAssignType = {
+    Assigns: AssignType list
+}
+
+and ConditionalType = {
+    Condition: ScalarExpressionType
+    Then: ScalarExpressionType
+    Else: ScalarExpressionType
+}
+
+and IntrinsicType = {
+    FunctionName: string
+    ScalarOperators: ScalarType list
+}
+
+and ScalarSequenceType = {
+    FunctionName: string
+}
+
+and CLRFunctionType = {
+    Assembly: string option
+    Class: string
+    Method: string option
+}
+
+and UDFType = {
+    FunctionName: string
+    IsClrFunction: bool option
+    CLRFunction: CLRFunctionType option
+    ScalarOperators: ScalarType list
+}
+
+and UDTMethodType = {
+    CLRFunction: CLRFunctionType option
+    ScalarOperators: ScalarType list
+}
+
+and SubqueryType = {
+    Operation: SubqueryOperationType
+    ScalarOperator: ScalarType option
+    RelOp: RelOpType
+}
+
+and ScalarExpressionListType = {
+    ScalarOperators: ScalarType list // 1+ items
+}
+
+// ========================================
+// Main Scalar Type
+// ========================================
+
+and ScalarOperatorKind =
+    | Aggregate of AggregateType
+    | Arithmetic of ArithmeticType
+    | Assign of AssignType
+    | Compare of CompareType
+    | Const of ConstType
+    | Convert of ConvertType
+    | Identifier of IdentType
+    | IF of ConditionalType
+    | Intrinsic of IntrinsicType
+    | Logical of LogicalType
+    | MultipleAssign of MultAssignType
+    | ScalarExpressionList of ScalarExpressionListType
+    | Sequence of ScalarSequenceType
+    | Subquery of SubqueryType
+    | UDTMethod of UDTMethodType
+    | UserDefinedAggregate of UDAggregateType
+    | UserDefinedFunction of UDFType
+
+and ScalarType = {
+    Kind: ScalarOperatorKind
+    ScalarString: string option
+    InternalInfo: InternalInfoType option
+}
+
+and ScalarExpressionType = {
+    ScalarOperator: ScalarType
+}
+
+// ========================================
+// Runtime Information
+// ========================================
+        
+and RunTimeCountersPerThread = {
+    Thread: int
+    ActualRows: uint64
+    ActualEndOfScans: uint64
+    ActualExecutions: uint64
+    ActualExecutionMode: ExecutionModeType option
+    ActualElapsedms: uint64 option
+    ActualCPUms: uint64 option
+    ActualScans: uint64 option
+    ActualLogicalReads: uint64 option
+    ActualPhysicalReads: uint64 option
+}
+
+and RunTimeInformationType = {
+    RunTimeCountersPerThread: RunTimeCountersPerThread list
+}
+
+// ========================================
 // Relational Operators
 // ========================================
 
-type RelOpType = {
+and RelOpType = {
     // Sequence elements
     OutputList: ColumnReferenceType list
     Warnings: WarningsType option
@@ -450,7 +333,7 @@ type RelOpType = {
 // Query Plan
 // ========================================
 
-type QueryPlanType = {
+and QueryPlanType = {
     DegreeOfParallelism: int option
     NonParallelPlanReason: string option
     MemoryGrant: uint64 option
@@ -470,7 +353,7 @@ type QueryPlanType = {
 // Statement Types
 // ========================================
 
-type BaseStmtInfoType = {
+and BaseStmtInfoType = {
     StatementSetOptions: SetOptionsType option
     StatementCompId: int option
     StatementEstRows: float option
@@ -489,21 +372,21 @@ type BaseStmtInfoType = {
     BatchModeOnRowStoreUsed: bool option
 }
 
-type ExternalDistributedComputationType = {
+and ExternalDistributedComputationType = {
     EdcShowplanXml: string
 }
 
-type StmtSimpleType = {
+and StmtSimpleType = {
     BaseInfo: BaseStmtInfoType
     QueryPlan: QueryPlanType option
 }
 
-type CursorOperationType = {
+and CursorOperationType = {
     OperationType: string // "FetchQuery" | "PopulateQuery" | "RefreshQuery"
     QueryPlan: QueryPlanType
 }
 
-type StmtCursorType = {
+and StmtCursorType = {
     BaseInfo: BaseStmtInfoType
     CursorName: string option
     CursorActualType: CursorType option
@@ -513,23 +396,23 @@ type StmtCursorType = {
     Operations: CursorOperationType list
 }
 
-type ReceiveOperationType = {
+and ReceiveOperationType = {
     OperationType: string // "ReceivePlanSelect" | "ReceivePlanUpdate"
     QueryPlan: QueryPlanType
 }
 
-type StmtReceiveType = {
+and StmtReceiveType = {
     BaseInfo: BaseStmtInfoType
     Operations: ReceiveOperationType list
 }
 
-type StmtUseDbType = {
+and StmtUseDbType = {
     BaseInfo: BaseStmtInfoType
     Database: string
 }
 
 /// Shows the plan for the UDF or stored procedure
-type FunctionType = {
+and FunctionType = {
     Statements : StmtBlockType list
 
     ProcName : string
@@ -542,6 +425,7 @@ and StmtCondType = {
     Then: StmtBlockType
     Else: StmtBlockType option
 }
+
 and StmtBlockType =
     | StmtSimple of StmtSimpleType
     | StmtCond of StmtCondType
@@ -549,7 +433,8 @@ and StmtBlockType =
     | StmtReceive of StmtReceiveType
     | StmtUseDb of StmtUseDbType
     | ExternalDistributedComputation of ExternalDistributedComputationType
-and  Batch = {
+
+and Batch = {
     Statements: StmtBlockType list
 }
 
@@ -567,6 +452,3 @@ type ShowPlanXML = {
     ClusteredMode: bool option
     BatchSequence: BatchSequence
 }
-
-
-
