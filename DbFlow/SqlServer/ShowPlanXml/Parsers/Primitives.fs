@@ -1,4 +1,4 @@
-﻿module DbFlow.SqlServer.ShowPlanXml.Parsers.Primitives
+module DbFlow.SqlServer.ShowPlanXml.Parsers.Primitives
 
 open DbFlow.XmlParser
 open DbFlow.SqlServer.ShowPlanXml

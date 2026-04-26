@@ -1,8 +1,9 @@
-﻿module DbFlow.SqlServer.ShowPlanXml.Parsers
+module DbFlow.SqlServer.ShowPlanXml.Parsers.Internal
 
 open System.Xml
 
 open DbFlow.XmlParser
+open DbFlow.SqlServer.ShowPlanXml
 open DbFlow.SqlServer.ShowPlanXml.Parsers.Primitives
 
 let ns = "http://schemas.microsoft.com/sqlserver/2004/07/showplan"
@@ -705,16 +706,4 @@ let parseBatch (batch : Linq.XElement) : PResult<Batch, _> =
         return { Statements = stmtBlockTypes }
     }
 
-let parseShowPlanXML (root : Linq.XElement) : PResult<Plan, _> =
-    PResult.builder {
-        let! version = xAttrReq "Version" root  
-        let! build = xAttrReq "Build" root
-        let! clusteredMode = xAttr "ClusteredMode" root
-        let! batches = xElementReqP ("BatchSequence", ns) (xElementsP ("Batch", ns) parseBatch) root
-        return {
-            Version = version
-            Build = build
-            ClusteredMode = clusteredMode
-            BatchSequence = { Batches = batches }
-        }
-    }
+

@@ -442,13 +442,4 @@ type BatchSequence = {
     Batches: Batch list
 }
 
-// ========================================
-// Root Element
-// ========================================
 
-type Plan = {
-    Version: string
-    Build: string
-    ClusteredMode: bool option
-    BatchSequence: BatchSequence
-}

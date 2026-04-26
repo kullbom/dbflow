@@ -9,10 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+	<None Include="PlanSamples\Plan01.xml" />
 	<None Include="Samples\**\*.*" />
 	<Compile Include="Examples.fs" />
 	
 	<Compile Include="Helpers.fs" />
+	
+	<Compile Include="ShowPlanXml.fs" />
 	
 	<Compile Include="Search.fs" />
 	
@@ -20,6 +23,8 @@
     <Compile Include="Tests.fs" />
     <Compile Include="CodeGenerator.fs" />
   </ItemGroup>
+
+  <ItemGroup />
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="8.0.1">
