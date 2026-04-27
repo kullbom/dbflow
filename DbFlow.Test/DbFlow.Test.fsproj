@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<None Include="PlanSamples\Plan01.xml" />
+	<None Include="PlanSamples\*.xml" />
 	<None Include="Samples\**\*.*" />
 	<Compile Include="Examples.fs" />
 	

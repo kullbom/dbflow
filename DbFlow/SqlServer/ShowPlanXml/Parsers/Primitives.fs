@@ -115,197 +115,197 @@ let parseCompareOp (s : string) : PResult<CompareOpType, _> =
 let parseLogicalOp (s : string) : PResult<LogicalOpType, _> =
     match s with
     | "Aggregate" -> POk LogicalOpType.Aggregate
-    | "AntiDiff" -> POk LogicalOpType.AntiDiff
+    | "Anti Diff" -> POk LogicalOpType.AntiDiff
     | "Assert" -> POk LogicalOpType.Assert
-    | "AsyncConcat" -> POk LogicalOpType.AsyncConcat
-    | "BatchHashTableBuild" -> POk LogicalOpType.BatchHashTableBuild
-    | "BitmapCreate" -> POk LogicalOpType.BitmapCreate
-    | "ClusteredIndexScan" -> POk LogicalOpType.ClusteredIndexScan
-    | "ClusteredIndexSeek" -> POk LogicalOpType.ClusteredIndexSeek
-    | "ClusteredUpdate" -> POk LogicalOpType.ClusteredUpdate
+    | "Async Concat" -> POk LogicalOpType.AsyncConcat
+    | "Batch Hash Table Build" -> POk LogicalOpType.BatchHashTableBuild
+    | "Bitmap Create" -> POk LogicalOpType.BitmapCreate
+    | "Clustered Index Scan" -> POk LogicalOpType.ClusteredIndexScan
+    | "Clustered Index Seek" -> POk LogicalOpType.ClusteredIndexSeek
+    | "Clustered Update" -> POk LogicalOpType.ClusteredUpdate
     | "Collapse" -> POk LogicalOpType.Collapse
-    | "ComputeScalar" -> POk LogicalOpType.ComputeScalar
+    | "Compute Scalar" -> POk LogicalOpType.ComputeScalar
     | "Concatenation" -> POk LogicalOpType.Concatenation
-    | "ConstantScan" -> POk LogicalOpType.ConstantScan
-    | "ConstantTableGet" -> POk LogicalOpType.ConstantTableGet
-    | "CrossJoin" -> POk LogicalOpType.CrossJoin
+    | "Constant Scan" -> POk LogicalOpType.ConstantScan
+    | "Constant Table Get" -> POk LogicalOpType.ConstantTableGet
+    | "Cross Join" -> POk LogicalOpType.CrossJoin
     | "Delete" -> POk LogicalOpType.Delete
-    | "DeletedScan" -> POk LogicalOpType.DeletedScan
-    | "DistinctSort" -> POk LogicalOpType.DistinctSort
+    | "Deleted Scan" -> POk LogicalOpType.DeletedScan
+    | "Distinct Sort" -> POk LogicalOpType.DistinctSort
     | "Distinct" -> POk LogicalOpType.Distinct
-    | "DistributeStreams" -> POk LogicalOpType.DistributeStreams
-    | "EagerSpool" -> POk LogicalOpType.EagerSpool
-    | "ExternalExtractionScan" -> POk LogicalOpType.ExternalExtractionScan
-    | "ExternalSelect" -> POk LogicalOpType.ExternalSelect
+    | "Distribute Streams" -> POk LogicalOpType.DistributeStreams
+    | "Eager Spool" -> POk LogicalOpType.EagerSpool
+    | "External Extraction Scan" -> POk LogicalOpType.ExternalExtractionScan
+    | "External Select" -> POk LogicalOpType.ExternalSelect
     | "Filter" -> POk LogicalOpType.Filter
-    | "FlowDistinct" -> POk LogicalOpType.FlowDistinct
-    | "ForeignKeyReferencesCheck" -> POk LogicalOpType.ForeignKeyReferencesCheck
-    | "FullOuterJoin" -> POk LogicalOpType.FullOuterJoin
-    | "GatherStreams" -> POk LogicalOpType.GatherStreams
+    | "Flow Distinct" -> POk LogicalOpType.FlowDistinct
+    | "Foreign Key References Check" -> POk LogicalOpType.ForeignKeyReferencesCheck
+    | "Full Outer Join" -> POk LogicalOpType.FullOuterJoin
+    | "Gather Streams" -> POk LogicalOpType.GatherStreams
     | "GbAgg" -> POk LogicalOpType.GbAgg
     | "GbApply" -> POk LogicalOpType.GbApply
     | "Get" -> POk LogicalOpType.Get
     | "Generic" -> POk LogicalOpType.Generic
-    | "InnerApply" -> POk LogicalOpType.InnerApply
-    | "IndexScan" -> POk LogicalOpType.IndexScan
-    | "IndexSeek" -> POk LogicalOpType.IndexSeek
-    | "InnerJoin" -> POk LogicalOpType.InnerJoin
+    | "Inner Apply" -> POk LogicalOpType.InnerApply
+    | "Index Scan" -> POk LogicalOpType.IndexScan
+    | "Index Seek" -> POk LogicalOpType.IndexSeek
+    | "Inner Join" -> POk LogicalOpType.InnerJoin
     | "Insert" -> POk LogicalOpType.Insert
-    | "InsertedScan" -> POk LogicalOpType.InsertedScan
+    | "Inserted Scan" -> POk LogicalOpType.InsertedScan
     | "Intersect" -> POk LogicalOpType.Intersect
-    | "IntersectAll" -> POk LogicalOpType.IntersectAll
-    | "LazySpool" -> POk LogicalOpType.LazySpool
-    | "LeftAntiSemiApply" -> POk LogicalOpType.LeftAntiSemiApply
-    | "LeftSemiApply" -> POk LogicalOpType.LeftSemiApply
-    | "LeftOuterApply" -> POk LogicalOpType.LeftOuterApply
-    | "LeftAntiSemiJoin" -> POk LogicalOpType.LeftAntiSemiJoin
-    | "LeftDiff" -> POk LogicalOpType.LeftDiff
-    | "LeftDiffAll" -> POk LogicalOpType.LeftDiffAll
-    | "LeftOuterJoin" -> POk LogicalOpType.LeftOuterJoin
-    | "LeftSemiJoin" -> POk LogicalOpType.LeftSemiJoin
+    | "Intersect All" -> POk LogicalOpType.IntersectAll
+    | "Lazy Spool" -> POk LogicalOpType.LazySpool
+    | "Left Anti Semi Apply" -> POk LogicalOpType.LeftAntiSemiApply
+    | "Left Semi Apply" -> POk LogicalOpType.LeftSemiApply
+    | "Left Outer Apply" -> POk LogicalOpType.LeftOuterApply
+    | "Left Anti Semi Join" -> POk LogicalOpType.LeftAntiSemiJoin
+    | "Left Diff" -> POk LogicalOpType.LeftDiff
+    | "Left Diff All" -> POk LogicalOpType.LeftDiffAll
+    | "Left Outer Join" -> POk LogicalOpType.LeftOuterJoin
+    | "Left Semi Join" -> POk LogicalOpType.LeftSemiJoin
     | "LocalCube" -> POk LogicalOpType.LocalCube
-    | "LogRowScan" -> POk LogicalOpType.LogRowScan
+    | "Log Row Scan" -> POk LogicalOpType.LogRowScan
     | "Merge" -> POk LogicalOpType.Merge
-    | "MergeInterval" -> POk LogicalOpType.MergeInterval
-    | "MergeStats" -> POk LogicalOpType.MergeStats
+    | "Merge Interval" -> POk LogicalOpType.MergeInterval
+    | "Merge Stats" -> POk LogicalOpType.MergeStats
     | "Move" -> POk LogicalOpType.Move
-    | "ParameterTableScan" -> POk LogicalOpType.ParameterTableScan
-    | "PartialAggregate" -> POk LogicalOpType.PartialAggregate
+    | "Parameter Table Scan" -> POk LogicalOpType.ParameterTableScan
+    | "Partial Aggregate" -> POk LogicalOpType.PartialAggregate
     | "Print" -> POk LogicalOpType.Print
     | "Project" -> POk LogicalOpType.Project
     | "Put" -> POk LogicalOpType.Put
     | "Rank" -> POk LogicalOpType.Rank
-    | "RemoteDelete" -> POk LogicalOpType.RemoteDelete
-    | "RemoteIndexScan" -> POk LogicalOpType.RemoteIndexScan
-    | "RemoteIndexSeek" -> POk LogicalOpType.RemoteIndexSeek
-    | "RemoteInsert" -> POk LogicalOpType.RemoteInsert
-    | "RemoteQuery" -> POk LogicalOpType.RemoteQuery
-    | "RemoteScan" -> POk LogicalOpType.RemoteScan
-    | "RemoteUpdate" -> POk LogicalOpType.RemoteUpdate
-    | "RepartitionStreams" -> POk LogicalOpType.RepartitionStreams
-    | "RIDLookup" -> POk LogicalOpType.RIDLookup
-    | "RightAntiSemiJoin" -> POk LogicalOpType.RightAntiSemiJoin
-    | "RightDiff" -> POk LogicalOpType.RightDiff
-    | "RightDiffAll" -> POk LogicalOpType.RightDiffAll
-    | "RightOuterJoin" -> POk LogicalOpType.RightOuterJoin
-    | "RightSemiJoin" -> POk LogicalOpType.RightSemiJoin
+    | "Remote Delete" -> POk LogicalOpType.RemoteDelete
+    | "Remote Index Scan" -> POk LogicalOpType.RemoteIndexScan
+    | "Remote Index Seek" -> POk LogicalOpType.RemoteIndexSeek
+    | "Remote Insert" -> POk LogicalOpType.RemoteInsert
+    | "Remote Query" -> POk LogicalOpType.RemoteQuery
+    | "Remote Scan" -> POk LogicalOpType.RemoteScan
+    | "Remote Update" -> POk LogicalOpType.RemoteUpdate
+    | "Repartition Streams" -> POk LogicalOpType.RepartitionStreams
+    | "RID Lookup" -> POk LogicalOpType.RIDLookup
+    | "Right Anti Semi Join" -> POk LogicalOpType.RightAntiSemiJoin
+    | "Right Diff" -> POk LogicalOpType.RightDiff
+    | "Right Diff All" -> POk LogicalOpType.RightDiffAll
+    | "Right Outer Join" -> POk LogicalOpType.RightOuterJoin
+    | "Right Semi Join" -> POk LogicalOpType.RightSemiJoin
     | "Segment" -> POk LogicalOpType.Segment
     | "Sequence" -> POk LogicalOpType.Sequence
     | "Sort" -> POk LogicalOpType.Sort
     | "Split" -> POk LogicalOpType.Split
     | "Switch" -> POk LogicalOpType.Switch
-    | "TableValuedFunction" -> POk LogicalOpType.TableValuedFunction
-    | "TableScan" -> POk LogicalOpType.TableScan
+    | "Table-valued function" -> POk LogicalOpType.TableValuedFunction
+    | "Table Scan" -> POk LogicalOpType.TableScan
     | "Top" -> POk LogicalOpType.Top
-    | "TopNSort" -> POk LogicalOpType.TopNSort
+    | "TopN Sort" -> POk LogicalOpType.TopNSort
     | "UDX" -> POk LogicalOpType.UDX
     | "Union" -> POk LogicalOpType.Union
-    | "UnionAll" -> POk LogicalOpType.UnionAll
+    | "Union All" -> POk LogicalOpType.UnionAll
     | "Update" -> POk LogicalOpType.Update
-    | "LocalStats" -> POk LogicalOpType.LocalStats
-    | "WindowSpool" -> POk LogicalOpType.WindowSpool
-    | "WindowAggregate" -> POk LogicalOpType.WindowAggregate
-    | "KeyLookup" -> POk LogicalOpType.KeyLookup
-    | "ExtensibleColumnStoreScan" -> POk LogicalOpType.ExtensibleColumnStoreScan
+    | "Local Stats" -> POk LogicalOpType.LocalStats
+    | "Window Spool" -> POk LogicalOpType.WindowSpool
+    | "Window Aggregate" -> POk LogicalOpType.WindowAggregate
+    | "Key Lookup" -> POk LogicalOpType.KeyLookup
+    | "Extensible Column Store Scan" -> POk LogicalOpType.ExtensibleColumnStoreScan
     | other -> Failf "Unknown LogicalOp type: '%s'" other
-
+    
 let parsePhysicalOp (s : string) : PResult<PhysicalOpType, _> =
     match s with
-    | "AdaptiveJoin" -> POk PhysicalOpType.AdaptiveJoin
+    | "Adaptive Join" -> POk PhysicalOpType.AdaptiveJoin
     | "Apply" -> POk PhysicalOpType.Apply
     | "Assert" -> POk PhysicalOpType.Assert
-    | "BatchHashTableBuild" -> POk PhysicalOpType.BatchHashTableBuild
+    | "Batch Hash Table Build" -> POk PhysicalOpType.BatchHashTableBuild
     | "Bitmap" -> POk PhysicalOpType.Bitmap
     | "Broadcast" -> POk PhysicalOpType.Broadcast
-    | "ClusteredIndexDelete" -> POk PhysicalOpType.ClusteredIndexDelete
-    | "ClusteredIndexInsert" -> POk PhysicalOpType.ClusteredIndexInsert
-    | "ClusteredIndexScan" -> POk PhysicalOpType.ClusteredIndexScan
-    | "ClusteredIndexSeek" -> POk PhysicalOpType.ClusteredIndexSeek
-    | "ClusteredIndexUpdate" -> POk PhysicalOpType.ClusteredIndexUpdate
-    | "ClusteredIndexMerge" -> POk PhysicalOpType.ClusteredIndexMerge
-    | "ClusteredUpdate" -> POk PhysicalOpType.ClusteredUpdate
+    | "Clustered Index Delete" -> POk PhysicalOpType.ClusteredIndexDelete
+    | "Clustered Index Insert" -> POk PhysicalOpType.ClusteredIndexInsert
+    | "Clustered Index Scan" -> POk PhysicalOpType.ClusteredIndexScan
+    | "Clustered Index Seek" -> POk PhysicalOpType.ClusteredIndexSeek
+    | "Clustered Index Update" -> POk PhysicalOpType.ClusteredIndexUpdate
+    | "Clustered Index Merge" -> POk PhysicalOpType.ClusteredIndexMerge
+    | "Clustered Update" -> POk PhysicalOpType.ClusteredUpdate
     | "Collapse" -> POk PhysicalOpType.Collapse
-    | "ColumnstoreIndexDelete" -> POk PhysicalOpType.ColumnstoreIndexDelete
-    | "ColumnstoreIndexInsert" -> POk PhysicalOpType.ColumnstoreIndexInsert
-    | "ColumnstoreIndexMerge" -> POk PhysicalOpType.ColumnstoreIndexMerge
-    | "ColumnstoreIndexScan" -> POk PhysicalOpType.ColumnstoreIndexScan
-    | "ColumnstoreIndexUpdate" -> POk PhysicalOpType.ColumnstoreIndexUpdate
-    | "ComputeScalar" -> POk PhysicalOpType.ComputeScalar
-    | "ComputeToControlNode" -> POk PhysicalOpType.ComputeToControlNode
+    | "Columnstore Index Delete" -> POk PhysicalOpType.ColumnstoreIndexDelete
+    | "Columnstore Index Insert" -> POk PhysicalOpType.ColumnstoreIndexInsert
+    | "Columnstore Index Merge" -> POk PhysicalOpType.ColumnstoreIndexMerge
+    | "Columnstore Index Scan" -> POk PhysicalOpType.ColumnstoreIndexScan
+    | "Columnstore Index Update" -> POk PhysicalOpType.ColumnstoreIndexUpdate
+    | "Compute Scalar" -> POk PhysicalOpType.ComputeScalar
+    | "Compute To Control Node" -> POk PhysicalOpType.ComputeToControlNode
     | "Concatenation" -> POk PhysicalOpType.Concatenation
-    | "ConstantScan" -> POk PhysicalOpType.ConstantScan
-    | "ConstantTableGet" -> POk PhysicalOpType.ConstantTableGet
-    | "ControlToComputeNodes" -> POk PhysicalOpType.ControlToComputeNodes
+    | "Constant Scan" -> POk PhysicalOpType.ConstantScan
+    | "Constant Table Get" -> POk PhysicalOpType.ConstantTableGet
+    | "Control To Compute Nodes" -> POk PhysicalOpType.ControlToComputeNodes
     | "Delete" -> POk PhysicalOpType.Delete
-    | "DeletedScan" -> POk PhysicalOpType.DeletedScan
-    | "ExternalBroadcast" -> POk PhysicalOpType.ExternalBroadcast
-    | "ExternalExtractionScan" -> POk PhysicalOpType.ExternalExtractionScan
-    | "ExternalLocalStreaming" -> POk PhysicalOpType.ExternalLocalStreaming
-    | "ExternalRoundRobin" -> POk PhysicalOpType.ExternalRoundRobin
-    | "ExternalSelect" -> POk PhysicalOpType.ExternalSelect
-    | "ExternalShuffle" -> POk PhysicalOpType.ExternalShuffle
+    | "Deleted Scan" -> POk PhysicalOpType.DeletedScan
+    | "External Broadcast" -> POk PhysicalOpType.ExternalBroadcast
+    | "External Extraction Scan" -> POk PhysicalOpType.ExternalExtractionScan
+    | "External Local Streaming" -> POk PhysicalOpType.ExternalLocalStreaming
+    | "External Round Robin" -> POk PhysicalOpType.ExternalRoundRobin
+    | "External Select" -> POk PhysicalOpType.ExternalSelect
+    | "External Shuffle" -> POk PhysicalOpType.ExternalShuffle
     | "Filter" -> POk PhysicalOpType.Filter
-    | "ForeignKeyReferencesCheck" -> POk PhysicalOpType.ForeignKeyReferencesCheck
+    | "Foreign Key References Check" -> POk PhysicalOpType.ForeignKeyReferencesCheck
     | "GbAgg" -> POk PhysicalOpType.GbAgg
     | "GbApply" -> POk PhysicalOpType.GbApply
     | "Get" -> POk PhysicalOpType.Get
     | "Generic" -> POk PhysicalOpType.Generic
-    | "HashMatch" -> POk PhysicalOpType.HashMatch
-    | "IndexDelete" -> POk PhysicalOpType.IndexDelete
-    | "IndexInsert" -> POk PhysicalOpType.IndexInsert
-    | "IndexScan" -> POk PhysicalOpType.IndexScan
+    | "Hash Match" -> POk PhysicalOpType.HashMatch
+    | "Index Delete" -> POk PhysicalOpType.IndexDelete
+    | "Index Insert" -> POk PhysicalOpType.IndexInsert
+    | "Index Scan" -> POk PhysicalOpType.IndexScan
     | "Insert" -> POk PhysicalOpType.Insert
     | "Join" -> POk PhysicalOpType.Join
-    | "IndexSeek" -> POk PhysicalOpType.IndexSeek
-    | "IndexSpool" -> POk PhysicalOpType.IndexSpool
-    | "IndexUpdate" -> POk PhysicalOpType.IndexUpdate
-    | "InsertedScan" -> POk PhysicalOpType.InsertedScan
-    | "LocalCube" -> POk PhysicalOpType.LocalCube
-    | "LogRowScan" -> POk PhysicalOpType.LogRowScan
-    | "MergeInterval" -> POk PhysicalOpType.MergeInterval
-    | "MergeJoin" -> POk PhysicalOpType.MergeJoin
-    | "NestedLoops" -> POk PhysicalOpType.NestedLoops
-    | "OnlineIndexInsert" -> POk PhysicalOpType.OnlineIndexInsert
+    | "Index Seek" -> POk PhysicalOpType.IndexSeek
+    | "Index Spool" -> POk PhysicalOpType.IndexSpool
+    | "Index Update" -> POk PhysicalOpType.IndexUpdate
+    | "Inserted Scan" -> POk PhysicalOpType.InsertedScan
+    | "Local Cube" -> POk PhysicalOpType.LocalCube
+    | "Log Row Scan" -> POk PhysicalOpType.LogRowScan
+    | "Merge Interval" -> POk PhysicalOpType.MergeInterval
+    | "Merge Join" -> POk PhysicalOpType.MergeJoin
+    | "Nested Loops" -> POk PhysicalOpType.NestedLoops
+    | "Online Index Insert" -> POk PhysicalOpType.OnlineIndexInsert
     | "Parallelism" -> POk PhysicalOpType.Parallelism
-    | "ParameterTableScan" -> POk PhysicalOpType.ParameterTableScan
+    | "Parameter Table Scan" -> POk PhysicalOpType.ParameterTableScan
     | "Print" -> POk PhysicalOpType.Print
     | "Project" -> POk PhysicalOpType.Project
     | "Put" -> POk PhysicalOpType.Put
     | "Rank" -> POk PhysicalOpType.Rank
-    | "RemoteDelete" -> POk PhysicalOpType.RemoteDelete
-    | "RemoteIndexScan" -> POk PhysicalOpType.RemoteIndexScan
-    | "RemoteIndexSeek" -> POk PhysicalOpType.RemoteIndexSeek
-    | "RemoteInsert" -> POk PhysicalOpType.RemoteInsert
-    | "RemoteQuery" -> POk PhysicalOpType.RemoteQuery
-    | "RemoteScan" -> POk PhysicalOpType.RemoteScan
-    | "RemoteUpdate" -> POk PhysicalOpType.RemoteUpdate
-    | "RIDLookup" -> POk PhysicalOpType.RIDLookup
-    | "RowCountSpool" -> POk PhysicalOpType.RowCountSpool
+    | "Remote Delete" -> POk PhysicalOpType.RemoteDelete
+    | "Remote Index Scan" -> POk PhysicalOpType.RemoteIndexScan
+    | "Remote Index Seek" -> POk PhysicalOpType.RemoteIndexSeek
+    | "Remote Insert" -> POk PhysicalOpType.RemoteInsert
+    | "Remote Query" -> POk PhysicalOpType.RemoteQuery
+    | "Remote Scan" -> POk PhysicalOpType.RemoteScan
+    | "Remote Update" -> POk PhysicalOpType.RemoteUpdate
+    | "RID Lookup" -> POk PhysicalOpType.RIDLookup
+    | "Row Count Spool" -> POk PhysicalOpType.RowCountSpool
     | "Segment" -> POk PhysicalOpType.Segment
     | "Sequence" -> POk PhysicalOpType.Sequence
-    | "SequenceProject" -> POk PhysicalOpType.SequenceProject
+    | "Sequence Project" -> POk PhysicalOpType.SequenceProject
     | "Shuffle" -> POk PhysicalOpType.Shuffle
-    | "SingleSourceRoundRobinMove" -> POk PhysicalOpType.SingleSourceRoundRobinMove
+    | "Single Source Round Robin Move" -> POk PhysicalOpType.SingleSourceRoundRobinMove
     | "Sort" -> POk PhysicalOpType.Sort
     | "Split" -> POk PhysicalOpType.Split
-    | "StreamAggregate" -> POk PhysicalOpType.StreamAggregate
+    | "Stream Aggregate" -> POk PhysicalOpType.StreamAggregate
     | "Switch" -> POk PhysicalOpType.Switch
-    | "TableDelete" -> POk PhysicalOpType.TableDelete
-    | "TableInsert" -> POk PhysicalOpType.TableInsert
-    | "TableMerge" -> POk PhysicalOpType.TableMerge
-    | "TableScan" -> POk PhysicalOpType.TableScan
-    | "TableSpool" -> POk PhysicalOpType.TableSpool
-    | "TableUpdate" -> POk PhysicalOpType.TableUpdate
-    | "TableValuedFunction" -> POk PhysicalOpType.TableValuedFunction
+    | "Table Delete" -> POk PhysicalOpType.TableDelete
+    | "Table Insert" -> POk PhysicalOpType.TableInsert
+    | "Table Merge" -> POk PhysicalOpType.TableMerge
+    | "Table Scan" -> POk PhysicalOpType.TableScan
+    | "Table Spool" -> POk PhysicalOpType.TableSpool
+    | "Table Update" -> POk PhysicalOpType.TableUpdate
+    | "Table-valued function" -> POk PhysicalOpType.TableValuedFunction
     | "Top" -> POk PhysicalOpType.Top
     | "Trim" -> POk PhysicalOpType.Trim
     | "UDX" -> POk PhysicalOpType.UDX
     | "Union" -> POk PhysicalOpType.Union
-    | "UnionAll" -> POk PhysicalOpType.UnionAll
-    | "WindowAggregate" -> POk PhysicalOpType.WindowAggregate
-    | "WindowSpool" -> POk PhysicalOpType.WindowSpool
-    | "KeyLookup" -> POk PhysicalOpType.KeyLookup
-    | "ExtensibleColumnStoreScan" -> POk PhysicalOpType.ExtensibleColumnStoreScan
+    | "Union All" -> POk PhysicalOpType.UnionAll
+    | "Window Aggregate" -> POk PhysicalOpType.WindowAggregate
+    | "Window Spool" -> POk PhysicalOpType.WindowSpool
+    | "Key Lookup" -> POk PhysicalOpType.KeyLookup
+    | "Extensible Column Store Scan" -> POk PhysicalOpType.ExtensibleColumnStoreScan
     | other -> Failf "Unknown PhysicalOp type: '%s'" other
 
 let parseExecutionMode (s : string) : PResult<ExecutionModeType, _> =

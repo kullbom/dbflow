@@ -7,16 +7,15 @@
 
   <ItemGroup>
     <None Include="Plan01.xml" />
-    <Compile Include="ForAllBenchmark.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.14.2" />
+    <ProjectReference Include="..\DbFlow\DbFlow.fsproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DbFlow\DbFlow.fsproj" />
+    <PackageReference Update="FSharp.Core" Version="10.1.201" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-module DbFlow.Test.Plans
+﻿module DbFlow.Test.Plans
 
 open System
 open Microsoft.Data.SqlClient
@@ -67,17 +67,74 @@ let describe_undeclared_parameters (sqlQuery : string) =
 
 
 open Xunit
+open DbFlow.SqlServer.ShowPlanXml
 
 type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) = 
     let output fmt = Printf.ksprintf outputHelper.WriteLine fmt
 
     let samplesFolder = __SOURCE_DIRECTORY__ + "\\PlanSamples\\"
 
-    let testConnStr2 = "<<<<NO...>>>>"
+    let testConnStr2 = "Server=t-dbs-scs-01.ia.corp.svea.com; Database=T-SCS-Admittance;Integrated Security=true;Persist Security Info=False; Trusted_Connection=True; Encrypt=false; Connect Timeout = 120;Application Name=AdmittanceApiUnitTest"
     
+    let foldQueryPlans f seed (p : Plan) =
+        p.BatchSequence.Batches
+        |> List.fold 
+            (fun acc b ->
+                b.Statements
+                |> List.fold 
+                    (fun acc' s -> 
+                        match s with
+                        | StmtSimple stmtSimple -> 
+                            stmtSimple.QueryPlan
+                            |> Option.fold (fun a0 qp -> f a0 qp) acc'
+                        | StmtCond _stmtCond -> acc'
+                        | StmtCursor _stmtCursor -> acc'
+                        | StmtReceive _stmtReceive -> acc'
+                        | StmtUseDb _stmtUseDb -> acc'
+                        | ExternalDistributedComputation _distributedComputation -> acc')
+                    acc)
+            seed
+
+    let foldRelOp f seed (ro : RelOpType) =
+        let acc = f seed ro
+        //ro.
+        //let rec loop acc (relOp : RelOp) =
+        //    let acc' = f acc relOp
+        //    relOp.Children
+        //    |> Option.fold (List.fold loop) acc'
+        //loop seed qp.RelOp
+        acc
+
+    //[<Fact>]
+    let ``Populate sample plans`` () =
+        let result = 
+            use testDbConn = new SqlConnection (testConnStr2)
+            testDbConn.Open ()
+               
+            DbTr.readList 
+                "SELECT TOP 10000 
+            		q.query_id,
+            	    qt.query_sql_text AS QueryText,
+            	    p.plan_id,
+            	    p.query_plan AS ExecutionPlanXML
+            	FROM sys.query_store_plan p
+            	JOIN sys.query_store_query q ON q.query_id = p.query_id
+            	JOIN sys.query_store_query_text qt ON q.query_text_id = qt.query_text_id"
+                []
+                (fun r -> 
+                    let planId = Readers.readInt64 "plan_id" r
+                    let planXml = Readers.readString "ExecutionPlanXML" r
+                    planId, planXml)
+            |> DbTr.commit_ testDbConn
+        for (planId, planXml) in result do
+            let fileName = sprintf "%sPlan%05d.xml" samplesFolder planId
+            System.IO.File.WriteAllText (fileName, planXml)
+            output "Wrote plan %d to file %s" planId fileName
+        ()
+            
     [<Fact>]
     let ``Get plan`` () =
-        let myQuery = "SELECT TOP 2 * FROM SignatureArrangements"
+        let myQuery = "SELECT TOP 2 * FROM [User] ORDER BY [LoginName]"
         
         let result = 
             use testDbConn = new SqlConnection (testConnStr2)
@@ -85,6 +142,29 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
                
             estimatedPlan myQuery
             |> DbTr.commit_ testDbConn
+        let plan = DbFlow.SqlServer.ShowPlanXml.Plan.parseString result
+        let problems =
+            match plan with
+            | Error e -> [e]
+            | Ok p -> 
+                p
+                |> foldQueryPlans 
+                    (fun acc qp -> 
+                        let warnings = 
+                            qp.Warnings 
+                            |> Option.fold 
+                                (fun acc' ws -> 
+                                    ws.PlanAffectingConvert
+                                    |>List.fold (fun acc'' pac -> $"{pac.ConvertIssue} - {pac.Expression}" :: acc'') acc')
+                                acc
+                        qp.RelOp
+                        |> foldRelOp
+                            (fun acc' ro ->
+                                // Leta efter IndexScanType som saknar SeekPredicates - det borde rimligen vara en "full table/index scan"
+                                //ro
+                                acc')
+                            warnings)
+                    []
         ()
 
     
@@ -110,5 +190,38 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
         output "Time to read file: %d ms" timeRead
         output "Time to parse XML: %d ms" timeXmlParse
         output "Time to parse plan: %d ms" timePlanParse
+
+        ()
+
+    // {(C:\Projects\dbflow\DbFlow.Test\PlanSamples\Plan10702.xml, Expected valid StmtType but got 'Statements')}
+
+    [<Fact>]
+    let ``Parse all sample plans`` () =
+        let sw = System.Diagnostics.Stopwatch ()
+        sw.Start ()
+        let files = System.IO.Directory.GetFiles(samplesFolder, "*.xml") |> List.ofArray
+        output "%d samples found" files.Length
+        let timeReadDir = sw.ElapsedMilliseconds 
+        sw.Restart ()
+        
+        let errors =
+            files
+            |> List.fold
+                (fun acc file -> 
+                    let planXml = System.IO.File.ReadAllText file
+                    let plan = DbFlow.SqlServer.ShowPlanXml.Plan.parseString planXml
+                    match plan with 
+                    | Ok _ -> acc 
+                    | Error e -> (file, e) :: acc)
+                []
+        
+        let timePlanParse = sw.ElapsedMilliseconds 
+        
+        output "Time to read file: %d ms" timeReadDir
+        output "Time to parse plan: %d ms" timePlanParse
+
+        output "Errors: %d / %d" errors.Length files.Length
+
+        Assert.Equal (0, errors.Length)
 
         ()

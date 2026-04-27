@@ -1,0 +1,418 @@
+<ShowPlanXML xmlns="http://schemas.microsoft.com/sqlserver/2004/07/showplan" Version="1.599" Build="17.0.4015.4">
+	<BatchSequence>
+		<Batch>
+			<Statements>
+				<StmtCond StatementText="IF EXISTS (&#xd;&#xa;            SELECT UserGroupPrincipalId FROM PrincipalUserGroup &#xd;&#xa;            WHERE PrincipalId = @principalId&#xd;&#xa;            AND NOT UserGroupPrincipalId = @groupId&#xd;&#xa;            AND DeletedTime IS NULL&#xd;&#xa;        )&#xd;&#xa;        OR EXISTS (&#xd;&#xa;            SELECT PrincipalId FROM Privilege &#xd;&#xa;&#x9;        WHERE PrincipalId = @principalId&#xd;&#xa;            AND DeletedTime IS NULL&#xd;&#xa;        )" StatementId="1" StatementCompId="1" StatementType="COND WITH QUERY" StatementSqlHandle="0x0900B6D95C07E6FFF54B3E8DCC0312E877B50000000000000000000000000000000000000000000000000000" DatabaseContextSettingsId="3" ParentObjectId="0" StatementParameterizationType="1" RetrievedFromCache="false" StatementSubTreeCost="0.00328902" StatementEstRows="1" SecurityPolicyApplied="false" StatementOptmLevel="FULL" QueryHash="0xEF1441BAE68E731B" QueryPlanHash="0xFD6501016EBCD13D" StatementOptmEarlyAbortReason="GoodEnoughPlanFound" CardinalityEstimationModelVersion="140">
+					<StatementSetOptions QUOTED_IDENTIFIER="true" ARITHABORT="false" CONCAT_NULL_YIELDS_NULL="true" ANSI_NULLS="true" ANSI_PADDING="true" ANSI_WARNINGS="true" NUMERIC_ROUNDABORT="false"></StatementSetOptions>
+					<Condition>
+						<QueryPlan NonParallelPlanReason="MaxDOPSetToOne" CachedPlanSize="48" CompileTime="8" CompileCPU="4" CompileMemory="624">
+							<MemoryGrantInfo SerialRequiredMemory="16" SerialDesiredMemory="24" GrantedMemory="0" MaxUsedMemory="0"></MemoryGrantInfo>
+							<OptimizerHardwareDependentProperties EstimatedAvailableMemoryGrant="454382" EstimatedPagesCached="170393" EstimatedAvailableDegreeOfParallelism="1" MaxCompileMemory="14794520"></OptimizerHardwareDependentProperties>
+							<OptimizerStatsUsage>
+								<StatisticsInfo LastUpdate="2026-04-16T06:01:45.46" ModificationCount="5" SamplingPercent="64.8563" Statistics="[_WA_Sys_00000007_1B0907CE]" Table="[Privilege]" Schema="[dbo]" Database="[T-SCS-Admittance]"></StatisticsInfo>
+								<StatisticsInfo LastUpdate="2026-04-11T06:01:33.61" ModificationCount="1" SamplingPercent="100" Statistics="[IX_PrincipalUserGroup]" Table="[PrincipalUserGroup]" Schema="[dbo]" Database="[T-SCS-Admittance]"></StatisticsInfo>
+								<StatisticsInfo LastUpdate="2026-04-11T06:01:33.59" ModificationCount="1" SamplingPercent="100" Statistics="[PK_PrincipalUserGroup]" Table="[PrincipalUserGroup]" Schema="[dbo]" Database="[T-SCS-Admittance]"></StatisticsInfo>
+								<StatisticsInfo LastUpdate="2026-04-16T06:01:44.98" ModificationCount="5" SamplingPercent="62.6861" Statistics="[_WA_Sys_00000003_1B0907CE]" Table="[Privilege]" Schema="[dbo]" Database="[T-SCS-Admittance]"></StatisticsInfo>
+								<StatisticsInfo LastUpdate="2026-04-11T06:01:33.66" ModificationCount="1" SamplingPercent="100" Statistics="[_WA_Sys_00000005_173876EA]" Table="[PrincipalUserGroup]" Schema="[dbo]" Database="[T-SCS-Admittance]"></StatisticsInfo>
+								<StatisticsInfo LastUpdate="2026-04-11T06:01:33.63" ModificationCount="1" SamplingPercent="100" Statistics="[_WA_Sys_00000002_173876EA]" Table="[PrincipalUserGroup]" Schema="[dbo]" Database="[T-SCS-Admittance]"></StatisticsInfo>
+								<StatisticsInfo LastUpdate="2026-04-16T06:01:44.54" ModificationCount="5" SamplingPercent="62.6861" Statistics="[PK_Privilege]" Table="[Privilege]" Schema="[dbo]" Database="[T-SCS-Admittance]"></StatisticsInfo>
+								<StatisticsInfo LastUpdate="2026-04-16T06:01:44.85" ModificationCount="5" SamplingPercent="62.6861" Statistics="[_WA_Sys_00000002_1B0907CE]" Table="[Privilege]" Schema="[dbo]" Database="[T-SCS-Admittance]"></StatisticsInfo>
+							</OptimizerStatsUsage>
+							<RelOp NodeId="0" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="1e-07" AvgRowSize="11" EstimatedTotalSubtreeCost="0.00328902" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+								<OutputList>
+									<ColumnReference Column="Expr1004"></ColumnReference>
+								</OutputList>
+								<ComputeScalar>
+									<DefinedValues>
+										<DefinedValue>
+											<ColumnReference Column="Expr1004"></ColumnReference>
+											<ScalarOperator ScalarString="CASE WHEN [Expr1005] THEN (1) ELSE (0) END">
+												<IF>
+													<Condition>
+														<ScalarOperator>
+															<Identifier>
+																<ColumnReference Column="Expr1005"></ColumnReference>
+															</Identifier>
+														</ScalarOperator>
+													</Condition>
+													<Then>
+														<ScalarOperator>
+															<Const ConstValue="(1)"></Const>
+														</ScalarOperator>
+													</Then>
+													<Else>
+														<ScalarOperator>
+															<Const ConstValue="(0)"></Const>
+														</ScalarOperator>
+													</Else>
+												</IF>
+											</ScalarOperator>
+										</DefinedValue>
+									</DefinedValues>
+									<RelOp NodeId="1" PhysicalOp="Nested Loops" LogicalOp="Left Semi Join" EstimateRows="1" EstimateIO="0" EstimateCPU="4.18e-06" AvgRowSize="9" EstimatedTotalSubtreeCost="0.00328892" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+										<OutputList>
+											<ColumnReference Column="Expr1005"></ColumnReference>
+										</OutputList>
+										<NestedLoops Optimized="0">
+											<DefinedValues>
+												<DefinedValue>
+													<ColumnReference Column="Expr1005"></ColumnReference>
+												</DefinedValue>
+											</DefinedValues>
+											<ProbeColumn>
+												<ColumnReference Column="Expr1005"></ColumnReference>
+											</ProbeColumn>
+											<RelOp NodeId="2" PhysicalOp="Constant Scan" LogicalOp="Constant Scan" EstimateRows="1" EstimateIO="0" EstimateCPU="1.157e-06" AvgRowSize="9" EstimatedTotalSubtreeCost="1.157e-06" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+												<OutputList></OutputList>
+												<ConstantScan></ConstantScan>
+											</RelOp>
+											<RelOp NodeId="3" PhysicalOp="Concatenation" LogicalOp="Concatenation" EstimateRows="1" EstimateRowsWithoutRowGoal="10.0495" EstimateIO="0" EstimateCPU="1.00495e-06" AvgRowSize="9" EstimatedTotalSubtreeCost="0.00328358" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+												<OutputList></OutputList>
+												<Concat>
+													<DefinedValues></DefinedValues>
+													<RelOp NodeId="4" PhysicalOp="Nested Loops" LogicalOp="Inner Join" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0032831" TableCardinality="7327" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+														<OutputList></OutputList>
+														<NestedLoops Optimized="0">
+															<OuterReferences>
+																<ColumnReference Column="Expr1012"></ColumnReference>
+																<ColumnReference Column="Expr1013"></ColumnReference>
+																<ColumnReference Column="Expr1014"></ColumnReference>
+															</OuterReferences>
+															<RelOp NodeId="5" PhysicalOp="Merge Interval" LogicalOp="Merge Interval" EstimateRows="2" EstimateIO="0" EstimateCPU="0" AvgRowSize="19" EstimatedTotalSubtreeCost="0" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																<OutputList>
+																	<ColumnReference Column="Expr1012"></ColumnReference>
+																	<ColumnReference Column="Expr1013"></ColumnReference>
+																	<ColumnReference Column="Expr1014"></ColumnReference>
+																</OutputList>
+																<MergeInterval>
+																	<RelOp NodeId="6" PhysicalOp="Sort" LogicalOp="TopN Sort" EstimateRows="2" EstimateIO="0" EstimateCPU="0" AvgRowSize="19" EstimatedTotalSubtreeCost="0" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																		<OutputList>
+																			<ColumnReference Column="Expr1012"></ColumnReference>
+																			<ColumnReference Column="Expr1013"></ColumnReference>
+																			<ColumnReference Column="Expr1014"></ColumnReference>
+																			<ColumnReference Column="Expr1015"></ColumnReference>
+																			<ColumnReference Column="Expr1016"></ColumnReference>
+																			<ColumnReference Column="Expr1017"></ColumnReference>
+																		</OutputList>
+																		<MemoryFractions Input="1" Output="1"></MemoryFractions>
+																		<TopSort Distinct="0" Rows="2">
+																			<OrderBy>
+																				<OrderByColumn Ascending="0">
+																					<ColumnReference Column="Expr1015"></ColumnReference>
+																				</OrderByColumn>
+																				<OrderByColumn Ascending="1">
+																					<ColumnReference Column="Expr1016"></ColumnReference>
+																				</OrderByColumn>
+																				<OrderByColumn Ascending="1">
+																					<ColumnReference Column="Expr1012"></ColumnReference>
+																				</OrderByColumn>
+																				<OrderByColumn Ascending="0">
+																					<ColumnReference Column="Expr1017"></ColumnReference>
+																				</OrderByColumn>
+																			</OrderBy>
+																			<RelOp NodeId="7" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="2" EstimateIO="0" EstimateCPU="0" AvgRowSize="19" EstimatedTotalSubtreeCost="0" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																				<OutputList>
+																					<ColumnReference Column="Expr1012"></ColumnReference>
+																					<ColumnReference Column="Expr1013"></ColumnReference>
+																					<ColumnReference Column="Expr1014"></ColumnReference>
+																					<ColumnReference Column="Expr1015"></ColumnReference>
+																					<ColumnReference Column="Expr1016"></ColumnReference>
+																					<ColumnReference Column="Expr1017"></ColumnReference>
+																				</OutputList>
+																				<ComputeScalar>
+																					<DefinedValues>
+																						<DefinedValue>
+																							<ColumnReference Column="Expr1015"></ColumnReference>
+																							<ScalarOperator ScalarString="((4)&amp;[Expr1014]) = (4) AND NULL = [Expr1012]">
+																								<Logical Operation="AND">
+																									<ScalarOperator>
+																										<Compare CompareOp="IS">
+																											<ScalarOperator>
+																												<Arithmetic Operation="BIT_AND">
+																													<ScalarOperator>
+																														<Const ConstValue="(4)"></Const>
+																													</ScalarOperator>
+																													<ScalarOperator>
+																														<Identifier>
+																															<ColumnReference Column="Expr1014"></ColumnReference>
+																														</Identifier>
+																													</ScalarOperator>
+																												</Arithmetic>
+																											</ScalarOperator>
+																											<ScalarOperator>
+																												<Const ConstValue="(4)"></Const>
+																											</ScalarOperator>
+																										</Compare>
+																									</ScalarOperator>
+																									<ScalarOperator>
+																										<Compare CompareOp="IS">
+																											<ScalarOperator>
+																												<Const ConstValue="NULL"></Const>
+																											</ScalarOperator>
+																											<ScalarOperator>
+																												<Identifier>
+																													<ColumnReference Column="Expr1012"></ColumnReference>
+																												</Identifier>
+																											</ScalarOperator>
+																										</Compare>
+																									</ScalarOperator>
+																								</Logical>
+																							</ScalarOperator>
+																						</DefinedValue>
+																						<DefinedValue>
+																							<ColumnReference Column="Expr1016"></ColumnReference>
+																							<ScalarOperator ScalarString="(4)&amp;[Expr1014]">
+																								<Arithmetic Operation="BIT_AND">
+																									<ScalarOperator>
+																										<Const ConstValue="(4)"></Const>
+																									</ScalarOperator>
+																									<ScalarOperator>
+																										<Identifier>
+																											<ColumnReference Column="Expr1014"></ColumnReference>
+																										</Identifier>
+																									</ScalarOperator>
+																								</Arithmetic>
+																							</ScalarOperator>
+																						</DefinedValue>
+																						<DefinedValue>
+																							<ColumnReference Column="Expr1017"></ColumnReference>
+																							<ScalarOperator ScalarString="(16)&amp;[Expr1014]">
+																								<Arithmetic Operation="BIT_AND">
+																									<ScalarOperator>
+																										<Const ConstValue="(16)"></Const>
+																									</ScalarOperator>
+																									<ScalarOperator>
+																										<Identifier>
+																											<ColumnReference Column="Expr1014"></ColumnReference>
+																										</Identifier>
+																									</ScalarOperator>
+																								</Arithmetic>
+																							</ScalarOperator>
+																						</DefinedValue>
+																					</DefinedValues>
+																					<RelOp NodeId="8" PhysicalOp="Concatenation" LogicalOp="Concatenation" EstimateRows="2" EstimateIO="0" EstimateCPU="0" AvgRowSize="19" EstimatedTotalSubtreeCost="0" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																						<OutputList>
+																							<ColumnReference Column="Expr1012"></ColumnReference>
+																							<ColumnReference Column="Expr1013"></ColumnReference>
+																							<ColumnReference Column="Expr1014"></ColumnReference>
+																						</OutputList>
+																						<Concat>
+																							<DefinedValues>
+																								<DefinedValue>
+																									<ColumnReference Column="Expr1012"></ColumnReference>
+																									<ColumnReference Column="Expr1007"></ColumnReference>
+																									<ColumnReference Column="Expr1010"></ColumnReference>
+																								</DefinedValue>
+																								<DefinedValue>
+																									<ColumnReference Column="Expr1013"></ColumnReference>
+																									<ColumnReference Column="Expr1008"></ColumnReference>
+																									<ColumnReference Column="Expr1011"></ColumnReference>
+																								</DefinedValue>
+																								<DefinedValue>
+																									<ColumnReference Column="Expr1014"></ColumnReference>
+																									<ColumnReference Column="Expr1006"></ColumnReference>
+																									<ColumnReference Column="Expr1009"></ColumnReference>
+																								</DefinedValue>
+																							</DefinedValues>
+																							<RelOp NodeId="9" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="0" AvgRowSize="19" EstimatedTotalSubtreeCost="0" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																								<OutputList>
+																									<ColumnReference Column="Expr1007"></ColumnReference>
+																									<ColumnReference Column="Expr1008"></ColumnReference>
+																									<ColumnReference Column="Expr1006"></ColumnReference>
+																								</OutputList>
+																								<ComputeScalar>
+																									<DefinedValues>
+																										<DefinedValue>
+																											<ColumnReference Column="Expr1007"></ColumnReference>
+																											<ScalarOperator ScalarString="NULL">
+																												<Const ConstValue="NULL"></Const>
+																											</ScalarOperator>
+																										</DefinedValue>
+																										<DefinedValue>
+																											<ColumnReference Column="Expr1008"></ColumnReference>
+																											<ScalarOperator ScalarString="[@groupId]">
+																												<Identifier>
+																													<ColumnReference Column="@groupId"></ColumnReference>
+																												</Identifier>
+																											</ScalarOperator>
+																										</DefinedValue>
+																										<DefinedValue>
+																											<ColumnReference Column="Expr1006"></ColumnReference>
+																											<ScalarOperator ScalarString="(10)">
+																												<Const ConstValue="(10)"></Const>
+																											</ScalarOperator>
+																										</DefinedValue>
+																									</DefinedValues>
+																									<RelOp NodeId="10" PhysicalOp="Constant Scan" LogicalOp="Constant Scan" EstimateRows="1" EstimateIO="0" EstimateCPU="0" AvgRowSize="0" EstimatedTotalSubtreeCost="0" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																										<OutputList></OutputList>
+																										<ConstantScan></ConstantScan>
+																									</RelOp>
+																								</ComputeScalar>
+																							</RelOp>
+																							<RelOp NodeId="11" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="0" AvgRowSize="19" EstimatedTotalSubtreeCost="0" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																								<OutputList>
+																									<ColumnReference Column="Expr1010"></ColumnReference>
+																									<ColumnReference Column="Expr1011"></ColumnReference>
+																									<ColumnReference Column="Expr1009"></ColumnReference>
+																								</OutputList>
+																								<ComputeScalar>
+																									<DefinedValues>
+																										<DefinedValue>
+																											<ColumnReference Column="Expr1010"></ColumnReference>
+																											<ScalarOperator ScalarString="[@groupId]">
+																												<Identifier>
+																													<ColumnReference Column="@groupId"></ColumnReference>
+																												</Identifier>
+																											</ScalarOperator>
+																										</DefinedValue>
+																										<DefinedValue>
+																											<ColumnReference Column="Expr1011"></ColumnReference>
+																											<ScalarOperator ScalarString="NULL">
+																												<Const ConstValue="NULL"></Const>
+																											</ScalarOperator>
+																										</DefinedValue>
+																										<DefinedValue>
+																											<ColumnReference Column="Expr1009"></ColumnReference>
+																											<ScalarOperator ScalarString="(6)">
+																												<Const ConstValue="(6)"></Const>
+																											</ScalarOperator>
+																										</DefinedValue>
+																									</DefinedValues>
+																									<RelOp NodeId="12" PhysicalOp="Constant Scan" LogicalOp="Constant Scan" EstimateRows="1" EstimateIO="0" EstimateCPU="0" AvgRowSize="0" EstimatedTotalSubtreeCost="0" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																										<OutputList></OutputList>
+																										<ConstantScan></ConstantScan>
+																									</RelOp>
+																								</ComputeScalar>
+																							</RelOp>
+																						</Concat>
+																					</RelOp>
+																				</ComputeScalar>
+																			</RelOp>
+																		</TopSort>
+																	</RelOp>
+																</MergeInterval>
+															</RelOp>
+															<RelOp NodeId="13" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0032831" TableCardinality="7327" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																<OutputList></OutputList>
+																<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																	<DefinedValues></DefinedValues>
+																	<Object Database="[T-SCS-Admittance]" Schema="[dbo]" Table="[PrincipalUserGroup]" Index="[PK_PrincipalUserGroup]" IndexKind="Clustered" Storage="RowStore"></Object>
+																	<SeekPredicates>
+																		<SeekPredicateNew>
+																			<SeekKeys>
+																				<Prefix ScanType="EQ">
+																					<RangeColumns>
+																						<ColumnReference Database="[T-SCS-Admittance]" Schema="[dbo]" Table="[PrincipalUserGroup]" Column="PrincipalId"></ColumnReference>
+																					</RangeColumns>
+																					<RangeExpressions>
+																						<ScalarOperator ScalarString="[@principalId]">
+																							<Identifier>
+																								<ColumnReference Column="@principalId"></ColumnReference>
+																							</Identifier>
+																						</ScalarOperator>
+																					</RangeExpressions>
+																				</Prefix>
+																				<StartRange ScanType="GT">
+																					<RangeColumns>
+																						<ColumnReference Database="[T-SCS-Admittance]" Schema="[dbo]" Table="[PrincipalUserGroup]" Column="UserGroupPrincipalId"></ColumnReference>
+																					</RangeColumns>
+																					<RangeExpressions>
+																						<ScalarOperator ScalarString="[Expr1012]">
+																							<Identifier>
+																								<ColumnReference Column="Expr1012"></ColumnReference>
+																							</Identifier>
+																						</ScalarOperator>
+																					</RangeExpressions>
+																				</StartRange>
+																				<EndRange ScanType="LT">
+																					<RangeColumns>
+																						<ColumnReference Database="[T-SCS-Admittance]" Schema="[dbo]" Table="[PrincipalUserGroup]" Column="UserGroupPrincipalId"></ColumnReference>
+																					</RangeColumns>
+																					<RangeExpressions>
+																						<ScalarOperator ScalarString="[Expr1013]">
+																							<Identifier>
+																								<ColumnReference Column="Expr1013"></ColumnReference>
+																							</Identifier>
+																						</ScalarOperator>
+																					</RangeExpressions>
+																				</EndRange>
+																			</SeekKeys>
+																		</SeekPredicateNew>
+																	</SeekPredicates>
+																	<Predicate>
+																		<ScalarOperator ScalarString="[T-SCS-Admittance].[dbo].[PrincipalUserGroup].[DeletedTime] IS NULL">
+																			<Compare CompareOp="IS">
+																				<ScalarOperator>
+																					<Identifier>
+																						<ColumnReference Database="[T-SCS-Admittance]" Schema="[dbo]" Table="[PrincipalUserGroup]" Column="DeletedTime"></ColumnReference>
+																					</Identifier>
+																				</ScalarOperator>
+																				<ScalarOperator>
+																					<Const ConstValue="NULL"></Const>
+																				</ScalarOperator>
+																			</Compare>
+																		</ScalarOperator>
+																	</Predicate>
+																</IndexScan>
+															</RelOp>
+														</NestedLoops>
+													</RelOp>
+													<RelOp NodeId="14" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimateRowsWithoutRowGoal="9.04948" EstimatedRowsRead="1.00724" EstimateIO="0.003125" EstimateCPU="0.000167027" AvgRowSize="15" EstimatedTotalSubtreeCost="0.00328311" TableCardinality="144927" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+														<OutputList></OutputList>
+														<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+															<DefinedValues></DefinedValues>
+															<Object Database="[T-SCS-Admittance]" Schema="[dbo]" Table="[Privilege]" Index="[PK_Privilege]" IndexKind="Clustered" Storage="RowStore"></Object>
+															<SeekPredicates>
+																<SeekPredicateNew>
+																	<SeekKeys>
+																		<Prefix ScanType="EQ">
+																			<RangeColumns>
+																				<ColumnReference Database="[T-SCS-Admittance]" Schema="[dbo]" Table="[Privilege]" Column="PrincipalId"></ColumnReference>
+																			</RangeColumns>
+																			<RangeExpressions>
+																				<ScalarOperator ScalarString="[@principalId]">
+																					<Identifier>
+																						<ColumnReference Column="@principalId"></ColumnReference>
+																					</Identifier>
+																				</ScalarOperator>
+																			</RangeExpressions>
+																		</Prefix>
+																	</SeekKeys>
+																</SeekPredicateNew>
+															</SeekPredicates>
+															<Predicate>
+																<ScalarOperator ScalarString="[T-SCS-Admittance].[dbo].[Privilege].[DeletedTime] IS NULL">
+																	<Compare CompareOp="IS">
+																		<ScalarOperator>
+																			<Identifier>
+																				<ColumnReference Database="[T-SCS-Admittance]" Schema="[dbo]" Table="[Privilege]" Column="DeletedTime"></ColumnReference>
+																			</Identifier>
+																		</ScalarOperator>
+																		<ScalarOperator>
+																			<Const ConstValue="NULL"></Const>
+																		</ScalarOperator>
+																	</Compare>
+																</ScalarOperator>
+															</Predicate>
+														</IndexScan>
+													</RelOp>
+												</Concat>
+											</RelOp>
+										</NestedLoops>
+									</RelOp>
+								</ComputeScalar>
+							</RelOp>
+							<ParameterList>
+								<ColumnReference Column="@groupId" ParameterDataType="int" ParameterCompiledValue="(27997)"></ColumnReference>
+								<ColumnReference Column="@principalId" ParameterDataType="int" ParameterCompiledValue="(28112)"></ColumnReference>
+							</ParameterList>
+						</QueryPlan>
+					</Condition>
+					<Then>
+						<Statements></Statements>
+					</Then>
+				</StmtCond>
+			</Statements>
+		</Batch>
+	</BatchSequence>
+</ShowPlanXML>

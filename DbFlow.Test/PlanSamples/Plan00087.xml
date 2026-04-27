@@ -1,0 +1,1709 @@
+<ShowPlanXML xmlns="http://schemas.microsoft.com/sqlserver/2004/07/showplan" Version="1.6" Build="14.0.3008.27">
+	<BatchSequence>
+		<Batch>
+			<Statements>
+				<StmtSimple StatementText="WITH AllRoles AS (&#xd;&#xa;&#x9;&#x9;SELECT Id, ParentRoleId As PId, 1 AS Depth FROM Role WHERE Id = @roleId&#xd;&#xa;&#x9;&#x9;UNION ALL&#xd;&#xa;&#x9;&#x9;SELECT &#xd;&#xa;&#x9;&#x9;&#x9;parent.Id AS Id,&#xd;&#xa;&#x9;&#x9;&#x9;parent.ParentRoleId AS PId,&#xd;&#xa;&#x9;&#x9;&#x9;child.Depth + 1 AS Depth&#xd;&#xa;&#x9;&#x9;FROM [Role] parent &#xd;&#xa;&#x9;&#x9;INNER JOIN AllRoles child&#xd;&#xa;&#x9;&#x9;  &#x9; ON parent.Id = child.PId&#xd;&#xa;&#x9;),&#xd;&#xa;&#x9;&#x9; Props AS (&#xd;&#xa;&#x9;&#x9;SELECT p.PropertyId, p.Value, r.Depth AS RoleDepth, p.RoleId, p.PrincipalId &#xd;&#xa;&#x9;&#x9;FROM [UserRoleProperty] p&#xd;&#xa;&#x9;&#x9;INNER JOIN AllRoles r ON p.RoleId = r.Id&#xd;&#xa;&#x9;&#x9;WHERE p.PrincipalId = @principalId&#xd;&#xa;&#x9;&#x9;  AND p.DeletedTime IS NULL&#xd;&#xa;&#x9;&#x9;UNION &#xd;&#xa;&#x9;&#x9;SELECT p.PropertyId, p.Value, 10000 * r.Depth AS RoleDepth, p.RoleId, NULL AS PrincipalId&#xd;&#xa;&#x9;&#x9;FROM RoleProperty p&#xd;&#xa;&#x9;&#x9;INNER JOIN AllRoles r ON p.RoleId = r.Id&#xd;&#xa;&#x9;&#x9;WHERE p.DeletedTime IS NULL&#xd;&#xa;&#x9;&#x9;)&#xd;&#xa;&#x9;SELECT p.PropertyId , p.RoleDepth, p2.Value, p3.Name, p3.AggregatedPropertyId AS AggregatedName, p2.RoleId, p2.PrincipalId &#xd;&#xa;&#x9;FROM (SELECT PropertyId, MIN(RoleDepth) AS RoleDepth&#xd;&#xa;&#x9;&#x9;  FROM Props &#xd;&#xa;&#x9;&#x9;  GROUP BY PropertyId) p&#xd;&#xa;&#x9;INNER JOIN Props p2 ON p.PropertyId = p2.PropertyId AND p.RoleDepth = p2.RoleDepth&#xd;&#xa;&#x9;INNER JOIN [Property] p3 ON p.PropertyId = p3.Id&#xd;&#xa;&#x9;ORDER BY PropertyId" StatementId="1" StatementCompId="3" StatementType="SELECT" StatementSqlHandle="0x0900E89179F3D0951A9632CCF900014963670000000000000000000000000000000000000000000000000000" DatabaseContextSettingsId="1" ParentObjectId="1989582126" StatementParameterizationType="0" RetrievedFromCache="true" StatementSubTreeCost="0.115285" StatementEstRows="4.57045" SecurityPolicyApplied="false" StatementOptmLevel="FULL" QueryHash="0x47436029D95F675C" QueryPlanHash="0xFDDCC31EDAD14A8C" StatementOptmEarlyAbortReason="GoodEnoughPlanFound" CardinalityEstimationModelVersion="140">
+					<StatementSetOptions QUOTED_IDENTIFIER="true" ARITHABORT="false" CONCAT_NULL_YIELDS_NULL="true" ANSI_NULLS="true" ANSI_PADDING="true" ANSI_WARNINGS="true" NUMERIC_ROUNDABORT="false"></StatementSetOptions>
+					<QueryPlan NonParallelPlanReason="MaxDOPSetToOne" CachedPlanSize="168" CompileTime="34" CompileCPU="16" CompileMemory="2168">
+						<MemoryGrantInfo SerialRequiredMemory="1024" SerialDesiredMemory="1200"></MemoryGrantInfo>
+						<OptimizerHardwareDependentProperties EstimatedAvailableMemoryGrant="681574" EstimatedPagesCached="170393" EstimatedAvailableDegreeOfParallelism="1" MaxCompileMemory="14655800"></OptimizerHardwareDependentProperties>
+						<OptimizerStatsUsage>
+							<StatisticsInfo LastUpdate="2016-09-19T09:33:26.78" ModificationCount="0" SamplingPercent="100" Statistics="[PK_Property]" Table="[Property]" Schema="[dbo]" Database="[T-INF-Admittance]"></StatisticsInfo>
+							<StatisticsInfo LastUpdate="2017-12-13T16:06:47.48" ModificationCount="0" SamplingPercent="100" Statistics="[PK_RoleProperty]" Table="[RoleProperty]" Schema="[dbo]" Database="[T-INF-Admittance]"></StatisticsInfo>
+							<StatisticsInfo LastUpdate="2016-09-19T09:33:26.97" ModificationCount="0" SamplingPercent="100" Statistics="[_WA_Sys_00000002_440B1D61]" Table="[UserRoleProperty]" Schema="[dbo]" Database="[T-INF-Admittance]"></StatisticsInfo>
+							<StatisticsInfo LastUpdate="2017-12-13T16:06:47.54" ModificationCount="0" SamplingPercent="100" Statistics="[_WA_Sys_00000003_2F10007B]" Table="[RoleProperty]" Schema="[dbo]" Database="[T-INF-Admittance]"></StatisticsInfo>
+							<StatisticsInfo LastUpdate="2016-09-19T09:33:26.97" ModificationCount="0" SamplingPercent="100" Statistics="[_WA_Sys_00000003_440B1D61]" Table="[UserRoleProperty]" Schema="[dbo]" Database="[T-INF-Admittance]"></StatisticsInfo>
+							<StatisticsInfo LastUpdate="2016-09-19T09:33:26.98" ModificationCount="0" SamplingPercent="100" Statistics="[PK_UserRoleProperty]" Table="[UserRoleProperty]" Schema="[dbo]" Database="[T-INF-Admittance]"></StatisticsInfo>
+							<StatisticsInfo LastUpdate="2017-12-13T16:06:47.53" ModificationCount="0" SamplingPercent="100" Statistics="[_WA_Sys_00000002_2F10007B]" Table="[RoleProperty]" Schema="[dbo]" Database="[T-INF-Admittance]"></StatisticsInfo>
+							<StatisticsInfo LastUpdate="2017-12-13T16:06:47.57" ModificationCount="0" SamplingPercent="100" Statistics="[_WA_Sys_00000008_2F10007B]" Table="[RoleProperty]" Schema="[dbo]" Database="[T-INF-Admittance]"></StatisticsInfo>
+							<StatisticsInfo LastUpdate="2016-12-27T17:00:02.46" ModificationCount="0" SamplingPercent="100" Statistics="[_WA_Sys_00000009_440B1D61]" Table="[UserRoleProperty]" Schema="[dbo]" Database="[T-INF-Admittance]"></StatisticsInfo>
+							<StatisticsInfo LastUpdate="2016-09-19T10:24:23.43" ModificationCount="0" SamplingPercent="100" Statistics="[_WA_Sys_00000004_440B1D61]" Table="[UserRoleProperty]" Schema="[dbo]" Database="[T-INF-Admittance]"></StatisticsInfo>
+						</OptimizerStatsUsage>
+						<RelOp NodeId="0" PhysicalOp="Nested Loops" LogicalOp="Inner Join" EstimateRows="4.57045" EstimateIO="0" EstimateCPU="1.91045e-05" AvgRowSize="8334" EstimatedTotalSubtreeCost="0.115285" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+							<OutputList>
+								<ColumnReference Column="Union1026"></ColumnReference>
+								<ColumnReference Column="Expr1031"></ColumnReference>
+								<ColumnReference Column="Union1059"></ColumnReference>
+								<ColumnReference Column="Union1061"></ColumnReference>
+								<ColumnReference Column="Union1062"></ColumnReference>
+								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Property]" Alias="[p3]" Column="Name"></ColumnReference>
+								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Property]" Alias="[p3]" Column="AggregatedPropertyId"></ColumnReference>
+							</OutputList>
+							<NestedLoops Optimized="0">
+								<OuterReferences>
+									<ColumnReference Column="Union1058"></ColumnReference>
+								</OuterReferences>
+								<RelOp NodeId="1" PhysicalOp="Nested Loops" LogicalOp="Inner Join" EstimateRows="4.57045" EstimateIO="0" EstimateCPU="0.000248697" AvgRowSize="4055" EstimatedTotalSubtreeCost="0.111418" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+									<OutputList>
+										<ColumnReference Column="Union1026"></ColumnReference>
+										<ColumnReference Column="Expr1031"></ColumnReference>
+										<ColumnReference Column="Union1058"></ColumnReference>
+										<ColumnReference Column="Union1059"></ColumnReference>
+										<ColumnReference Column="Union1061"></ColumnReference>
+										<ColumnReference Column="Union1062"></ColumnReference>
+									</OutputList>
+									<NestedLoops Optimized="0">
+										<Predicate>
+											<ScalarOperator ScalarString="[Union1026]=[Union1058] AND [Expr1031]=[Union1060]">
+												<Logical Operation="AND">
+													<ScalarOperator>
+														<Compare CompareOp="EQ">
+															<ScalarOperator>
+																<Identifier>
+																	<ColumnReference Column="Union1026"></ColumnReference>
+																</Identifier>
+															</ScalarOperator>
+															<ScalarOperator>
+																<Identifier>
+																	<ColumnReference Column="Union1058"></ColumnReference>
+																</Identifier>
+															</ScalarOperator>
+														</Compare>
+													</ScalarOperator>
+													<ScalarOperator>
+														<Compare CompareOp="EQ">
+															<ScalarOperator>
+																<Identifier>
+																	<ColumnReference Column="Expr1031"></ColumnReference>
+																</Identifier>
+															</ScalarOperator>
+															<ScalarOperator>
+																<Identifier>
+																	<ColumnReference Column="Union1060"></ColumnReference>
+																</Identifier>
+															</ScalarOperator>
+														</Compare>
+													</ScalarOperator>
+												</Logical>
+											</ScalarOperator>
+										</Predicate>
+										<RelOp NodeId="2" PhysicalOp="Stream Aggregate" LogicalOp="Aggregate" EstimateRows="4.19926" EstimateIO="0" EstimateCPU="1.06007e-05" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0503517" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+											<OutputList>
+												<ColumnReference Column="Union1026"></ColumnReference>
+												<ColumnReference Column="Expr1031"></ColumnReference>
+											</OutputList>
+											<StreamAggregate>
+												<DefinedValues>
+													<DefinedValue>
+														<ColumnReference Column="Expr1031"></ColumnReference>
+														<ScalarOperator ScalarString="MIN([Union1028])">
+															<Aggregate Distinct="0" AggType="MIN">
+																<ScalarOperator>
+																	<Identifier>
+																		<ColumnReference Column="Union1028"></ColumnReference>
+																	</Identifier>
+																</ScalarOperator>
+															</Aggregate>
+														</ScalarOperator>
+													</DefinedValue>
+												</DefinedValues>
+												<GroupBy>
+													<ColumnReference Column="Union1026"></ColumnReference>
+												</GroupBy>
+												<RelOp NodeId="3" PhysicalOp="Sort" LogicalOp="Distinct Sort" EstimateRows="14.1684" EstimateIO="0.0112613" EstimateCPU="0.000185267" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0503411" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+													<OutputList>
+														<ColumnReference Column="Union1026"></ColumnReference>
+														<ColumnReference Column="Union1028"></ColumnReference>
+													</OutputList>
+													<MemoryFractions Input="0.181818" Output="0.181818"></MemoryFractions>
+													<Sort Distinct="1">
+														<OrderBy>
+															<OrderByColumn Ascending="1">
+																<ColumnReference Column="Union1026"></ColumnReference>
+															</OrderByColumn>
+															<OrderByColumn Ascending="1">
+																<ColumnReference Column="Union1027"></ColumnReference>
+															</OrderByColumn>
+															<OrderByColumn Ascending="1">
+																<ColumnReference Column="Union1028"></ColumnReference>
+															</OrderByColumn>
+															<OrderByColumn Ascending="1">
+																<ColumnReference Column="Union1029"></ColumnReference>
+															</OrderByColumn>
+															<OrderByColumn Ascending="1">
+																<ColumnReference Column="Union1030"></ColumnReference>
+															</OrderByColumn>
+														</OrderBy>
+														<RelOp NodeId="4" PhysicalOp="Concatenation" LogicalOp="Concatenation" EstimateRows="14.2456" EstimateIO="0" EstimateCPU="1.42456e-06" AvgRowSize="98" EstimatedTotalSubtreeCost="0.0388946" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+															<OutputList>
+																<ColumnReference Column="Union1026"></ColumnReference>
+																<ColumnReference Column="Union1027"></ColumnReference>
+																<ColumnReference Column="Union1028"></ColumnReference>
+																<ColumnReference Column="Union1029"></ColumnReference>
+																<ColumnReference Column="Union1030"></ColumnReference>
+															</OutputList>
+															<Concat>
+																<DefinedValues>
+																	<DefinedValue>
+																		<ColumnReference Column="Union1026"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																	</DefinedValue>
+																	<DefinedValue>
+																		<ColumnReference Column="Union1027"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																	</DefinedValue>
+																	<DefinedValue>
+																		<ColumnReference Column="Union1028"></ColumnReference>
+																		<ColumnReference Column="Recr1011"></ColumnReference>
+																		<ColumnReference Column="Expr1024"></ColumnReference>
+																	</DefinedValue>
+																	<DefinedValue>
+																		<ColumnReference Column="Union1029"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																	</DefinedValue>
+																	<DefinedValue>
+																		<ColumnReference Column="Union1030"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PrincipalId"></ColumnReference>
+																		<ColumnReference Column="Expr1025"></ColumnReference>
+																	</DefinedValue>
+																</DefinedValues>
+																<RelOp NodeId="5" PhysicalOp="Nested Loops" LogicalOp="Inner Join" EstimateRows="2" EstimateIO="0" EstimateCPU="1.672e-05" AvgRowSize="95" EstimatedTotalSubtreeCost="0.0179713" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																	<OutputList>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PrincipalId"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																		<ColumnReference Column="Recr1011"></ColumnReference>
+																	</OutputList>
+																	<NestedLoops Optimized="0">
+																		<OuterReferences>
+																			<ColumnReference Column="Recr1009"></ColumnReference>
+																		</OuterReferences>
+																		<RelOp NodeId="6" PhysicalOp="Index Spool" LogicalOp="Lazy Spool" EstimateRows="4" EstimateIO="0" EstimateCPU="1e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0141953" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																			<OutputList>
+																				<ColumnReference Column="Expr1067"></ColumnReference>
+																				<ColumnReference Column="Recr1009"></ColumnReference>
+																				<ColumnReference Column="Recr1010"></ColumnReference>
+																				<ColumnReference Column="Recr1011"></ColumnReference>
+																			</OutputList>
+																			<Spool Stack="1">
+																				<RelOp NodeId="7" PhysicalOp="Concatenation" LogicalOp="Concatenation" EstimateRows="4" EstimateIO="0" EstimateCPU="2e-09" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0122881" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																					<OutputList>
+																						<ColumnReference Column="Expr1067"></ColumnReference>
+																						<ColumnReference Column="Recr1009"></ColumnReference>
+																						<ColumnReference Column="Recr1010"></ColumnReference>
+																						<ColumnReference Column="Recr1011"></ColumnReference>
+																					</OutputList>
+																					<Concat>
+																						<DefinedValues>
+																							<DefinedValue>
+																								<ColumnReference Column="Expr1067"></ColumnReference>
+																								<ColumnReference Column="Expr1064"></ColumnReference>
+																								<ColumnReference Column="Expr1066"></ColumnReference>
+																							</DefinedValue>
+																							<DefinedValue>
+																								<ColumnReference Column="Recr1009"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																							</DefinedValue>
+																							<DefinedValue>
+																								<ColumnReference Column="Recr1010"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																							</DefinedValue>
+																							<DefinedValue>
+																								<ColumnReference Column="Recr1011"></ColumnReference>
+																								<ColumnReference Column="Expr1003"></ColumnReference>
+																								<ColumnReference Column="Expr1008"></ColumnReference>
+																							</DefinedValue>
+																						</DefinedValues>
+																						<RelOp NodeId="8" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="2e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="2e-08" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																							<OutputList>
+																								<ColumnReference Column="Expr1064"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																								<ColumnReference Column="Expr1003"></ColumnReference>
+																							</OutputList>
+																							<ComputeScalar>
+																								<DefinedValues>
+																									<DefinedValue>
+																										<ColumnReference Column="Expr1064"></ColumnReference>
+																										<ScalarOperator ScalarString="(0)">
+																											<Const ConstValue="(0)"></Const>
+																										</ScalarOperator>
+																									</DefinedValue>
+																								</DefinedValues>
+																								<RelOp NodeId="9" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="1e-07" AvgRowSize="19" EstimatedTotalSubtreeCost="0.0032832" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																									<OutputList>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																										<ColumnReference Column="Expr1003"></ColumnReference>
+																									</OutputList>
+																									<ComputeScalar>
+																										<DefinedValues>
+																											<DefinedValue>
+																												<ColumnReference Column="Expr1003"></ColumnReference>
+																												<ScalarOperator ScalarString="(1)">
+																													<Const ConstValue="(1)"></Const>
+																												</ScalarOperator>
+																											</DefinedValue>
+																										</DefinedValues>
+																										<RelOp NodeId="10" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0032831" TableCardinality="346" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																											<OutputList>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																											</OutputList>
+																											<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																												<DefinedValues>
+																													<DefinedValue>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																													</DefinedValue>
+																													<DefinedValue>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																													</DefinedValue>
+																												</DefinedValues>
+																												<Object Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Index="[PK_Role]" TableReferenceId="1" IndexKind="Clustered" Storage="RowStore"></Object>
+																												<SeekPredicates>
+																													<SeekPredicateNew>
+																														<SeekKeys>
+																															<Prefix ScanType="EQ">
+																																<RangeColumns>
+																																	<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																																</RangeColumns>
+																																<RangeExpressions>
+																																	<ScalarOperator ScalarString="[@roleId]">
+																																		<Identifier>
+																																			<ColumnReference Column="@roleId"></ColumnReference>
+																																		</Identifier>
+																																	</ScalarOperator>
+																																</RangeExpressions>
+																															</Prefix>
+																														</SeekKeys>
+																													</SeekPredicateNew>
+																												</SeekPredicates>
+																											</IndexScan>
+																										</RelOp>
+																									</ComputeScalar>
+																								</RelOp>
+																							</ComputeScalar>
+																						</RelOp>
+																						<RelOp NodeId="11" PhysicalOp="Assert" LogicalOp="Assert" EstimateRows="4" EstimateIO="0" EstimateCPU="1.68e-07" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0090049" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																							<OutputList>
+																								<ColumnReference Column="Expr1066"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																								<ColumnReference Column="Expr1008"></ColumnReference>
+																							</OutputList>
+																							<Assert StartupExpression="0">
+																								<RelOp NodeId="12" PhysicalOp="Nested Loops" LogicalOp="Inner Join" EstimateRows="4" EstimateIO="0" EstimateCPU="1.68e-07" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0090049" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																									<OutputList>
+																										<ColumnReference Column="Expr1066"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																										<ColumnReference Column="Expr1008"></ColumnReference>
+																									</OutputList>
+																									<NestedLoops Optimized="0">
+																										<OuterReferences>
+																											<ColumnReference Column="Expr1066"></ColumnReference>
+																											<ColumnReference Column="Recr1005"></ColumnReference>
+																											<ColumnReference Column="Recr1006"></ColumnReference>
+																											<ColumnReference Column="Recr1007"></ColumnReference>
+																										</OuterReferences>
+																										<RelOp NodeId="13" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="2e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="2e-08" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																											<OutputList>
+																												<ColumnReference Column="Expr1066"></ColumnReference>
+																												<ColumnReference Column="Recr1005"></ColumnReference>
+																												<ColumnReference Column="Recr1006"></ColumnReference>
+																												<ColumnReference Column="Recr1007"></ColumnReference>
+																											</OutputList>
+																											<ComputeScalar>
+																												<DefinedValues>
+																													<DefinedValue>
+																														<ColumnReference Column="Expr1066"></ColumnReference>
+																														<ScalarOperator ScalarString="[Expr1065]+(1)">
+																															<Arithmetic Operation="ADD">
+																																<ScalarOperator>
+																																	<Identifier>
+																																		<ColumnReference Column="Expr1065"></ColumnReference>
+																																	</Identifier>
+																																</ScalarOperator>
+																																<ScalarOperator>
+																																	<Const ConstValue="(1)"></Const>
+																																</ScalarOperator>
+																															</Arithmetic>
+																														</ScalarOperator>
+																													</DefinedValue>
+																												</DefinedValues>
+																												<RelOp NodeId="14" PhysicalOp="Table Spool" LogicalOp="Lazy Spool" EstimateRows="1" EstimateIO="0" EstimateCPU="2e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="2e-08" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																													<OutputList>
+																														<ColumnReference Column="Expr1065"></ColumnReference>
+																														<ColumnReference Column="Recr1005"></ColumnReference>
+																														<ColumnReference Column="Recr1006"></ColumnReference>
+																														<ColumnReference Column="Recr1007"></ColumnReference>
+																													</OutputList>
+																													<Spool PrimaryNodeId="6" Stack="1"></Spool>
+																												</RelOp>
+																											</ComputeScalar>
+																										</RelOp>
+																										<RelOp NodeId="15" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="1e-07" AvgRowSize="19" EstimatedTotalSubtreeCost="0.00900471" Parallel="0" EstimateRebinds="3" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																											<OutputList>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																												<ColumnReference Column="Expr1008"></ColumnReference>
+																											</OutputList>
+																											<ComputeScalar>
+																												<DefinedValues>
+																													<DefinedValue>
+																														<ColumnReference Column="Expr1008"></ColumnReference>
+																														<ScalarOperator ScalarString="[Recr1007]+(1)">
+																															<Arithmetic Operation="ADD">
+																																<ScalarOperator>
+																																	<Identifier>
+																																		<ColumnReference Column="Recr1007"></ColumnReference>
+																																	</Identifier>
+																																</ScalarOperator>
+																																<ScalarOperator>
+																																	<Const ConstValue="(1)"></Const>
+																																</ScalarOperator>
+																															</Arithmetic>
+																														</ScalarOperator>
+																													</DefinedValue>
+																												</DefinedValues>
+																												<RelOp NodeId="16" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="15" EstimatedTotalSubtreeCost="0.00900431" TableCardinality="346" Parallel="0" EstimateRebinds="3" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																													<OutputList>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																													</OutputList>
+																													<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																														<DefinedValues>
+																															<DefinedValue>
+																																<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																															</DefinedValue>
+																															<DefinedValue>
+																																<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																															</DefinedValue>
+																														</DefinedValues>
+																														<Object Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Index="[PK_Role]" Alias="[parent]" TableReferenceId="1" IndexKind="Clustered" Storage="RowStore"></Object>
+																														<SeekPredicates>
+																															<SeekPredicateNew>
+																																<SeekKeys>
+																																	<Prefix ScanType="EQ">
+																																		<RangeColumns>
+																																			<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																																		</RangeColumns>
+																																		<RangeExpressions>
+																																			<ScalarOperator ScalarString="[Recr1006]">
+																																				<Identifier>
+																																					<ColumnReference Column="Recr1006"></ColumnReference>
+																																				</Identifier>
+																																			</ScalarOperator>
+																																		</RangeExpressions>
+																																	</Prefix>
+																																</SeekKeys>
+																															</SeekPredicateNew>
+																														</SeekPredicates>
+																													</IndexScan>
+																												</RelOp>
+																											</ComputeScalar>
+																										</RelOp>
+																									</NestedLoops>
+																								</RelOp>
+																								<Predicate>
+																									<ScalarOperator ScalarString="CASE WHEN [Expr1066]&gt;(100) THEN (0) ELSE NULL END">
+																										<IF>
+																											<Condition>
+																												<ScalarOperator>
+																													<Compare CompareOp="GT">
+																														<ScalarOperator>
+																															<Identifier>
+																																<ColumnReference Column="Expr1066"></ColumnReference>
+																															</Identifier>
+																														</ScalarOperator>
+																														<ScalarOperator>
+																															<Const ConstValue="(100)"></Const>
+																														</ScalarOperator>
+																													</Compare>
+																												</ScalarOperator>
+																											</Condition>
+																											<Then>
+																												<ScalarOperator>
+																													<Const ConstValue="(0)"></Const>
+																												</ScalarOperator>
+																											</Then>
+																											<Else>
+																												<ScalarOperator>
+																													<Const ConstValue="NULL"></Const>
+																												</ScalarOperator>
+																											</Else>
+																										</IF>
+																									</ScalarOperator>
+																								</Predicate>
+																							</Assert>
+																						</RelOp>
+																					</Concat>
+																				</RelOp>
+																			</Spool>
+																		</RelOp>
+																		<RelOp NodeId="17" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="99" EstimatedTotalSubtreeCost="0.0037574" TableCardinality="1" Parallel="0" EstimateRebinds="2" EstimateRewinds="1" EstimatedExecutionMode="Row">
+																			<OutputList>
+																				<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PrincipalId"></ColumnReference>
+																				<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																				<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																				<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																			</OutputList>
+																			<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																				<DefinedValues>
+																					<DefinedValue>
+																						<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PrincipalId"></ColumnReference>
+																					</DefinedValue>
+																					<DefinedValue>
+																						<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																					</DefinedValue>
+																					<DefinedValue>
+																						<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																					</DefinedValue>
+																					<DefinedValue>
+																						<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																					</DefinedValue>
+																				</DefinedValues>
+																				<Object Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Index="[PK_UserRoleProperty]" Alias="[p]" TableReferenceId="1" IndexKind="Clustered" Storage="RowStore"></Object>
+																				<SeekPredicates>
+																					<SeekPredicateNew>
+																						<SeekKeys>
+																							<Prefix ScanType="EQ">
+																								<RangeColumns>
+																									<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PrincipalId"></ColumnReference>
+																									<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																								</RangeColumns>
+																								<RangeExpressions>
+																									<ScalarOperator ScalarString="[@principalId]">
+																										<Identifier>
+																											<ColumnReference Column="@principalId"></ColumnReference>
+																										</Identifier>
+																									</ScalarOperator>
+																									<ScalarOperator ScalarString="[Recr1009]">
+																										<Identifier>
+																											<ColumnReference Column="Recr1009"></ColumnReference>
+																										</Identifier>
+																									</ScalarOperator>
+																								</RangeExpressions>
+																							</Prefix>
+																						</SeekKeys>
+																					</SeekPredicateNew>
+																				</SeekPredicates>
+																				<Predicate>
+																					<ScalarOperator ScalarString="[T-INF-Admittance].[dbo].[UserRoleProperty].[DeletedTime] as [p].[DeletedTime] IS NULL">
+																						<Compare CompareOp="IS">
+																							<ScalarOperator>
+																								<Identifier>
+																									<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="DeletedTime"></ColumnReference>
+																								</Identifier>
+																							</ScalarOperator>
+																							<ScalarOperator>
+																								<Const ConstValue="NULL"></Const>
+																							</ScalarOperator>
+																						</Compare>
+																					</ScalarOperator>
+																				</Predicate>
+																			</IndexScan>
+																		</RelOp>
+																	</NestedLoops>
+																</RelOp>
+																<RelOp NodeId="18" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="12.2456" EstimateIO="0" EstimateCPU="1.22456e-06" AvgRowSize="104" EstimatedTotalSubtreeCost="0.0209218" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																	<OutputList>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																		<ColumnReference Column="Expr1024"></ColumnReference>
+																		<ColumnReference Column="Expr1025"></ColumnReference>
+																	</OutputList>
+																	<ComputeScalar>
+																		<DefinedValues>
+																			<DefinedValue>
+																				<ColumnReference Column="Expr1024"></ColumnReference>
+																				<ScalarOperator ScalarString="(10000)*[Recr1023]">
+																					<Arithmetic Operation="MULT">
+																						<ScalarOperator>
+																							<Const ConstValue="(10000)"></Const>
+																						</ScalarOperator>
+																						<ScalarOperator>
+																							<Identifier>
+																								<ColumnReference Column="Recr1023"></ColumnReference>
+																							</Identifier>
+																						</ScalarOperator>
+																					</Arithmetic>
+																				</ScalarOperator>
+																			</DefinedValue>
+																			<DefinedValue>
+																				<ColumnReference Column="Expr1025"></ColumnReference>
+																				<ScalarOperator ScalarString="NULL">
+																					<Const ConstValue="NULL"></Const>
+																				</ScalarOperator>
+																			</DefinedValue>
+																		</DefinedValues>
+																		<RelOp NodeId="19" PhysicalOp="Nested Loops" LogicalOp="Inner Join" EstimateRows="12.2456" EstimateIO="0" EstimateCPU="5.11867e-05" AvgRowSize="100" EstimatedTotalSubtreeCost="0.0209206" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																			<OutputList>
+																				<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																				<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																				<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																				<ColumnReference Column="Recr1023"></ColumnReference>
+																			</OutputList>
+																			<NestedLoops Optimized="0">
+																				<OuterReferences>
+																					<ColumnReference Column="Recr1021"></ColumnReference>
+																				</OuterReferences>
+																				<RelOp NodeId="20" PhysicalOp="Index Spool" LogicalOp="Lazy Spool" EstimateRows="4" EstimateIO="0" EstimateCPU="1e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0141953" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																					<OutputList>
+																						<ColumnReference Column="Expr1071"></ColumnReference>
+																						<ColumnReference Column="Recr1021"></ColumnReference>
+																						<ColumnReference Column="Recr1022"></ColumnReference>
+																						<ColumnReference Column="Recr1023"></ColumnReference>
+																					</OutputList>
+																					<Spool Stack="1">
+																						<RelOp NodeId="21" PhysicalOp="Concatenation" LogicalOp="Concatenation" EstimateRows="4" EstimateIO="0" EstimateCPU="2e-09" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0122881" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																							<OutputList>
+																								<ColumnReference Column="Expr1071"></ColumnReference>
+																								<ColumnReference Column="Recr1021"></ColumnReference>
+																								<ColumnReference Column="Recr1022"></ColumnReference>
+																								<ColumnReference Column="Recr1023"></ColumnReference>
+																							</OutputList>
+																							<Concat>
+																								<DefinedValues>
+																									<DefinedValue>
+																										<ColumnReference Column="Expr1071"></ColumnReference>
+																										<ColumnReference Column="Expr1068"></ColumnReference>
+																										<ColumnReference Column="Expr1070"></ColumnReference>
+																									</DefinedValue>
+																									<DefinedValue>
+																										<ColumnReference Column="Recr1021"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																									</DefinedValue>
+																									<DefinedValue>
+																										<ColumnReference Column="Recr1022"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																									</DefinedValue>
+																									<DefinedValue>
+																										<ColumnReference Column="Recr1023"></ColumnReference>
+																										<ColumnReference Column="Expr1015"></ColumnReference>
+																										<ColumnReference Column="Expr1020"></ColumnReference>
+																									</DefinedValue>
+																								</DefinedValues>
+																								<RelOp NodeId="22" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="2e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="2e-08" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																									<OutputList>
+																										<ColumnReference Column="Expr1068"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																										<ColumnReference Column="Expr1015"></ColumnReference>
+																									</OutputList>
+																									<ComputeScalar>
+																										<DefinedValues>
+																											<DefinedValue>
+																												<ColumnReference Column="Expr1068"></ColumnReference>
+																												<ScalarOperator ScalarString="(0)">
+																													<Const ConstValue="(0)"></Const>
+																												</ScalarOperator>
+																											</DefinedValue>
+																										</DefinedValues>
+																										<RelOp NodeId="23" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="1e-07" AvgRowSize="19" EstimatedTotalSubtreeCost="0.0032832" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																											<OutputList>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																												<ColumnReference Column="Expr1015"></ColumnReference>
+																											</OutputList>
+																											<ComputeScalar>
+																												<DefinedValues>
+																													<DefinedValue>
+																														<ColumnReference Column="Expr1015"></ColumnReference>
+																														<ScalarOperator ScalarString="(1)">
+																															<Const ConstValue="(1)"></Const>
+																														</ScalarOperator>
+																													</DefinedValue>
+																												</DefinedValues>
+																												<RelOp NodeId="24" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0032831" TableCardinality="346" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																													<OutputList>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																													</OutputList>
+																													<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																														<DefinedValues>
+																															<DefinedValue>
+																																<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																															</DefinedValue>
+																															<DefinedValue>
+																																<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																															</DefinedValue>
+																														</DefinedValues>
+																														<Object Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Index="[PK_Role]" TableReferenceId="2" IndexKind="Clustered" Storage="RowStore"></Object>
+																														<SeekPredicates>
+																															<SeekPredicateNew>
+																																<SeekKeys>
+																																	<Prefix ScanType="EQ">
+																																		<RangeColumns>
+																																			<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																																		</RangeColumns>
+																																		<RangeExpressions>
+																																			<ScalarOperator ScalarString="[@roleId]">
+																																				<Identifier>
+																																					<ColumnReference Column="@roleId"></ColumnReference>
+																																				</Identifier>
+																																			</ScalarOperator>
+																																		</RangeExpressions>
+																																	</Prefix>
+																																</SeekKeys>
+																															</SeekPredicateNew>
+																														</SeekPredicates>
+																													</IndexScan>
+																												</RelOp>
+																											</ComputeScalar>
+																										</RelOp>
+																									</ComputeScalar>
+																								</RelOp>
+																								<RelOp NodeId="25" PhysicalOp="Assert" LogicalOp="Assert" EstimateRows="4" EstimateIO="0" EstimateCPU="1.68e-07" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0090049" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																									<OutputList>
+																										<ColumnReference Column="Expr1070"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																										<ColumnReference Column="Expr1020"></ColumnReference>
+																									</OutputList>
+																									<Assert StartupExpression="0">
+																										<RelOp NodeId="26" PhysicalOp="Nested Loops" LogicalOp="Inner Join" EstimateRows="4" EstimateIO="0" EstimateCPU="1.68e-07" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0090049" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																											<OutputList>
+																												<ColumnReference Column="Expr1070"></ColumnReference>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																												<ColumnReference Column="Expr1020"></ColumnReference>
+																											</OutputList>
+																											<NestedLoops Optimized="0">
+																												<OuterReferences>
+																													<ColumnReference Column="Expr1070"></ColumnReference>
+																													<ColumnReference Column="Recr1017"></ColumnReference>
+																													<ColumnReference Column="Recr1018"></ColumnReference>
+																													<ColumnReference Column="Recr1019"></ColumnReference>
+																												</OuterReferences>
+																												<RelOp NodeId="27" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="2e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="2e-08" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																													<OutputList>
+																														<ColumnReference Column="Expr1070"></ColumnReference>
+																														<ColumnReference Column="Recr1017"></ColumnReference>
+																														<ColumnReference Column="Recr1018"></ColumnReference>
+																														<ColumnReference Column="Recr1019"></ColumnReference>
+																													</OutputList>
+																													<ComputeScalar>
+																														<DefinedValues>
+																															<DefinedValue>
+																																<ColumnReference Column="Expr1070"></ColumnReference>
+																																<ScalarOperator ScalarString="[Expr1069]+(1)">
+																																	<Arithmetic Operation="ADD">
+																																		<ScalarOperator>
+																																			<Identifier>
+																																				<ColumnReference Column="Expr1069"></ColumnReference>
+																																			</Identifier>
+																																		</ScalarOperator>
+																																		<ScalarOperator>
+																																			<Const ConstValue="(1)"></Const>
+																																		</ScalarOperator>
+																																	</Arithmetic>
+																																</ScalarOperator>
+																															</DefinedValue>
+																														</DefinedValues>
+																														<RelOp NodeId="28" PhysicalOp="Table Spool" LogicalOp="Lazy Spool" EstimateRows="1" EstimateIO="0" EstimateCPU="2e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="2e-08" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																															<OutputList>
+																																<ColumnReference Column="Expr1069"></ColumnReference>
+																																<ColumnReference Column="Recr1017"></ColumnReference>
+																																<ColumnReference Column="Recr1018"></ColumnReference>
+																																<ColumnReference Column="Recr1019"></ColumnReference>
+																															</OutputList>
+																															<Spool PrimaryNodeId="20" Stack="1"></Spool>
+																														</RelOp>
+																													</ComputeScalar>
+																												</RelOp>
+																												<RelOp NodeId="29" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="1e-07" AvgRowSize="19" EstimatedTotalSubtreeCost="0.00900471" Parallel="0" EstimateRebinds="3" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																													<OutputList>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																														<ColumnReference Column="Expr1020"></ColumnReference>
+																													</OutputList>
+																													<ComputeScalar>
+																														<DefinedValues>
+																															<DefinedValue>
+																																<ColumnReference Column="Expr1020"></ColumnReference>
+																																<ScalarOperator ScalarString="[Recr1019]+(1)">
+																																	<Arithmetic Operation="ADD">
+																																		<ScalarOperator>
+																																			<Identifier>
+																																				<ColumnReference Column="Recr1019"></ColumnReference>
+																																			</Identifier>
+																																		</ScalarOperator>
+																																		<ScalarOperator>
+																																			<Const ConstValue="(1)"></Const>
+																																		</ScalarOperator>
+																																	</Arithmetic>
+																																</ScalarOperator>
+																															</DefinedValue>
+																														</DefinedValues>
+																														<RelOp NodeId="30" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="15" EstimatedTotalSubtreeCost="0.00900431" TableCardinality="346" Parallel="0" EstimateRebinds="3" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																															<OutputList>
+																																<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																																<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																															</OutputList>
+																															<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																																<DefinedValues>
+																																	<DefinedValue>
+																																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																																	</DefinedValue>
+																																	<DefinedValue>
+																																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																																	</DefinedValue>
+																																</DefinedValues>
+																																<Object Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Index="[PK_Role]" Alias="[parent]" TableReferenceId="2" IndexKind="Clustered" Storage="RowStore"></Object>
+																																<SeekPredicates>
+																																	<SeekPredicateNew>
+																																		<SeekKeys>
+																																			<Prefix ScanType="EQ">
+																																				<RangeColumns>
+																																					<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																																				</RangeColumns>
+																																				<RangeExpressions>
+																																					<ScalarOperator ScalarString="[Recr1018]">
+																																						<Identifier>
+																																							<ColumnReference Column="Recr1018"></ColumnReference>
+																																						</Identifier>
+																																					</ScalarOperator>
+																																				</RangeExpressions>
+																																			</Prefix>
+																																		</SeekKeys>
+																																	</SeekPredicateNew>
+																																</SeekPredicates>
+																															</IndexScan>
+																														</RelOp>
+																													</ComputeScalar>
+																												</RelOp>
+																											</NestedLoops>
+																										</RelOp>
+																										<Predicate>
+																											<ScalarOperator ScalarString="CASE WHEN [Expr1070]&gt;(100) THEN (0) ELSE NULL END">
+																												<IF>
+																													<Condition>
+																														<ScalarOperator>
+																															<Compare CompareOp="GT">
+																																<ScalarOperator>
+																																	<Identifier>
+																																		<ColumnReference Column="Expr1070"></ColumnReference>
+																																	</Identifier>
+																																</ScalarOperator>
+																																<ScalarOperator>
+																																	<Const ConstValue="(100)"></Const>
+																																</ScalarOperator>
+																															</Compare>
+																														</ScalarOperator>
+																													</Condition>
+																													<Then>
+																														<ScalarOperator>
+																															<Const ConstValue="(0)"></Const>
+																														</ScalarOperator>
+																													</Then>
+																													<Else>
+																														<ScalarOperator>
+																															<Const ConstValue="NULL"></Const>
+																														</ScalarOperator>
+																													</Else>
+																												</IF>
+																											</ScalarOperator>
+																										</Predicate>
+																									</Assert>
+																								</RelOp>
+																							</Concat>
+																						</RelOp>
+																					</Spool>
+																				</RelOp>
+																				<RelOp NodeId="31" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="3.0614" EstimatedRowsRead="3.0614" EstimateIO="0.003125" EstimateCPU="0.000160368" AvgRowSize="104" EstimatedTotalSubtreeCost="0.00666826" TableCardinality="698" Parallel="0" EstimateRebinds="2" EstimateRewinds="1" EstimatedExecutionMode="Row">
+																					<OutputList>
+																						<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																						<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																						<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																					</OutputList>
+																					<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																						<DefinedValues>
+																							<DefinedValue>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																							</DefinedValue>
+																							<DefinedValue>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																							</DefinedValue>
+																							<DefinedValue>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																							</DefinedValue>
+																						</DefinedValues>
+																						<Object Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Index="[PK_RoleProperty]" Alias="[p]" TableReferenceId="1" IndexKind="Clustered" Storage="RowStore"></Object>
+																						<SeekPredicates>
+																							<SeekPredicateNew>
+																								<SeekKeys>
+																									<Prefix ScanType="EQ">
+																										<RangeColumns>
+																											<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																										</RangeColumns>
+																										<RangeExpressions>
+																											<ScalarOperator ScalarString="[Recr1021]">
+																												<Identifier>
+																													<ColumnReference Column="Recr1021"></ColumnReference>
+																												</Identifier>
+																											</ScalarOperator>
+																										</RangeExpressions>
+																									</Prefix>
+																								</SeekKeys>
+																							</SeekPredicateNew>
+																						</SeekPredicates>
+																						<Predicate>
+																							<ScalarOperator ScalarString="[T-INF-Admittance].[dbo].[RoleProperty].[DeletedTime] as [p].[DeletedTime] IS NULL">
+																								<Compare CompareOp="IS">
+																									<ScalarOperator>
+																										<Identifier>
+																											<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="DeletedTime"></ColumnReference>
+																										</Identifier>
+																									</ScalarOperator>
+																									<ScalarOperator>
+																										<Const ConstValue="NULL"></Const>
+																									</ScalarOperator>
+																								</Compare>
+																							</ScalarOperator>
+																						</Predicate>
+																					</IndexScan>
+																				</RelOp>
+																			</NestedLoops>
+																		</RelOp>
+																	</ComputeScalar>
+																</RelOp>
+															</Concat>
+														</RelOp>
+													</Sort>
+												</RelOp>
+											</StreamAggregate>
+										</RelOp>
+										<RelOp NodeId="32" PhysicalOp="Table Spool" LogicalOp="Lazy Spool" EstimateRows="14.1684" EstimateIO="0.01" EstimateCPU="0.00010305" AvgRowSize="4051" EstimatedTotalSubtreeCost="0.0607762" Parallel="0" EstimateRebinds="0" EstimateRewinds="3.19926" EstimatedExecutionMode="Row">
+											<OutputList>
+												<ColumnReference Column="Union1058"></ColumnReference>
+												<ColumnReference Column="Union1059"></ColumnReference>
+												<ColumnReference Column="Union1060"></ColumnReference>
+												<ColumnReference Column="Union1061"></ColumnReference>
+												<ColumnReference Column="Union1062"></ColumnReference>
+											</OutputList>
+											<Spool>
+												<RelOp NodeId="33" PhysicalOp="Sort" LogicalOp="Distinct Sort" EstimateRows="14.1684" EstimateIO="0.0112613" EstimateCPU="0.00018922" AvgRowSize="4051" EstimatedTotalSubtreeCost="0.0503451" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+													<OutputList>
+														<ColumnReference Column="Union1058"></ColumnReference>
+														<ColumnReference Column="Union1059"></ColumnReference>
+														<ColumnReference Column="Union1060"></ColumnReference>
+														<ColumnReference Column="Union1061"></ColumnReference>
+														<ColumnReference Column="Union1062"></ColumnReference>
+													</OutputList>
+													<MemoryFractions Input="0.818182" Output="0.818182"></MemoryFractions>
+													<Sort Distinct="1">
+														<OrderBy>
+															<OrderByColumn Ascending="1">
+																<ColumnReference Column="Union1058"></ColumnReference>
+															</OrderByColumn>
+															<OrderByColumn Ascending="1">
+																<ColumnReference Column="Union1059"></ColumnReference>
+															</OrderByColumn>
+															<OrderByColumn Ascending="1">
+																<ColumnReference Column="Union1060"></ColumnReference>
+															</OrderByColumn>
+															<OrderByColumn Ascending="1">
+																<ColumnReference Column="Union1061"></ColumnReference>
+															</OrderByColumn>
+															<OrderByColumn Ascending="1">
+																<ColumnReference Column="Union1062"></ColumnReference>
+															</OrderByColumn>
+														</OrderBy>
+														<RelOp NodeId="34" PhysicalOp="Concatenation" LogicalOp="Concatenation" EstimateRows="14.2456" EstimateIO="0" EstimateCPU="1.42456e-06" AvgRowSize="4051" EstimatedTotalSubtreeCost="0.0388946" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+															<OutputList>
+																<ColumnReference Column="Union1058"></ColumnReference>
+																<ColumnReference Column="Union1059"></ColumnReference>
+																<ColumnReference Column="Union1060"></ColumnReference>
+																<ColumnReference Column="Union1061"></ColumnReference>
+																<ColumnReference Column="Union1062"></ColumnReference>
+															</OutputList>
+															<Concat>
+																<DefinedValues>
+																	<DefinedValue>
+																		<ColumnReference Column="Union1058"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																	</DefinedValue>
+																	<DefinedValue>
+																		<ColumnReference Column="Union1059"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																	</DefinedValue>
+																	<DefinedValue>
+																		<ColumnReference Column="Union1060"></ColumnReference>
+																		<ColumnReference Column="Recr1043"></ColumnReference>
+																		<ColumnReference Column="Expr1056"></ColumnReference>
+																	</DefinedValue>
+																	<DefinedValue>
+																		<ColumnReference Column="Union1061"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																	</DefinedValue>
+																	<DefinedValue>
+																		<ColumnReference Column="Union1062"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PrincipalId"></ColumnReference>
+																		<ColumnReference Column="Expr1057"></ColumnReference>
+																	</DefinedValue>
+																</DefinedValues>
+																<RelOp NodeId="35" PhysicalOp="Nested Loops" LogicalOp="Inner Join" EstimateRows="2" EstimateIO="0" EstimateCPU="1.672e-05" AvgRowSize="4051" EstimatedTotalSubtreeCost="0.0179713" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																	<OutputList>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PrincipalId"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																		<ColumnReference Column="Recr1043"></ColumnReference>
+																	</OutputList>
+																	<NestedLoops Optimized="0">
+																		<OuterReferences>
+																			<ColumnReference Column="Recr1041"></ColumnReference>
+																		</OuterReferences>
+																		<RelOp NodeId="36" PhysicalOp="Index Spool" LogicalOp="Lazy Spool" EstimateRows="4" EstimateIO="0" EstimateCPU="1e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0141953" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																			<OutputList>
+																				<ColumnReference Column="Expr1075"></ColumnReference>
+																				<ColumnReference Column="Recr1041"></ColumnReference>
+																				<ColumnReference Column="Recr1042"></ColumnReference>
+																				<ColumnReference Column="Recr1043"></ColumnReference>
+																			</OutputList>
+																			<Spool Stack="1">
+																				<RelOp NodeId="37" PhysicalOp="Concatenation" LogicalOp="Concatenation" EstimateRows="4" EstimateIO="0" EstimateCPU="2e-09" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0122881" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																					<OutputList>
+																						<ColumnReference Column="Expr1075"></ColumnReference>
+																						<ColumnReference Column="Recr1041"></ColumnReference>
+																						<ColumnReference Column="Recr1042"></ColumnReference>
+																						<ColumnReference Column="Recr1043"></ColumnReference>
+																					</OutputList>
+																					<Concat>
+																						<DefinedValues>
+																							<DefinedValue>
+																								<ColumnReference Column="Expr1075"></ColumnReference>
+																								<ColumnReference Column="Expr1072"></ColumnReference>
+																								<ColumnReference Column="Expr1074"></ColumnReference>
+																							</DefinedValue>
+																							<DefinedValue>
+																								<ColumnReference Column="Recr1041"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																							</DefinedValue>
+																							<DefinedValue>
+																								<ColumnReference Column="Recr1042"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																							</DefinedValue>
+																							<DefinedValue>
+																								<ColumnReference Column="Recr1043"></ColumnReference>
+																								<ColumnReference Column="Expr1035"></ColumnReference>
+																								<ColumnReference Column="Expr1040"></ColumnReference>
+																							</DefinedValue>
+																						</DefinedValues>
+																						<RelOp NodeId="38" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="2e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="2e-08" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																							<OutputList>
+																								<ColumnReference Column="Expr1072"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																								<ColumnReference Column="Expr1035"></ColumnReference>
+																							</OutputList>
+																							<ComputeScalar>
+																								<DefinedValues>
+																									<DefinedValue>
+																										<ColumnReference Column="Expr1072"></ColumnReference>
+																										<ScalarOperator ScalarString="(0)">
+																											<Const ConstValue="(0)"></Const>
+																										</ScalarOperator>
+																									</DefinedValue>
+																								</DefinedValues>
+																								<RelOp NodeId="39" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="1e-07" AvgRowSize="19" EstimatedTotalSubtreeCost="0.0032832" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																									<OutputList>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																										<ColumnReference Column="Expr1035"></ColumnReference>
+																									</OutputList>
+																									<ComputeScalar>
+																										<DefinedValues>
+																											<DefinedValue>
+																												<ColumnReference Column="Expr1035"></ColumnReference>
+																												<ScalarOperator ScalarString="(1)">
+																													<Const ConstValue="(1)"></Const>
+																												</ScalarOperator>
+																											</DefinedValue>
+																										</DefinedValues>
+																										<RelOp NodeId="40" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0032831" TableCardinality="346" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																											<OutputList>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																											</OutputList>
+																											<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																												<DefinedValues>
+																													<DefinedValue>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																													</DefinedValue>
+																													<DefinedValue>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																													</DefinedValue>
+																												</DefinedValues>
+																												<Object Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Index="[PK_Role]" TableReferenceId="3" IndexKind="Clustered" Storage="RowStore"></Object>
+																												<SeekPredicates>
+																													<SeekPredicateNew>
+																														<SeekKeys>
+																															<Prefix ScanType="EQ">
+																																<RangeColumns>
+																																	<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																																</RangeColumns>
+																																<RangeExpressions>
+																																	<ScalarOperator ScalarString="[@roleId]">
+																																		<Identifier>
+																																			<ColumnReference Column="@roleId"></ColumnReference>
+																																		</Identifier>
+																																	</ScalarOperator>
+																																</RangeExpressions>
+																															</Prefix>
+																														</SeekKeys>
+																													</SeekPredicateNew>
+																												</SeekPredicates>
+																											</IndexScan>
+																										</RelOp>
+																									</ComputeScalar>
+																								</RelOp>
+																							</ComputeScalar>
+																						</RelOp>
+																						<RelOp NodeId="41" PhysicalOp="Assert" LogicalOp="Assert" EstimateRows="4" EstimateIO="0" EstimateCPU="1.68e-07" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0090049" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																							<OutputList>
+																								<ColumnReference Column="Expr1074"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																								<ColumnReference Column="Expr1040"></ColumnReference>
+																							</OutputList>
+																							<Assert StartupExpression="0">
+																								<RelOp NodeId="42" PhysicalOp="Nested Loops" LogicalOp="Inner Join" EstimateRows="4" EstimateIO="0" EstimateCPU="1.68e-07" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0090049" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																									<OutputList>
+																										<ColumnReference Column="Expr1074"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																										<ColumnReference Column="Expr1040"></ColumnReference>
+																									</OutputList>
+																									<NestedLoops Optimized="0">
+																										<OuterReferences>
+																											<ColumnReference Column="Expr1074"></ColumnReference>
+																											<ColumnReference Column="Recr1037"></ColumnReference>
+																											<ColumnReference Column="Recr1038"></ColumnReference>
+																											<ColumnReference Column="Recr1039"></ColumnReference>
+																										</OuterReferences>
+																										<RelOp NodeId="43" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="2e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="2e-08" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																											<OutputList>
+																												<ColumnReference Column="Expr1074"></ColumnReference>
+																												<ColumnReference Column="Recr1037"></ColumnReference>
+																												<ColumnReference Column="Recr1038"></ColumnReference>
+																												<ColumnReference Column="Recr1039"></ColumnReference>
+																											</OutputList>
+																											<ComputeScalar>
+																												<DefinedValues>
+																													<DefinedValue>
+																														<ColumnReference Column="Expr1074"></ColumnReference>
+																														<ScalarOperator ScalarString="[Expr1073]+(1)">
+																															<Arithmetic Operation="ADD">
+																																<ScalarOperator>
+																																	<Identifier>
+																																		<ColumnReference Column="Expr1073"></ColumnReference>
+																																	</Identifier>
+																																</ScalarOperator>
+																																<ScalarOperator>
+																																	<Const ConstValue="(1)"></Const>
+																																</ScalarOperator>
+																															</Arithmetic>
+																														</ScalarOperator>
+																													</DefinedValue>
+																												</DefinedValues>
+																												<RelOp NodeId="44" PhysicalOp="Table Spool" LogicalOp="Lazy Spool" EstimateRows="1" EstimateIO="0" EstimateCPU="2e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="2e-08" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																													<OutputList>
+																														<ColumnReference Column="Expr1073"></ColumnReference>
+																														<ColumnReference Column="Recr1037"></ColumnReference>
+																														<ColumnReference Column="Recr1038"></ColumnReference>
+																														<ColumnReference Column="Recr1039"></ColumnReference>
+																													</OutputList>
+																													<Spool PrimaryNodeId="36" Stack="1"></Spool>
+																												</RelOp>
+																											</ComputeScalar>
+																										</RelOp>
+																										<RelOp NodeId="45" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="1e-07" AvgRowSize="19" EstimatedTotalSubtreeCost="0.00900471" Parallel="0" EstimateRebinds="3" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																											<OutputList>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																												<ColumnReference Column="Expr1040"></ColumnReference>
+																											</OutputList>
+																											<ComputeScalar>
+																												<DefinedValues>
+																													<DefinedValue>
+																														<ColumnReference Column="Expr1040"></ColumnReference>
+																														<ScalarOperator ScalarString="[Recr1039]+(1)">
+																															<Arithmetic Operation="ADD">
+																																<ScalarOperator>
+																																	<Identifier>
+																																		<ColumnReference Column="Recr1039"></ColumnReference>
+																																	</Identifier>
+																																</ScalarOperator>
+																																<ScalarOperator>
+																																	<Const ConstValue="(1)"></Const>
+																																</ScalarOperator>
+																															</Arithmetic>
+																														</ScalarOperator>
+																													</DefinedValue>
+																												</DefinedValues>
+																												<RelOp NodeId="46" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="15" EstimatedTotalSubtreeCost="0.00900431" TableCardinality="346" Parallel="0" EstimateRebinds="3" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																													<OutputList>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																													</OutputList>
+																													<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																														<DefinedValues>
+																															<DefinedValue>
+																																<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																															</DefinedValue>
+																															<DefinedValue>
+																																<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																															</DefinedValue>
+																														</DefinedValues>
+																														<Object Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Index="[PK_Role]" Alias="[parent]" TableReferenceId="3" IndexKind="Clustered" Storage="RowStore"></Object>
+																														<SeekPredicates>
+																															<SeekPredicateNew>
+																																<SeekKeys>
+																																	<Prefix ScanType="EQ">
+																																		<RangeColumns>
+																																			<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																																		</RangeColumns>
+																																		<RangeExpressions>
+																																			<ScalarOperator ScalarString="[Recr1038]">
+																																				<Identifier>
+																																					<ColumnReference Column="Recr1038"></ColumnReference>
+																																				</Identifier>
+																																			</ScalarOperator>
+																																		</RangeExpressions>
+																																	</Prefix>
+																																</SeekKeys>
+																															</SeekPredicateNew>
+																														</SeekPredicates>
+																													</IndexScan>
+																												</RelOp>
+																											</ComputeScalar>
+																										</RelOp>
+																									</NestedLoops>
+																								</RelOp>
+																								<Predicate>
+																									<ScalarOperator ScalarString="CASE WHEN [Expr1074]&gt;(100) THEN (0) ELSE NULL END">
+																										<IF>
+																											<Condition>
+																												<ScalarOperator>
+																													<Compare CompareOp="GT">
+																														<ScalarOperator>
+																															<Identifier>
+																																<ColumnReference Column="Expr1074"></ColumnReference>
+																															</Identifier>
+																														</ScalarOperator>
+																														<ScalarOperator>
+																															<Const ConstValue="(100)"></Const>
+																														</ScalarOperator>
+																													</Compare>
+																												</ScalarOperator>
+																											</Condition>
+																											<Then>
+																												<ScalarOperator>
+																													<Const ConstValue="(0)"></Const>
+																												</ScalarOperator>
+																											</Then>
+																											<Else>
+																												<ScalarOperator>
+																													<Const ConstValue="NULL"></Const>
+																												</ScalarOperator>
+																											</Else>
+																										</IF>
+																									</ScalarOperator>
+																								</Predicate>
+																							</Assert>
+																						</RelOp>
+																					</Concat>
+																				</RelOp>
+																			</Spool>
+																		</RelOp>
+																		<RelOp NodeId="47" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="4055" EstimatedTotalSubtreeCost="0.0037574" TableCardinality="1" Parallel="0" EstimateRebinds="2" EstimateRewinds="1" EstimatedExecutionMode="Row">
+																			<OutputList>
+																				<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PrincipalId"></ColumnReference>
+																				<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																				<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																				<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																			</OutputList>
+																			<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																				<DefinedValues>
+																					<DefinedValue>
+																						<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PrincipalId"></ColumnReference>
+																					</DefinedValue>
+																					<DefinedValue>
+																						<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																					</DefinedValue>
+																					<DefinedValue>
+																						<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																					</DefinedValue>
+																					<DefinedValue>
+																						<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																					</DefinedValue>
+																				</DefinedValues>
+																				<Object Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Index="[PK_UserRoleProperty]" Alias="[p]" TableReferenceId="2" IndexKind="Clustered" Storage="RowStore"></Object>
+																				<SeekPredicates>
+																					<SeekPredicateNew>
+																						<SeekKeys>
+																							<Prefix ScanType="EQ">
+																								<RangeColumns>
+																									<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="PrincipalId"></ColumnReference>
+																									<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																								</RangeColumns>
+																								<RangeExpressions>
+																									<ScalarOperator ScalarString="[@principalId]">
+																										<Identifier>
+																											<ColumnReference Column="@principalId"></ColumnReference>
+																										</Identifier>
+																									</ScalarOperator>
+																									<ScalarOperator ScalarString="[Recr1041]">
+																										<Identifier>
+																											<ColumnReference Column="Recr1041"></ColumnReference>
+																										</Identifier>
+																									</ScalarOperator>
+																								</RangeExpressions>
+																							</Prefix>
+																						</SeekKeys>
+																					</SeekPredicateNew>
+																				</SeekPredicates>
+																				<Predicate>
+																					<ScalarOperator ScalarString="[T-INF-Admittance].[dbo].[UserRoleProperty].[DeletedTime] as [p].[DeletedTime] IS NULL">
+																						<Compare CompareOp="IS">
+																							<ScalarOperator>
+																								<Identifier>
+																									<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[UserRoleProperty]" Alias="[p]" Column="DeletedTime"></ColumnReference>
+																								</Identifier>
+																							</ScalarOperator>
+																							<ScalarOperator>
+																								<Const ConstValue="NULL"></Const>
+																							</ScalarOperator>
+																						</Compare>
+																					</ScalarOperator>
+																				</Predicate>
+																			</IndexScan>
+																		</RelOp>
+																	</NestedLoops>
+																</RelOp>
+																<RelOp NodeId="48" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="12.2456" EstimateIO="0" EstimateCPU="1.22456e-06" AvgRowSize="4051" EstimatedTotalSubtreeCost="0.0209218" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																	<OutputList>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																		<ColumnReference Column="Expr1056"></ColumnReference>
+																		<ColumnReference Column="Expr1057"></ColumnReference>
+																	</OutputList>
+																	<ComputeScalar>
+																		<DefinedValues>
+																			<DefinedValue>
+																				<ColumnReference Column="Expr1056"></ColumnReference>
+																				<ScalarOperator ScalarString="(10000)*[Recr1055]">
+																					<Arithmetic Operation="MULT">
+																						<ScalarOperator>
+																							<Const ConstValue="(10000)"></Const>
+																						</ScalarOperator>
+																						<ScalarOperator>
+																							<Identifier>
+																								<ColumnReference Column="Recr1055"></ColumnReference>
+																							</Identifier>
+																						</ScalarOperator>
+																					</Arithmetic>
+																				</ScalarOperator>
+																			</DefinedValue>
+																			<DefinedValue>
+																				<ColumnReference Column="Expr1057"></ColumnReference>
+																				<ScalarOperator ScalarString="NULL">
+																					<Const ConstValue="NULL"></Const>
+																				</ScalarOperator>
+																			</DefinedValue>
+																		</DefinedValues>
+																		<RelOp NodeId="49" PhysicalOp="Nested Loops" LogicalOp="Inner Join" EstimateRows="12.2456" EstimateIO="0" EstimateCPU="5.11867e-05" AvgRowSize="4047" EstimatedTotalSubtreeCost="0.0209206" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																			<OutputList>
+																				<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																				<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																				<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																				<ColumnReference Column="Recr1055"></ColumnReference>
+																			</OutputList>
+																			<NestedLoops Optimized="0">
+																				<OuterReferences>
+																					<ColumnReference Column="Recr1053"></ColumnReference>
+																				</OuterReferences>
+																				<RelOp NodeId="50" PhysicalOp="Index Spool" LogicalOp="Lazy Spool" EstimateRows="4" EstimateIO="0" EstimateCPU="1e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0141953" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																					<OutputList>
+																						<ColumnReference Column="Expr1079"></ColumnReference>
+																						<ColumnReference Column="Recr1053"></ColumnReference>
+																						<ColumnReference Column="Recr1054"></ColumnReference>
+																						<ColumnReference Column="Recr1055"></ColumnReference>
+																					</OutputList>
+																					<Spool Stack="1">
+																						<RelOp NodeId="51" PhysicalOp="Concatenation" LogicalOp="Concatenation" EstimateRows="4" EstimateIO="0" EstimateCPU="2e-09" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0122881" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																							<OutputList>
+																								<ColumnReference Column="Expr1079"></ColumnReference>
+																								<ColumnReference Column="Recr1053"></ColumnReference>
+																								<ColumnReference Column="Recr1054"></ColumnReference>
+																								<ColumnReference Column="Recr1055"></ColumnReference>
+																							</OutputList>
+																							<Concat>
+																								<DefinedValues>
+																									<DefinedValue>
+																										<ColumnReference Column="Expr1079"></ColumnReference>
+																										<ColumnReference Column="Expr1076"></ColumnReference>
+																										<ColumnReference Column="Expr1078"></ColumnReference>
+																									</DefinedValue>
+																									<DefinedValue>
+																										<ColumnReference Column="Recr1053"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																									</DefinedValue>
+																									<DefinedValue>
+																										<ColumnReference Column="Recr1054"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																									</DefinedValue>
+																									<DefinedValue>
+																										<ColumnReference Column="Recr1055"></ColumnReference>
+																										<ColumnReference Column="Expr1047"></ColumnReference>
+																										<ColumnReference Column="Expr1052"></ColumnReference>
+																									</DefinedValue>
+																								</DefinedValues>
+																								<RelOp NodeId="52" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="2e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="2e-08" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																									<OutputList>
+																										<ColumnReference Column="Expr1076"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																										<ColumnReference Column="Expr1047"></ColumnReference>
+																									</OutputList>
+																									<ComputeScalar>
+																										<DefinedValues>
+																											<DefinedValue>
+																												<ColumnReference Column="Expr1076"></ColumnReference>
+																												<ScalarOperator ScalarString="(0)">
+																													<Const ConstValue="(0)"></Const>
+																												</ScalarOperator>
+																											</DefinedValue>
+																										</DefinedValues>
+																										<RelOp NodeId="53" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="1e-07" AvgRowSize="19" EstimatedTotalSubtreeCost="0.0032832" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																											<OutputList>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																												<ColumnReference Column="Expr1047"></ColumnReference>
+																											</OutputList>
+																											<ComputeScalar>
+																												<DefinedValues>
+																													<DefinedValue>
+																														<ColumnReference Column="Expr1047"></ColumnReference>
+																														<ScalarOperator ScalarString="(1)">
+																															<Const ConstValue="(1)"></Const>
+																														</ScalarOperator>
+																													</DefinedValue>
+																												</DefinedValues>
+																												<RelOp NodeId="54" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0032831" TableCardinality="346" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																													<OutputList>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																													</OutputList>
+																													<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																														<DefinedValues>
+																															<DefinedValue>
+																																<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																															</DefinedValue>
+																															<DefinedValue>
+																																<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="ParentRoleId"></ColumnReference>
+																															</DefinedValue>
+																														</DefinedValues>
+																														<Object Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Index="[PK_Role]" TableReferenceId="4" IndexKind="Clustered" Storage="RowStore"></Object>
+																														<SeekPredicates>
+																															<SeekPredicateNew>
+																																<SeekKeys>
+																																	<Prefix ScanType="EQ">
+																																		<RangeColumns>
+																																			<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Column="Id"></ColumnReference>
+																																		</RangeColumns>
+																																		<RangeExpressions>
+																																			<ScalarOperator ScalarString="[@roleId]">
+																																				<Identifier>
+																																					<ColumnReference Column="@roleId"></ColumnReference>
+																																				</Identifier>
+																																			</ScalarOperator>
+																																		</RangeExpressions>
+																																	</Prefix>
+																																</SeekKeys>
+																															</SeekPredicateNew>
+																														</SeekPredicates>
+																													</IndexScan>
+																												</RelOp>
+																											</ComputeScalar>
+																										</RelOp>
+																									</ComputeScalar>
+																								</RelOp>
+																								<RelOp NodeId="55" PhysicalOp="Assert" LogicalOp="Assert" EstimateRows="4" EstimateIO="0" EstimateCPU="1.68e-07" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0090049" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																									<OutputList>
+																										<ColumnReference Column="Expr1078"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																										<ColumnReference Column="Expr1052"></ColumnReference>
+																									</OutputList>
+																									<Assert StartupExpression="0">
+																										<RelOp NodeId="56" PhysicalOp="Nested Loops" LogicalOp="Inner Join" EstimateRows="4" EstimateIO="0" EstimateCPU="1.68e-07" AvgRowSize="15" EstimatedTotalSubtreeCost="0.0090049" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																											<OutputList>
+																												<ColumnReference Column="Expr1078"></ColumnReference>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																												<ColumnReference Column="Expr1052"></ColumnReference>
+																											</OutputList>
+																											<NestedLoops Optimized="0">
+																												<OuterReferences>
+																													<ColumnReference Column="Expr1078"></ColumnReference>
+																													<ColumnReference Column="Recr1049"></ColumnReference>
+																													<ColumnReference Column="Recr1050"></ColumnReference>
+																													<ColumnReference Column="Recr1051"></ColumnReference>
+																												</OuterReferences>
+																												<RelOp NodeId="57" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="2e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="2e-08" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																													<OutputList>
+																														<ColumnReference Column="Expr1078"></ColumnReference>
+																														<ColumnReference Column="Recr1049"></ColumnReference>
+																														<ColumnReference Column="Recr1050"></ColumnReference>
+																														<ColumnReference Column="Recr1051"></ColumnReference>
+																													</OutputList>
+																													<ComputeScalar>
+																														<DefinedValues>
+																															<DefinedValue>
+																																<ColumnReference Column="Expr1078"></ColumnReference>
+																																<ScalarOperator ScalarString="[Expr1077]+(1)">
+																																	<Arithmetic Operation="ADD">
+																																		<ScalarOperator>
+																																			<Identifier>
+																																				<ColumnReference Column="Expr1077"></ColumnReference>
+																																			</Identifier>
+																																		</ScalarOperator>
+																																		<ScalarOperator>
+																																			<Const ConstValue="(1)"></Const>
+																																		</ScalarOperator>
+																																	</Arithmetic>
+																																</ScalarOperator>
+																															</DefinedValue>
+																														</DefinedValues>
+																														<RelOp NodeId="58" PhysicalOp="Table Spool" LogicalOp="Lazy Spool" EstimateRows="1" EstimateIO="0" EstimateCPU="2e-08" AvgRowSize="15" EstimatedTotalSubtreeCost="2e-08" Parallel="0" EstimateRebinds="4" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																															<OutputList>
+																																<ColumnReference Column="Expr1077"></ColumnReference>
+																																<ColumnReference Column="Recr1049"></ColumnReference>
+																																<ColumnReference Column="Recr1050"></ColumnReference>
+																																<ColumnReference Column="Recr1051"></ColumnReference>
+																															</OutputList>
+																															<Spool PrimaryNodeId="50" Stack="1"></Spool>
+																														</RelOp>
+																													</ComputeScalar>
+																												</RelOp>
+																												<RelOp NodeId="59" PhysicalOp="Compute Scalar" LogicalOp="Compute Scalar" EstimateRows="1" EstimateIO="0" EstimateCPU="1e-07" AvgRowSize="19" EstimatedTotalSubtreeCost="0.00900471" Parallel="0" EstimateRebinds="3" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																													<OutputList>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																														<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																														<ColumnReference Column="Expr1052"></ColumnReference>
+																													</OutputList>
+																													<ComputeScalar>
+																														<DefinedValues>
+																															<DefinedValue>
+																																<ColumnReference Column="Expr1052"></ColumnReference>
+																																<ScalarOperator ScalarString="[Recr1051]+(1)">
+																																	<Arithmetic Operation="ADD">
+																																		<ScalarOperator>
+																																			<Identifier>
+																																				<ColumnReference Column="Recr1051"></ColumnReference>
+																																			</Identifier>
+																																		</ScalarOperator>
+																																		<ScalarOperator>
+																																			<Const ConstValue="(1)"></Const>
+																																		</ScalarOperator>
+																																	</Arithmetic>
+																																</ScalarOperator>
+																															</DefinedValue>
+																														</DefinedValues>
+																														<RelOp NodeId="60" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="15" EstimatedTotalSubtreeCost="0.00900431" TableCardinality="346" Parallel="0" EstimateRebinds="3" EstimateRewinds="0" EstimatedExecutionMode="Row">
+																															<OutputList>
+																																<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																																<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																															</OutputList>
+																															<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																																<DefinedValues>
+																																	<DefinedValue>
+																																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																																	</DefinedValue>
+																																	<DefinedValue>
+																																		<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="ParentRoleId"></ColumnReference>
+																																	</DefinedValue>
+																																</DefinedValues>
+																																<Object Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Index="[PK_Role]" Alias="[parent]" TableReferenceId="4" IndexKind="Clustered" Storage="RowStore"></Object>
+																																<SeekPredicates>
+																																	<SeekPredicateNew>
+																																		<SeekKeys>
+																																			<Prefix ScanType="EQ">
+																																				<RangeColumns>
+																																					<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Role]" Alias="[parent]" Column="Id"></ColumnReference>
+																																				</RangeColumns>
+																																				<RangeExpressions>
+																																					<ScalarOperator ScalarString="[Recr1050]">
+																																						<Identifier>
+																																							<ColumnReference Column="Recr1050"></ColumnReference>
+																																						</Identifier>
+																																					</ScalarOperator>
+																																				</RangeExpressions>
+																																			</Prefix>
+																																		</SeekKeys>
+																																	</SeekPredicateNew>
+																																</SeekPredicates>
+																															</IndexScan>
+																														</RelOp>
+																													</ComputeScalar>
+																												</RelOp>
+																											</NestedLoops>
+																										</RelOp>
+																										<Predicate>
+																											<ScalarOperator ScalarString="CASE WHEN [Expr1078]&gt;(100) THEN (0) ELSE NULL END">
+																												<IF>
+																													<Condition>
+																														<ScalarOperator>
+																															<Compare CompareOp="GT">
+																																<ScalarOperator>
+																																	<Identifier>
+																																		<ColumnReference Column="Expr1078"></ColumnReference>
+																																	</Identifier>
+																																</ScalarOperator>
+																																<ScalarOperator>
+																																	<Const ConstValue="(100)"></Const>
+																																</ScalarOperator>
+																															</Compare>
+																														</ScalarOperator>
+																													</Condition>
+																													<Then>
+																														<ScalarOperator>
+																															<Const ConstValue="(0)"></Const>
+																														</ScalarOperator>
+																													</Then>
+																													<Else>
+																														<ScalarOperator>
+																															<Const ConstValue="NULL"></Const>
+																														</ScalarOperator>
+																													</Else>
+																												</IF>
+																											</ScalarOperator>
+																										</Predicate>
+																									</Assert>
+																								</RelOp>
+																							</Concat>
+																						</RelOp>
+																					</Spool>
+																				</RelOp>
+																				<RelOp NodeId="61" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="3.0614" EstimatedRowsRead="3.0614" EstimateIO="0.003125" EstimateCPU="0.000160368" AvgRowSize="4051" EstimatedTotalSubtreeCost="0.00666826" TableCardinality="698" Parallel="0" EstimateRebinds="2" EstimateRewinds="1" EstimatedExecutionMode="Row">
+																					<OutputList>
+																						<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																						<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																						<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																					</OutputList>
+																					<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+																						<DefinedValues>
+																							<DefinedValue>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																							</DefinedValue>
+																							<DefinedValue>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="PropertyId"></ColumnReference>
+																							</DefinedValue>
+																							<DefinedValue>
+																								<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="Value"></ColumnReference>
+																							</DefinedValue>
+																						</DefinedValues>
+																						<Object Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Index="[PK_RoleProperty]" Alias="[p]" TableReferenceId="2" IndexKind="Clustered" Storage="RowStore"></Object>
+																						<SeekPredicates>
+																							<SeekPredicateNew>
+																								<SeekKeys>
+																									<Prefix ScanType="EQ">
+																										<RangeColumns>
+																											<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="RoleId"></ColumnReference>
+																										</RangeColumns>
+																										<RangeExpressions>
+																											<ScalarOperator ScalarString="[Recr1053]">
+																												<Identifier>
+																													<ColumnReference Column="Recr1053"></ColumnReference>
+																												</Identifier>
+																											</ScalarOperator>
+																										</RangeExpressions>
+																									</Prefix>
+																								</SeekKeys>
+																							</SeekPredicateNew>
+																						</SeekPredicates>
+																						<Predicate>
+																							<ScalarOperator ScalarString="[T-INF-Admittance].[dbo].[RoleProperty].[DeletedTime] as [p].[DeletedTime] IS NULL">
+																								<Compare CompareOp="IS">
+																									<ScalarOperator>
+																										<Identifier>
+																											<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[RoleProperty]" Alias="[p]" Column="DeletedTime"></ColumnReference>
+																										</Identifier>
+																									</ScalarOperator>
+																									<ScalarOperator>
+																										<Const ConstValue="NULL"></Const>
+																									</ScalarOperator>
+																								</Compare>
+																							</ScalarOperator>
+																						</Predicate>
+																					</IndexScan>
+																				</RelOp>
+																			</NestedLoops>
+																		</RelOp>
+																	</ComputeScalar>
+																</RelOp>
+															</Concat>
+														</RelOp>
+													</Sort>
+												</RelOp>
+											</Spool>
+										</RelOp>
+									</NestedLoops>
+								</RelOp>
+								<RelOp NodeId="62" PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="4292" EstimatedTotalSubtreeCost="0.00384759" TableCardinality="15" Parallel="0" EstimateRebinds="0.628874" EstimateRewinds="2.94158" EstimatedExecutionMode="Row">
+									<OutputList>
+										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Property]" Alias="[p3]" Column="Name"></ColumnReference>
+										<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Property]" Alias="[p3]" Column="AggregatedPropertyId"></ColumnReference>
+									</OutputList>
+									<IndexScan Ordered="1" ScanDirection="FORWARD" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+										<DefinedValues>
+											<DefinedValue>
+												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Property]" Alias="[p3]" Column="Name"></ColumnReference>
+											</DefinedValue>
+											<DefinedValue>
+												<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Property]" Alias="[p3]" Column="AggregatedPropertyId"></ColumnReference>
+											</DefinedValue>
+										</DefinedValues>
+										<Object Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Property]" Index="[PK_Property]" Alias="[p3]" IndexKind="Clustered" Storage="RowStore"></Object>
+										<SeekPredicates>
+											<SeekPredicateNew>
+												<SeekKeys>
+													<Prefix ScanType="EQ">
+														<RangeColumns>
+															<ColumnReference Database="[T-INF-Admittance]" Schema="[dbo]" Table="[Property]" Alias="[p3]" Column="Id"></ColumnReference>
+														</RangeColumns>
+														<RangeExpressions>
+															<ScalarOperator ScalarString="[Union1058]">
+																<Identifier>
+																	<ColumnReference Column="Union1058"></ColumnReference>
+																</Identifier>
+															</ScalarOperator>
+														</RangeExpressions>
+													</Prefix>
+												</SeekKeys>
+											</SeekPredicateNew>
+										</SeekPredicates>
+									</IndexScan>
+								</RelOp>
+							</NestedLoops>
+						</RelOp>
+						<ParameterList>
+							<ColumnReference Column="@principalId" ParameterDataType="int" ParameterCompiledValue="(243)"></ColumnReference>
+							<ColumnReference Column="@roleId" ParameterDataType="int" ParameterCompiledValue="(229)"></ColumnReference>
+						</ParameterList>
+					</QueryPlan>
+				</StmtSimple>
+			</Statements>
+		</Batch>
+	</BatchSequence>
+</ShowPlanXML>

@@ -359,7 +359,7 @@ and BaseStmtInfoType = {
     StatementEstRows: float option
     StatementId: int option
     StatementOptmLevel: string option
-    StatementOptmEarlyAbortReason: string option
+    StatementOptmEarlyAbortReason: string option // "TimeOut" / "MemoryLimitExceeded" / "GoodEnoughPlanFound"
     CardinalityEstimationModelVersion: string option
     StatementSubTreeCost: float option
     StatementText: string option
@@ -422,8 +422,8 @@ and FunctionType = {
 and StmtCondType = {
     BaseInfo: BaseStmtInfoType
     Condition: {| QueryPlan : QueryPlanType option; UDFs : FunctionType list |}
-    Then: StmtBlockType
-    Else: StmtBlockType option
+    Then: StmtBlockType list
+    Else: StmtBlockType list
 }
 
 and StmtBlockType =

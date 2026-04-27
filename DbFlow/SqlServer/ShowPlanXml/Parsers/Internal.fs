@@ -680,13 +680,13 @@ and parseStmtCond (stmtCond: Linq.XElement) : PResult<StmtCondType, _> =
                         return {| QueryPlan = queryPlan; UDFs = udfFunctions |}
                     })
                 stmtCond
-        let! thenStmt = xElementReqP ("Then", ns) (xElementReqP ("Statements", ns) parseStmtBlockType) stmtCond
-        let! elseStmt = xElementP ("Else", ns) (xElementReqP ("Statements", ns) parseStmtBlockType) stmtCond 
+        let! thenStmt = xElementReqP ("Then", ns) (xElementReqP ("Statements", ns) (xElementsAllP parseStmtBlockType)) stmtCond
+        let! elseStmt = xElementP ("Else", ns) (xElementReqP ("Statements", ns) (xElementsAllP parseStmtBlockType)) stmtCond 
         return { 
             BaseInfo = baseInfo
             Condition = condition
             Then = thenStmt
-            Else = elseStmt
+            Else = match elseStmt with Some es -> es | None -> []
         }
     }
 

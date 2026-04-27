@@ -10,6 +10,7 @@ module Readers =
     let readByte n (r : System.Data.IDataReader) = r.GetByte (r.GetOrdinal n)
     let readInt16 n (r : System.Data.IDataReader) = r.GetInt16 (r.GetOrdinal n)
     let readInt32 n (r : System.Data.IDataReader) = r.GetInt32 (r.GetOrdinal n)
+    let readInt64 n (r : System.Data.IDataReader) = r.GetInt64 (r.GetOrdinal n)
     let readDateTime n (r : System.Data.IDataReader) = r.GetDateTime (r.GetOrdinal n)
     let nullable n f (r : System.Data.IDataReader) = if r.IsDBNull (r.GetOrdinal n) then None else Some (f n r)
 
