@@ -107,9 +107,11 @@
 
 - [ ] Add support for ShowPlanXml 
     - [x] Add support for parsing ShowPlanXml
+    - [ ] Change the XmlParser to always select all elements - and then apply som kind of parser to that based on the expectations (in the xsd...)
     - [ ] Go through all xsd:choice-elements of the xsd and make sure they are handled.
         - [ ] Add some kind of support xsd:choice-elements to the XmlParser. "xsd:choice" means that the element IS ONE of cases.
     - [ ] Go through all xsd:restriction elements of the xsd and make sure they are handled.
+    - [ ] Go through _all_ of the xsd manually (from the end...?) to make sure nothing is missed.  
     - [ ] Extract all xsd:annotation elements as documentation 
     - [ ] Add support for writing ShowPlanXml
     - [ ] Add tests to validate ShowPlanXml
