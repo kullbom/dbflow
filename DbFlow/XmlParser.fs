@@ -48,8 +48,18 @@ type XNameResolver = XNameResolver  with
     
 let inline XN selector : XName = XNameResolver $ selector
 
+let inline getXName name =
+    match XN name with
+    | Name name -> System.Xml.Linq.XName.Get (name)
+    | NSName (name, ns) -> System.Xml.Linq.XName.Get (name, ns)
 
 let inline nullGuard x = match x with null -> None | x -> Some x
+
+
+
+// ======================================================
+// Elements
+// ======================================================
 
 let xElementRequire' (c : #System.Xml.Linq.XContainer) n =
     match n with
@@ -96,6 +106,47 @@ let xElementsAllP parser (c : #System.Xml.Linq.XContainer) =
     c.Elements () |> Seq.toList |> forAll parser
 
 
+// ======================================================
+// Element sequences
+// ======================================================
+
+module ElementsInternal =
+    let xElement xname parser (es : System.Xml.Linq.XElement list) =
+        match es with
+        | e :: es' when e.Name = xname ->
+            parser e |> PResult.map (fun x -> Some x, es')
+        | _ -> 
+            POk (None, es)
+
+    let xElementReq xname parser (es : System.Xml.Linq.XElement list) =
+        match es with
+        | e :: es' when e.Name = xname ->
+            parser e |> PResult.map (fun x -> x, es')
+        | _ -> 
+            Failf "Expected %A" xname
+
+    let xElementMany xname parser (es : System.Xml.Linq.XElement list) =
+        match es with
+        | e :: es' when e.Name = xname ->
+            parser e |> PResult.map (fun x -> x, es')
+        | _ -> 
+            Failf "Expected %A" xname
+
+let xElementsAll (c : #System.Xml.Linq.XContainer) = 
+    c.Elements () |> Seq.toList
+
+
+let inline xElement name parser (es : System.Xml.Linq.XElement list) =
+    ElementsInternal.xElement (getXName name) parser es
+
+let inline xElementReq name parser (es : System.Xml.Linq.XElement list) =
+    ElementsInternal.xElementReq (getXName name) parser es
+    
+
+// ======================================================
+// Attributes
+// ======================================================
+
 module XmlReaders =
     let readBool (s : string) = 
         match s with
@@ -128,51 +179,47 @@ type public XmlTypeMapping =
 
 let inline resolveAttr (a : string) : PResult< ^R,string> = (Unchecked.defaultof<XmlTypeMapping> $ (Unchecked.defaultof< ^R>)) a
 
-let inline getXName name =
-    match XN name with
-    | Name name -> System.Xml.Linq.XName.Get (name)
-    | NSName (name, ns) -> System.Xml.Linq.XName.Get (name, ns)
-
-let xAttrInternal' name (e : #System.Xml.Linq.XElement) = 
-    e.Attribute name
-    |> nullGuard
-    |> Option.map (fun a -> a.Value)
+module Internal =
+    let xAttrInternal' name (e : #System.Xml.Linq.XElement) = 
+        e.Attribute name
+        |> nullGuard
+        |> Option.map (fun a -> a.Value)
+        
+    let xAttr' name resolver (e : #System.Xml.Linq.XElement) = 
+        match xAttrInternal' name e with
+        | Some v -> resolver v |> PResult.map Some 
+        | None -> POk None
     
-let xAttr' name resolver (e : #System.Xml.Linq.XElement) = 
-    match xAttrInternal' name e with
-    | Some v -> resolver v |> PResult.map Some 
-    | None -> POk None
-
-let xAttrP' name resolver attrParser (e : #System.Xml.Linq.XElement) = 
-    match xAttrInternal' name e with
-    | Some v -> resolver v |> PResult.bind attrParser |> PResult.map Some 
-    | None -> POk None
-
-let xAttrReq' name resolver (e : #System.Xml.Linq.XElement) = 
-    match xAttrInternal' name e with
-    | Some v -> resolver v
-    | None -> 
-        Failf "Expected attribute %A not found" name
-
-let xAttrReqP' name resolver parser (e : #System.Xml.Linq.XElement) = 
-    match xAttrInternal' name e with
-    | Some v -> resolver v |> PResult.bind parser
-    | None -> 
-        Failf "Expected attribute %A not found" name
+    let xAttrP' name resolver attrParser (e : #System.Xml.Linq.XElement) = 
+        match xAttrInternal' name e with
+        | Some v -> resolver v |> PResult.bind attrParser |> PResult.map Some 
+        | None -> POk None
+    
+    let xAttrReq' name resolver (e : #System.Xml.Linq.XElement) = 
+        match xAttrInternal' name e with
+        | Some v -> resolver v
+        | None -> 
+            Failf "Expected attribute %A not found" name
+    
+    let xAttrReqP' name resolver parser (e : #System.Xml.Linq.XElement) = 
+        match xAttrInternal' name e with
+        | Some v -> resolver v |> PResult.bind parser
+        | None -> 
+            Failf "Expected attribute %A not found" name
 
 /// Reads and resolves an attribute, returning None if the attribute is not present, or an error if the value cannot be resolved to the expected type
 let inline xAttr name (e : #System.Xml.Linq.XElement) = 
-    xAttr' (getXName name) resolveAttr e
+    Internal.xAttr' (getXName name) resolveAttr e
 
 /// Reads and resolves an attribute, returning None if the attribute is not present, or an error if the value cannot be resolved/parsed to the expected type
 let inline xAttrP name attrParser (e : #System.Xml.Linq.XElement) = 
-    xAttrP' (getXName name) resolveAttr attrParser e
+    Internal.xAttrP' (getXName name) resolveAttr attrParser e
 
 /// Reads and resolves an attribute, returning an error if the attribute is not present or if the value cannot be resolved to the expected type
 let inline xAttrReq name (e : #System.Xml.Linq.XElement) = 
-    xAttrReq' (getXName name) resolveAttr e
+    Internal.xAttrReq' (getXName name) resolveAttr e
 
 /// Reads and resolves an attribute, returning an error if the attribute is not present or if the value cannot be resolved/parsed to the expected type
 let inline xAttrReqP name parser (e : #System.Xml.Linq.XElement) = 
-    xAttrReqP' (getXName name) resolveAttr parser e
+    Internal.xAttrReqP' (getXName name) resolveAttr parser e
 
