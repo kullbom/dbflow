@@ -23,7 +23,7 @@ module PResult =
     let builder = new CEBuilder()
 
 let Failf fmt = 
-    //failwithf fmt
+    failwith "Error"
     Printf.ksprintf Failure fmt
 
 let forAll (f : 'a -> PResult<'b, _>) (xs : 'a list) : PResult<'b list, _> =
@@ -88,20 +88,24 @@ let xElements' (c : #System.Xml.Linq.XContainer) =
 
 // Simple navigation
 
+[<System.Obsolete("Prefer the sequences-Api")>]
 let inline xElementReqP path parser (c : #System.Xml.Linq.XContainer) = 
     match xElementRequire' c (XN path) with
     | POk v -> parser v 
     | Failure e -> Failure e
 
+[<System.Obsolete("Prefer the sequences-Api")>]
 let inline xElementP path parser (c : #System.Xml.Linq.XContainer) = 
     match xElementOptional' c (XN path) with
     | POk (Some e) -> parser e |> PResult.map Some
     | POk None -> POk None
     | Failure e -> Failure e
 
+[<System.Obsolete("Prefer the sequences-Api")>]
 let inline xElementsP name parser (c : #System.Xml.Linq.XContainer) = 
     xElements' c (XN name) |> forAll parser
 
+[<System.Obsolete("Prefer the sequences-Api")>]
 let xElementsAllP parser (c : #System.Xml.Linq.XContainer) = 
     c.Elements () |> Seq.toList |> forAll parser
 
@@ -110,37 +114,66 @@ let xElementsAllP parser (c : #System.Xml.Linq.XContainer) =
 // Element sequences
 // ======================================================
 
-module ElementsInternal =
-    let xElement xname parser (es : System.Xml.Linq.XElement list) =
-        match es with
-        | e :: es' when e.Name = xname ->
-            parser e |> PResult.map (fun x -> Some x, es')
-        | _ -> 
-            POk (None, es)
-
-    let xElementReq xname parser (es : System.Xml.Linq.XElement list) =
-        match es with
-        | e :: es' when e.Name = xname ->
-            parser e |> PResult.map (fun x -> x, es')
-        | _ -> 
-            Failf "Expected %A" xname
-
-    let xElementMany xname parser (es : System.Xml.Linq.XElement list) =
-        match es with
-        | e :: es' when e.Name = xname ->
-            parser e |> PResult.map (fun x -> x, es')
-        | _ -> 
-            Failf "Expected %A" xname
-
 let xElementsAll (c : #System.Xml.Linq.XContainer) = 
     c.Elements () |> Seq.toList
 
+let inline ensureName name parser (e : System.Xml.Linq.XElement) =
+    if e.Name = getXName name
+    then parser e
+    else Failf "Expected element %A but found %A" name e.Name
 
-let inline xElement name parser (es : System.Xml.Linq.XElement list) =
-    ElementsInternal.xElement (getXName name) parser es
+let xElementEnsureEmpty (es : System.Xml.Linq.XElement list) =
+    match es with
+    | [] -> POk ()
+    | e :: _ -> Failf "Expected no more elements, but found %A" e.Name
 
-let inline xElementReq name parser (es : System.Xml.Linq.XElement list) =
-    ElementsInternal.xElementReq (getXName name) parser es
+/// Parse the first element if the name matches 
+let xElement parser (es : System.Xml.Linq.XElement list) =
+    match es with
+    | e :: es' ->
+        match parser e with
+        | POk x -> POk (Some x, es')
+        | Failure _ -> POk (None, es)
+    | _ -> 
+        POk (None, es)
+
+/// Parse the first element if the name matches - else fail
+let xElementReq parser (es : System.Xml.Linq.XElement list) =
+    match es with
+    | e :: es' ->
+        parser e |> PResult.map (fun x -> x, es')
+    | [] -> 
+        Failf "Required element not found" 
+
+/// Parse elements as long as the name matches
+let xElementMany parser (es : System.Xml.Linq.XElement list) =
+    let rec xElementMany' acc (es : System.Xml.Linq.XElement list) =
+        match es with
+        | e :: es' ->
+            match parser e with
+            | POk x -> xElementMany' (x :: acc) es'
+            | Failure _ -> POk (List.rev acc, es)
+        | _ -> 
+            POk (List.rev acc, es)
+    xElementMany' [] es
+
+/// Parse elements as long as the name matches - require at least one match
+let xElementMany1 parser (es : System.Xml.Linq.XElement list) =
+    let rec xElementMany1' acc (es : System.Xml.Linq.XElement list) =
+        match es with
+        | e :: es' ->
+            match parser e with
+            | POk x -> xElementMany1' (x :: acc) es'
+            | Failure e -> POk (List.rev acc, es)
+        | _ -> 
+            POk (List.rev acc, es)
+    match es with
+    | e :: es' ->
+        match parser e with
+        | POk x -> xElementMany1' [x] es'
+        | Failure e -> Failure e
+    | _ -> 
+        Failf "Expected at least one"
     
 
 // ======================================================

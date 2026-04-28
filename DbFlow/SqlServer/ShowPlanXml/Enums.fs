@@ -5,6 +5,16 @@
 // ========================================
 
 [<RequireQualifiedAccess>]
+type OrderType =
+    | BACKWARD
+    | FORWARD
+    
+[<RequireQualifiedAccess>]
+type SetPredicateType =
+    | Update
+    | Insert
+
+[<RequireQualifiedAccess>]
 type StorageType =
     | RowStore
     | ColumnStore
@@ -21,11 +31,6 @@ type CursorType =
     | FastForward
     | Keyset
     | SnapShot
-
-[<RequireQualifiedAccess>]
-type OrderType =
-    | BACKWARD
-    | FORWARD
 
 [<RequireQualifiedAccess>]
 type PartitionType =
@@ -78,6 +83,12 @@ type CloneAccessScopeType =
     | ExactMatch
     | Local
 
+/// These are the logical operators to which "query"
+/// portions of T-SQL statement are translated. Subsequent
+/// to that translation, a physical operator is chosen for
+/// evaluating each logical operator. The SQL Server query
+/// optimizer uses a cost-based approach to decide which 
+/// physical operator will implement a logical operator.
 [<RequireQualifiedAccess>]
 type LogicalOpType =
     | Aggregate
@@ -174,6 +185,26 @@ type LogicalOpType =
     | KeyLookup
     | ExtensibleColumnStoreScan
 
+/// Each of the physical operator is an iterator. An iterator
+/// can answer three method calls: Init(), GetNext(), and Close().
+/// Upon receiving an Init() call, an iterator initializes itself,
+/// setting up any data structures if necessary. Upon receiving a
+/// GetNext() call, the iterator produces the "next" packet of 
+/// data and gives it to the iterator that made the GetNext() call.
+/// To produce the "next" packet of data, the iterator may have to
+/// make zero or more GetNext() (or even Init()) calls to its 
+/// children. Upon receiving a Close() call, an iterator performs
+/// some clean-up operations and shuts itself down. Typically, an
+/// iterator receives one Init() call, followed by many GetNext()
+/// calls, and then a single Close() call.
+/// 
+/// The "query" portion of a T-SQL statement is typically a tree
+/// made up of iterators.  
+/// 
+/// Usually, there is a one-to-many mapping among logical operators
+/// and physical operators. That is, usually multiple physical operators
+/// can implement a logical operator. In some cases in SQL Server,
+/// however, a physical operator can implement multiple logical operators.
 [<RequireQualifiedAccess>]
 type PhysicalOpType =
     | AdaptiveJoin

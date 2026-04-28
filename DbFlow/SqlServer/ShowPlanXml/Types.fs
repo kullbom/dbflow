@@ -5,6 +5,7 @@
 // Basic Types
 // ========================================
 
+/// The set options that affects query cost
 type SetOptionsType = {
     ANSI_NULLS: bool option
     ANSI_PADDING: bool option
@@ -74,12 +75,68 @@ type AffectingConvertWarningType = {
     Expression: string
 }
 
-type WarningsType = {
-    PlanAffectingConvert: AffectingConvertWarningType list
-    NoJoinPredicate: bool option
-    SpatialGuess: bool option
-    UnmatchedIndexes: bool option
-    FullUpdateForOnlineIndexBuild: bool option
+// Spill Warning for last query plan stats
+type SpillOccurredType = {
+    Detail: bool option
+}
+
+// Spill warning information
+type SpillToTempDbType = {
+    // Additional information, like spill I/O stats may go here when available
+    InternalInfo : InternalInfoType
+
+    SpillLevel : uint64 option
+    SpilledThreadCount : uint64 option
+}
+
+// Sort spill details
+type SortSpillDetailsType = {
+    // Additional information, like spill I/O stats may go here when available
+    InternalInfo : InternalInfoType
+
+    GrantedMemoryKb : uint64 option
+    UsedMemoryKb : uint64 option
+    WritesToTempDb : uint64 option
+    ReadsFromTempDb : uint64 option
+}
+
+// Hash spill details
+type HashSpillDetailsType = {
+    // Additional information, like spill I/O stats may go here when available
+    InternalInfo : InternalInfoType
+
+    GrantedMemoryKb : uint64 option
+    UsedMemoryKb : uint64 option
+    WritesToTempDb : uint64 option
+    ReadsFromTempDb : uint64 option
+}
+
+// Exchange spill details
+type ExchangeSpillDetailsType = {
+    // Additional information, like spill I/O stats may go here when available
+    InternalInfo : InternalInfoType
+    
+    WritesToTempDb : uint64 option
+}
+
+// Query wait information
+type WaitWarningType = {
+    // Additional information, like spill I/O stats may go here when available
+    InternalInfo : InternalInfoType
+    
+    WaitType : string // enum: "Memory Grant"
+}
+
+/// Provide warning information for memory grant.
+/// GrantWarningKind: Warning kind
+/// RequestedMemory: Initial grant request in KB
+/// GrantedMemory: Granted memory in KB
+/// MaxUsedMemory: Maximum used memory grant in KB
+type MemoryGrantWarningInfo = {
+    GrantWarningKind : string // enum: "Excessive Grant", "Used More Than Granted", "Grant Increase" 
+    RequestedMemory : uint64
+    GrantedMemory : uint64
+    MaxUsedMemory : uint64
 }
 
 type MemoryFractionsType = {
@@ -101,11 +158,33 @@ type RunTimePartitionSummaryType = {
     PartitionsAccessed: PartitionsAccessedType
 }
 
+
 // ========================================
 // Mutually Recursive Types
 // ========================================
+type Warning =
+    | SpillOccurred of SpillOccurredType
+    | ColumnsWithNoStatistics of ColumnReferenceType list
+    | ColumnsWithStaleStatistics of ColumnReferenceType list
+    | SpillToTempDb of SpillToTempDbType
+    | Wait of WaitWarningType
+    | PlanAffectingConvert of AffectingConvertWarningType 
+    | SortSpillDetails of SortSpillDetailsType
+    | HashSpillDetails of HashSpillDetailsType
+    | ExchangeSpillDetails of ExchangeSpillDetailsType
+    | MemoryGrantWarning of MemoryGrantWarningInfo
 
-type ColumnReferenceType = {
+
+// List of all possible iterator or query specific warnings (e.g. hash spilling, no join predicate)
+and WarningsType = {
+    Warnings: Warning list
+    NoJoinPredicate: bool option
+    SpatialGuess: bool option
+    UnmatchedIndexes: bool option
+    FullUpdateForOnlineIndexBuild: bool option
+}
+
+and ColumnReferenceType = {
     // Sequence elements
     ScalarOperator: ScalarType option
     InternalInfo: InternalInfoType option
@@ -205,6 +284,7 @@ and ScalarSequenceType = {
 }
 
 and CLRFunctionType = {
+    // Attributes
     Assembly: string option
     Class: string
     Method: string option
@@ -223,9 +303,10 @@ and UDTMethodType = {
 }
 
 and SubqueryType = {
-    Operation: SubqueryOperationType
     ScalarOperator: ScalarType option
     RelOp: RelOpType
+    // Attributes
+    Operation: SubqueryOperationType
 }
 
 and ScalarExpressionListType = {
@@ -284,6 +365,28 @@ and RunTimeCountersPerThread = {
 
 and RunTimeInformationType = {
     RunTimeCountersPerThread: RunTimeCountersPerThread list
+}
+
+
+// ========================================
+// Parameter sensitive plan optimization schema definition
+// ========================================
+
+/// This contains information related to the parameter sensitive predicate:
+/// Boundaries used to determine different ranges;
+/// Statistics information used to compute the boundaries;
+/// Predicate details.
+and ParameterSensitivePredicateType = {
+    StatisticsInfo: StatsInfoType list // 1 .. unbounded
+    Predicate: ScalarExpressionType
+    // Attributes
+    LowBoundery : float
+    HighBoundary : float
+}
+
+/// This is the dispatcher expression in XML format for the parameter sensitive plan.
+and DispatcherType = {
+    ParameterSensitivePredicate : ParameterSensitivePredicateType list // 1..3 
 }
 
 // ========================================
@@ -419,6 +522,7 @@ and FunctionType = {
     IsNativelyCompiled : bool option
 }
 
+// Complex statement type that is constructed by a condition, a then clause and an optional else clause.
 and StmtCondType = {
     BaseInfo: BaseStmtInfoType
     Condition: {| QueryPlan : QueryPlanType option; UDFs : FunctionType list |}
@@ -426,6 +530,7 @@ and StmtCondType = {
     Else: StmtBlockType list
 }
 
+// The statement block that contains many statements
 and StmtBlockType =
     | StmtSimple of StmtSimpleType
     | StmtCond of StmtCondType

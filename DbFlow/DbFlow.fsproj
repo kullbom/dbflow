@@ -39,6 +39,7 @@
     <Compile Include="SqlServer\Schema\Database.fs" />
     <Compile Include="SqlServer\Schema\Compare.fs" />
     <Compile Include="SqlServer\Schema\CompareGen.fs" />
+    <None Include="sqlserver\showplanxml\showplanxml KVAR.xsd" />
     <None Include="SqlServer\ShowPlanXml\showplanxml.xsd" />
     <Compile Include="SqlServer\ShowPlanXml\Enums.fs" />
     <Compile Include="SqlServer\ShowPlanXml\Types.fs" />
@@ -51,8 +52,6 @@
     <Compile Include="SqlServer\Execute.fs" />
     <Compile Include="SqlServer\Rules.fs" />
   </ItemGroup>
-
-  <ItemGroup />
 
   <ItemGroup>
     <None Include="..\README.md">

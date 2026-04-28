@@ -21,17 +21,22 @@ module Plan =
             let! version = xAttrReq "Version" root  
             let! build = xAttrReq "Build" root
             let! clusteredMode = xAttr "ClusteredMode" root
-            let! batches = xElementReqP ("BatchSequence", ns) (xElementsP ("Batch", ns) Parsers.Internal.parseBatch) root
+            // elements
+            let! (batches, rest) = 
+                xElementsAll root
+                |> xElementReq (ensureName ("BatchSequence", ns) Parsers.Internal.parseBatchSequence)
+            do! xElementEnsureEmpty rest
             return {
                 Version = version
                 Build = build
                 ClusteredMode = clusteredMode
                 BatchSequence = { Batches = batches }
             }
-        }
+        } 
 
     let parseXElement (xml : Linq.XElement) =
-        match parseShowPlanXML xml with
+        let ns = Parsers.Internal.ns
+        match ensureName ("ShowPlanXML", ns) parseShowPlanXML xml with
         | POk v -> Ok v
         | Failure e -> Error e
     

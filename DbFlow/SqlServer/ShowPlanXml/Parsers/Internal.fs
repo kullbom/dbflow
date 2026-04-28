@@ -101,9 +101,35 @@ let parseAffectingConvertWarning (element : Linq.XElement) : PResult<AffectingCo
         }
     }
 
+let parseWarning (warning : Linq.XElement) : PResult<Warning, _> =
+    match warning.Name.LocalName with
+    | "SpillOccurred" -> 
+        Failf "NYI"
+    | "ColumnsWithNoStatistics" -> 
+        Failf "NYI"
+    | "ColumnsWithStaleStatistics" -> 
+        Failf "NYI"
+    | "SpillToTempDb" -> 
+        Failf "NYI"
+    | "Wait" -> 
+        Failf "NYI"
+    | "PlanAffectingConvert" -> 
+        Failf "NYI"
+    | "SortSpillDetails" -> 
+        Failf "NYI"
+    | "HashSpillDetails" -> 
+        Failf "NYI"
+    | "ExchangeSpillDetails" -> 
+        Failf "NYI"
+    | "MemoryGrantWarning" -> 
+        Failf "NYI"
+    
+    | name -> 
+        Failf "Expected warning but got '%s'" name
+
 let parseWarningsType (warnings : Linq.XElement) : PResult<WarningsType, _> =
     PResult.builder {
-        let! planAffectingConvert = xElementsAllP parseAffectingConvertWarning warnings
+        let! (planAffectingConvert, rest) = xElementMany (ensureName parseAffectingConvertWarning warnings
         let! noJoinPredicate = xAttr "NoJoinPredicate" warnings
         let! spatialGuess = xAttr "SpatialGuess" warnings
         let! unmatchedIndexes = xAttr "UnmatchedIndexes" warnings
@@ -192,9 +218,10 @@ let parseOptimizerStatsUsage (optimizerStatsUsage : Linq.XElement) : PResult<Opt
         return { StatisticsInfo = statisticsInfo }
     }
 
-let parseBaseStmtInfoType (stmtSimple : Linq.XElement) : PResult<BaseStmtInfoType, _> =
+let parseBaseStmtInfoType (stmtSimple : Linq.XElement) : PResult<BaseStmtInfoType * _, _> =
     PResult.builder {
-        let! statementSetOptions = xElementP ("StatementSetOptions", ns) parseSetOptionsType stmtSimple
+        let allElements = xElementsAll stmtSimple
+        let! (statementSetOptions, elements') = xElement (ensureName ("StatementSetOptions", ns) parseSetOptionsType) allElements
         let! statementCompId = xAttr "StatementCompId" stmtSimple
         let! statementEstRows = xAttr "StatementEstRows" stmtSimple
         let! statementId = xAttr "StatementId" stmtSimple
@@ -227,7 +254,8 @@ let parseBaseStmtInfoType (stmtSimple : Linq.XElement) : PResult<BaseStmtInfoTyp
             StatementSqlHandle = statementSqlHandle
             SecurityPolicyApplied = securityPolicyApplied
             BatchModeOnRowStoreUsed = batchModeOnRowStoreUsed
-        }
+        },
+        elements'
     }
 
 // ========================================
@@ -613,8 +641,9 @@ let parseReceiveOperation (receiveOperation : Linq.XElement) : PResult<ReceiveOp
 
 let parseStmtSimple (stmtSimple : Linq.XElement) : PResult<StmtSimpleType, _> =
     PResult.builder {
-        let! baseInfo = parseBaseStmtInfoType stmtSimple
-        let! queryPlanType = xElementP ("QueryPlan", ns) parseQueryPlanType stmtSimple 
+        let! (baseInfo, rest) = parseBaseStmtInfoType stmtSimple
+        let! (queryPlanType, rest) = xElement (ensureName ("QueryPlan", ns) parseQueryPlanType) rest 
+        do! xElementEnsureEmpty rest
         return { BaseInfo = baseInfo; QueryPlan = queryPlanType }
     }
 
@@ -626,8 +655,9 @@ let parseStmtCursor (stmtCursor : Linq.XElement) : PResult<StmtCursorType, _> =
 
 let parseStmtReceive (stmtReceive : Linq.XElement) : PResult<StmtReceiveType, _> =
     PResult.builder {
-        let! baseInfo = parseBaseStmtInfoType stmtReceive
+        let! (baseInfo, rest) = parseBaseStmtInfoType stmtReceive
         let! operations = xElementsP ("Operation", ns) parseReceiveOperation stmtReceive
+        do! xElementEnsureEmpty rest
         return { 
             BaseInfo = baseInfo
             Operations = operations
@@ -636,8 +666,9 @@ let parseStmtReceive (stmtReceive : Linq.XElement) : PResult<StmtReceiveType, _>
 
 let parseStmtUseDb (stmtUseDb : Linq.XElement) : PResult<StmtUseDbType, _> =
     PResult.builder {
-        let! baseInfo = parseBaseStmtInfoType stmtUseDb
+        let! (baseInfo, rest) = parseBaseStmtInfoType stmtUseDb
         let! database = xAttrReq "Database" stmtUseDb
+        do! xElementEnsureEmpty rest
         return { 
             BaseInfo = baseInfo
             Database = database
@@ -670,18 +701,38 @@ let rec parseFunctionType (functionType : Linq.XElement) : PResult<FunctionType,
 
 and parseStmtCond (stmtCond: Linq.XElement) : PResult<StmtCondType, _> =
     PResult.builder {
-        let! baseInfo = parseBaseStmtInfoType stmtCond
-        let! condition = 
-            xElementReqP ("Condition", ns) 
-                (fun cond -> 
-                    PResult.builder {
-                        let! queryPlan = xElementP ("QueryPlan", ns) parseQueryPlanType cond
-                        let! udfFunctions = xElementsP ("UDF", ns) parseFunctionType cond
-                        return {| QueryPlan = queryPlan; UDFs = udfFunctions |}
-                    })
-                stmtCond
-        let! thenStmt = xElementReqP ("Then", ns) (xElementReqP ("Statements", ns) (xElementsAllP parseStmtBlockType)) stmtCond
-        let! elseStmt = xElementP ("Else", ns) (xElementReqP ("Statements", ns) (xElementsAllP parseStmtBlockType)) stmtCond 
+        let! (baseInfo, rest) = parseBaseStmtInfoType stmtCond
+        let! (condition, rest) =
+            xElementReq 
+                (ensureName ("Condition", ns)
+                    (fun (condition : Linq.XElement) ->
+                        PResult.builder {
+                            let allElements = xElementsAll condition
+                            let! (queryPlan, rest) = xElement (ensureName ("QueryPlan", ns) parseQueryPlanType) allElements
+                            let! (udfFunctions, rest) = xElementMany (ensureName ("UDF", ns) parseFunctionType) rest
+                            do! xElementEnsureEmpty rest
+                            return {| QueryPlan = queryPlan; UDFs = udfFunctions |}
+                        }))
+                rest
+        let! (thenStmt, rest) = 
+            xElementReq 
+                (ensureName ("Then", ns) 
+                    (fun stmts -> 
+                        xElementsAll stmts 
+                        |> xElementReq (ensureName ("Statements", ns) parseStatements)
+                        // Should use xElementEnsureEmpty
+                        |> PResult.map fst))
+                rest
+        let! (elseStmt, rest) = 
+            xElement 
+                (ensureName ("Else", ns) 
+                    (fun stmts -> 
+                        xElementsAll stmts 
+                        |> xElementReq (ensureName ("Statements", ns) parseStatements)
+                        // Should use xElementEnsureEmpty
+                        |> PResult.map fst))
+                rest
+        do! xElementEnsureEmpty rest
         return { 
             BaseInfo = baseInfo
             Condition = condition
@@ -693,17 +744,31 @@ and parseStmtCond (stmtCond: Linq.XElement) : PResult<StmtCondType, _> =
 and parseStmtBlockType (stmtType : Linq.XElement) : PResult<StmtBlockType, _> =
     match stmtType.Name.LocalName with
     | "StmtSimple" -> parseStmtSimple stmtType |> PResult.map StmtBlockType.StmtSimple 
-    | "StmtCond" -> parseStmtCond stmtType |> PResult.map StmtBlockType.StmtCond 
+    | "StmtCond" -> ensureName ("StmtCond", ns) parseStmtCond stmtType |> PResult.map StmtBlockType.StmtCond 
     | "StmtCursor" -> parseStmtCursor stmtType |> PResult.map StmtBlockType.StmtCursor 
     | "StmtReceive" -> parseStmtReceive stmtType |> PResult.map StmtBlockType.StmtReceive 
     | "StmtUseDb" -> parseStmtUseDb stmtType |> PResult.map StmtBlockType.StmtUseDb 
     | "ExternalDistributedComputation" -> parseExternalDistributedComputation stmtType |> PResult.map StmtBlockType.ExternalDistributedComputation 
     | n -> Failf "Expected valid StmtType but got '%s'" n 
 
-let parseBatch (batch : Linq.XElement) : PResult<Batch, _> =
+and parseStatements (statements : Linq.XElement) : PResult<StmtBlockType list, _> =
     PResult.builder {
-        let! stmtBlockTypes = xElementReqP ("Statements", ns) (xElementsAllP parseStmtBlockType) batch 
-        return { Statements = stmtBlockTypes }
+        let! (stmtBlockTypes, rest) = xElementMany parseStmtBlockType (xElementsAll statements) 
+        do! xElementEnsureEmpty rest
+        return stmtBlockTypes
     }
 
+let parseBatch (batch : Linq.XElement) : PResult<Batch, _> =
+    PResult.builder {
+        let! (stmtBlockTypes, rest) = xElementMany (ensureName ("Statements", ns) parseStatements) (xElementsAll batch) 
+        do! xElementEnsureEmpty rest
+        return { Statements = stmtBlockTypes |> List.collect id }
+    }
 
+let parseBatchSequence (batchSequence : Linq.XElement) =
+    PResult.builder {
+        let! (batches, rest) = 
+            xElementMany1 (ensureName ("Batch", ns) parseBatch) (xElementsAll batchSequence)
+        do! xElementEnsureEmpty rest
+        return batches
+    }
