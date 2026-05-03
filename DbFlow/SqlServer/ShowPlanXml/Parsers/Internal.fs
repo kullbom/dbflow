@@ -114,7 +114,7 @@ let parseWarning (warning : Linq.XElement) : PResult<Warning, _> =
     | "Wait" -> 
         Failf "NYI"
     | "PlanAffectingConvert" -> 
-        Failf "NYI"
+        parseAffectingConvertWarning warning |> PResult.map Warning.PlanAffectingConvert
     | "SortSpillDetails" -> 
         Failf "NYI"
     | "HashSpillDetails" -> 
@@ -127,15 +127,17 @@ let parseWarning (warning : Linq.XElement) : PResult<Warning, _> =
     | name -> 
         Failf "Expected warning but got '%s'" name
 
-let parseWarningsType (warnings : Linq.XElement) : PResult<WarningsType, _> =
+let parseWarningsType (warningsType : Linq.XElement) : PResult<WarningsType, _> =
     PResult.builder {
-        let! (planAffectingConvert, rest) = xElementMany (ensureName parseAffectingConvertWarning warnings
-        let! noJoinPredicate = xAttr "NoJoinPredicate" warnings
-        let! spatialGuess = xAttr "SpatialGuess" warnings
-        let! unmatchedIndexes = xAttr "UnmatchedIndexes" warnings
-        let! fullUpdateForOnlineIndexBuild = xAttr "FullUpdateForOnlineIndexBuild" warnings
+        let warningElements = xElementsAll warningsType
+        let! (warnings, rest) = xElementMany parseWarning warningElements
+        do! xElementEnsureEmpty rest
+        let! noJoinPredicate = xAttr "NoJoinPredicate" warningsType
+        let! spatialGuess = xAttr "SpatialGuess" warningsType
+        let! unmatchedIndexes = xAttr "UnmatchedIndexes" warningsType
+        let! fullUpdateForOnlineIndexBuild = xAttr "FullUpdateForOnlineIndexBuild" warningsType
         return { 
-            PlanAffectingConvert = planAffectingConvert
+            Warnings = warnings
             NoJoinPredicate = noJoinPredicate
             SpatialGuess = spatialGuess
             UnmatchedIndexes = unmatchedIndexes
@@ -214,7 +216,9 @@ let parseStatsInfo (statsInfo : Linq.XElement) : PResult<StatsInfoType, _> =
 
 let parseOptimizerStatsUsage (optimizerStatsUsage : Linq.XElement) : PResult<OptimizerStatsUsageType, _> =
     PResult.builder {
-        let! statisticsInfo = xElementsAllP parseStatsInfo optimizerStatsUsage
+        let! (statisticsInfo, rest) = xElementMany (ensureName ("StatisticsInfo", ns) parseStatsInfo) (xElementsAll optimizerStatsUsage)
+        do! xElementEnsureEmpty rest
+
         return { StatisticsInfo = statisticsInfo }
     }
 
@@ -258,6 +262,10 @@ let parseBaseStmtInfoType (stmtSimple : Linq.XElement) : PResult<BaseStmtInfoTyp
         elements'
     }
 
+let parseRunTimeInformation (runTimeInformation : Linq.XElement) : PResult<RunTimeInformationType, _> = Failf "NYI"
+
+let parseRunTimePartitionSummary (runTimePartitionSummary : Linq.XElement) : PResult<RunTimePartitionSummaryType, _> = Failf "NYI"
+
 // ========================================
 // Single mutual recursion block covering:
 //   ColumnReference ↔ ScalarType ↔ SubqueryType ↔ RelOpType
@@ -265,8 +273,6 @@ let parseBaseStmtInfoType (stmtSimple : Linq.XElement) : PResult<BaseStmtInfoTyp
 
 let rec parseColumnReferenceType (columnReference : Linq.XElement) : PResult<ColumnReferenceType, _> =
     PResult.builder {
-        let! scalarOperator = xElementP ("ScalarOperator", ns) parseScalarType columnReference
-        let! internalInfo = xElementP ("InternalInfo", ns) parseInternalInfoType columnReference
         let! server = xAttr "Server" columnReference
         let! database = xAttr "Database" columnReference
         let! table = xAttr "Table" columnReference
@@ -277,6 +283,10 @@ let rec parseColumnReferenceType (columnReference : Linq.XElement) : PResult<Col
         let! parameterDataType = xAttr "ParameterDataType" columnReference
         let! parameterCompiledValue = xAttr "ParameterCompiledValue" columnReference
         let! parameterRuntimeValue = xAttr "ParameterRuntimeValue" columnReference
+        
+        let! (scalarOperator, rest) = xElement (ensureName ("ScalarOperator", ns) parseScalarType) (xElementsAll columnReference)
+        let! (internalInfo, rest) = xElement (ensureName ("InternalInfo", ns) parseInternalInfoType) rest
+        do! xElementEnsureEmpty rest
         return {
             ScalarOperator = scalarOperator
             InternalInfo = internalInfo
@@ -295,8 +305,11 @@ let rec parseColumnReferenceType (columnReference : Linq.XElement) : PResult<Col
 
 and parseIdentType (ident : Linq.XElement) : PResult<IdentType, _> =
     PResult.builder {
-        let! columnReference = xElementP ("ColumnReference", ns) parseColumnReferenceType ident
         let! table = xAttr "Table" ident
+        
+        let! (columnReference, rest) = xElement (ensureName ("ColumnReference", ns) parseColumnReferenceType) (xElementsAll ident)
+        do! xElementEnsureEmpty rest
+
         return { 
             ColumnReference = columnReference
             Table = table 
@@ -306,7 +319,8 @@ and parseIdentType (ident : Linq.XElement) : PResult<IdentType, _> =
 and parseCompareType (compare : Linq.XElement) : PResult<CompareType, _> =
     PResult.builder {
         let! compareOp = xAttrReqP "CompareOp" parseCompareOp compare 
-        let! scalarOperators = xElementsP ("ScalarOperator", ns) parseScalarType compare
+        let! (scalarOperators, rest) = xElementMany (ensureName ("ScalarOperator", ns) parseScalarType) (xElementsAll compare)
+        do! xElementEnsureEmpty rest
         return { 
             CompareOp = compareOp
             ScalarOperators = scalarOperators 
@@ -321,8 +335,11 @@ and parseConvertType (convert : Linq.XElement) : PResult<ConvertType, _> =
         let! scale = xAttr "Scale" convert
         let! style = xAttrReq "Style" convert
         let! implicit = xAttrReq "Implicit" convert
-        let! styleExpression = xElementP ("Style", ns) parseScalarExpressionType convert
-        let! scalarOperator = xElementReqP ("ScalarOperator", ns) parseScalarType convert 
+        
+        let! (styleExpression, rest) = xElement (ensureName ("Style", ns) parseScalarExpressionType) (xElementsAll convert)
+        let! (scalarOperator, rest) = xElementReq (ensureName ("ScalarOperator", ns) parseScalarType) rest
+        do! xElementEnsureEmpty rest
+        
         return { 
             DataType = dataType
             Length = length
@@ -338,7 +355,8 @@ and parseConvertType (convert : Linq.XElement) : PResult<ConvertType, _> =
 and parseArithmeticType (arithmetic : Linq.XElement) : PResult<ArithmeticType, _> =
     PResult.builder {
         let! operation = xAttrReqP "Operation" parseArithmeticOperation arithmetic 
-        let! scalarOperators = xElementsP ("ScalarOperator", ns) parseScalarType arithmetic
+        let! (scalarOperators, rest) = xElementMany (ensureName ("ScalarOperator", ns) parseScalarType) (xElementsAll arithmetic)
+        do! xElementEnsureEmpty rest
         return { 
             Operation = operation
             ScalarOperators = scalarOperators 
@@ -348,7 +366,8 @@ and parseArithmeticType (arithmetic : Linq.XElement) : PResult<ArithmeticType, _
 and parseLogicalType (logical : Linq.XElement) : PResult<LogicalType, _> =
     PResult.builder {
         let! operation = xAttrReqP "Operation" parseLogicalOperation logical 
-        let! scalarOperators = xElementsP ("ScalarOperator", ns) parseScalarType logical
+        let! (scalarOperators, rest) = xElementMany (ensureName ("ScalarOperator", ns) parseScalarType) (xElementsAll logical)
+        do! xElementEnsureEmpty rest
         return { 
             Operation = operation
             ScalarOperators = scalarOperators 
@@ -359,7 +378,10 @@ and parseAggregateType (aggregate : Linq.XElement) : PResult<AggregateType, _> =
     PResult.builder {
         let! aggType = xAttrReq "AggType" aggregate
         let! distinct = xAttrReq "Distinct" aggregate
-        let! scalarOperators = xElementsP ("ScalarOperator", ns) parseScalarType aggregate
+        
+        let! (scalarOperators, rest) = xElementMany (ensureName ("ScalarOperator", ns) parseScalarType) (xElementsAll aggregate)
+        do! xElementEnsureEmpty rest
+
         return { 
             AggType = aggType
             Distinct = distinct
@@ -370,8 +392,11 @@ and parseAggregateType (aggregate : Linq.XElement) : PResult<AggregateType, _> =
 and parseUDAggregateType (udAggregate : Linq.XElement) : PResult<UDAggregateType, _> =
     PResult.builder {
         let! distinct = xAttrReq "Distinct" udAggregate
-        let! udAggObject = xElementP ("UDAggObject", ns) parseObjectType udAggregate
-        let! scalarOperators = xElementsP ("ScalarOperator", ns) parseScalarType udAggregate
+        
+        let! (udAggObject, rest) = xElement (ensureName ("UDAggObject", ns) parseObjectType) (xElementsAll udAggregate)
+        let! (scalarOperators, rest) = xElementMany (ensureName ("ScalarOperator", ns) parseScalarType) rest
+        do! xElementEnsureEmpty rest
+
         return { 
             Distinct = distinct
             UDAggObject = udAggObject
@@ -382,7 +407,8 @@ and parseUDAggregateType (udAggregate : Linq.XElement) : PResult<UDAggregateType
 and parseIntrinsicType (intrinsic : Linq.XElement) : PResult<IntrinsicType, _> =
     PResult.builder {
         let! functionName = xAttrReq "FunctionName" intrinsic
-        let! scalarOperators = xElementsP ("ScalarOperator", ns) parseScalarType intrinsic
+        let! (scalarOperators, rest) = xElementMany (ensureName ("ScalarOperator", ns) parseScalarType) (xElementsAll intrinsic)
+        do! xElementEnsureEmpty rest
         return { 
             FunctionName = functionName
             ScalarOperators = scalarOperators 
@@ -393,8 +419,11 @@ and parseUDFType (udf : Linq.XElement) : PResult<UDFType, _> =
     PResult.builder {
         let! functionName = xAttrReq "FunctionName" udf
         let! isClrFunction = xAttr "IsClrFunction" udf
-        let! clrFunction = xElementP ("CLRFunction", ns) parseCLRFunctionType udf
-        let! scalarOperators = xElementsP ("ScalarOperator", ns) parseScalarType udf 
+        
+        let! (clrFunction, rest) = xElement (ensureName ("CLRFunction", ns) parseCLRFunctionType) (xElementsAll udf)
+        let! (scalarOperators, rest) = xElementMany (ensureName ("ScalarOperator", ns) parseScalarType) rest
+        do! xElementEnsureEmpty rest
+
         return { 
             FunctionName = functionName
             IsClrFunction = isClrFunction
@@ -405,8 +434,10 @@ and parseUDFType (udf : Linq.XElement) : PResult<UDFType, _> =
 
 and parseUDTMethodType (udtMethod : Linq.XElement) : PResult<UDTMethodType, _> =
     PResult.builder {
-        let! clrFunction = xElementP ("CLRFunction", ns) parseCLRFunctionType udtMethod
-        let! scalarOperators = xElementsP ("ScalarOperator", ns) parseScalarType udtMethod 
+        let! (clrFunction, rest) = xElement (ensureName ("CLRFunction", ns) parseCLRFunctionType) (xElementsAll udtMethod)
+        let! (scalarOperators, rest) = xElementMany (ensureName ("ScalarOperator", ns) parseScalarType) rest 
+        do! xElementEnsureEmpty rest
+
         return { 
             CLRFunction = clrFunction
             ScalarOperators = scalarOperators 
@@ -415,9 +446,10 @@ and parseUDTMethodType (udtMethod : Linq.XElement) : PResult<UDTMethodType, _> =
 
 and parseConditionalType (ifExpr : Linq.XElement) : PResult<ConditionalType, _> =
     PResult.builder {
-        let! condition = xElementReqP ("Condition", ns) parseScalarExpressionType ifExpr 
-        let! then_ = xElementReqP ("Then", ns) parseScalarExpressionType ifExpr 
-        let! else_ = xElementReqP ("Else", ns) parseScalarExpressionType ifExpr 
+        let! (condition, rest) = xElementReq (ensureName ("Condition", ns) parseScalarExpressionType) (xElementsAll ifExpr)
+        let! (then_, rest) = xElementReq (ensureName ("Then", ns) parseScalarExpressionType) rest
+        let! (else_, rest) = xElementReq (ensureName ("Else", ns) parseScalarExpressionType) rest
+        do! xElementEnsureEmpty rest
         return { 
             Condition = condition
             Then = then_
@@ -427,7 +459,9 @@ and parseConditionalType (ifExpr : Linq.XElement) : PResult<ConditionalType, _> 
 
 and parseScalarExpressionType (scalarExpr : Linq.XElement) : PResult<ScalarExpressionType, _> =
     PResult.builder {
-        let! scalarOperator = xElementReqP ("ScalarOperator", ns) parseScalarType scalarExpr
+        let! (scalarOperator, rest) = xElementReq (ensureName ("ScalarOperator", ns) parseScalarType) (xElementsAll scalarExpr)
+        do! xElementEnsureEmpty rest
+
         return { ScalarOperator = scalarOperator }
     }
 
@@ -466,21 +500,28 @@ and parseAssignType (assign : Linq.XElement) : PResult<AssignType, _> =
 
 and parseMultAssignType (multiAssign : Linq.XElement) : PResult<MultAssignType, _> =
     PResult.builder {
-        let! assigns = xElementsP ("Assign", ns) parseAssignType multiAssign
+        let! (assigns, rest) = xElementMany (ensureName ("Assign", ns) parseAssignType) (xElementsAll multiAssign)
+        do! xElementEnsureEmpty rest
+
         return { Assigns = assigns }
     }
 
 and parseScalarExpressionListType (scalarExprList : Linq.XElement) : PResult<ScalarExpressionListType, _> =
     PResult.builder {
-        let! scalarOperators = xElementsP ("ScalarOperator", ns) parseScalarType scalarExprList
+        let! (scalarOperators, rest) = xElementMany (ensureName ("ScalarOperator", ns) parseScalarType) (xElementsAll scalarExprList)
+        do! xElementEnsureEmpty rest
+        
         return { ScalarOperators = scalarOperators }
     }
 
 and parseSubqueryType (subquery : Linq.XElement) : PResult<SubqueryType, _> =
     PResult.builder {
         let! operation = xAttrReqP "Operation" parseSubqueryOperation subquery 
-        let! scalarOperator = xElementP ("ScalarOperator", ns) parseScalarType subquery
-        let! relOp = xElementReqP ("RelOp", ns) parseRelOpType subquery
+        
+        let! (scalarOperator, rest) = xElement (ensureName ("ScalarOperator", ns) parseScalarType) (xElementsAll subquery)
+        let! (relOp, rest) = xElementReq (ensureName ("RelOp", ns) parseRelOpType) rest
+        do! xElementEnsureEmpty rest
+
         return { 
             Operation = operation
             ScalarOperator = scalarOperator
@@ -525,12 +566,19 @@ and parseScalarType (scalarOperator : Linq.XElement) : PResult<ScalarType, _> =
         }
     }
 
+
 and parseRelOpType (relOp : Linq.XElement) : PResult<RelOpType, _> =
     PResult.builder {
-        let! outputList = xElementReqP ("OutputList", ns) (xElementsP ("ColumnReference", ns) parseColumnReferenceType) relOp
-        let! warnings = xElementP ("Warnings", ns) parseWarningsType relOp
-        let! memoryFractions = xElementP ("MemoryFractions", ns) parseMemoryFractionsType relOp
-
+        let! (columnsReferences', rest) = xElementReq (ensureName ("OutputList", ns) (xElementsAll >> POk)) (xElementsAll relOp)
+        let! (columnsReferences, cRefRest) = xElementMany (ensureName ("ColumnReference", ns) parseColumnReferenceType) columnsReferences'
+        do! xElementEnsureEmpty cRefRest
+        let! (warnings, rest) = xElement (ensureName ("Warnings", ns) parseWarningsType) rest
+        let! (memoryFractions, rest) = xElement (ensureName ("MemoryFractions", ns) parseMemoryFractionsType) rest
+        let! (runTimeInformation, rest) = xElement (ensureName ("RunTimeInformation", ns) parseRunTimeInformation) rest
+        let! (runTimePartitionSummary, rest) = xElement (ensureName ("RunTimePartitionSummary", ns) parseRunTimePartitionSummary) rest
+        let! (internalInfoType, rest) = xElement (ensureName ("InternalInfo", ns) parseInternalInfoType) rest
+        do! xElementEnsureEmpty rest
+        
         let! avgRowSize = xAttrReq "AvgRowSize" relOp
         let! estimateCPU = xAttrReq "EstimateCPU" relOp
         let! estimateIO = xAttrReq "EstimateIO" relOp
@@ -541,7 +589,6 @@ and parseRelOpType (relOp : Linq.XElement) : PResult<RelOpType, _> =
         let! parallel_ = xAttrReq "Parallel" relOp
         let! physicalOp = xAttrReqP "PhysicalOp" parsePhysicalOp relOp
         let! estimatedTotalSubtreeCost = xAttrReq "EstimatedTotalSubtreeCost" relOp
-
         let! estimatedExecutionMode = xAttrP "EstimatedExecutionMode" parseExecutionMode relOp
         let! groupExecuted = xAttr "GroupExecuted" relOp
         let! estimateRowsWithoutRowGoal = xAttr "EstimateRowsWithoutRowGoal" relOp
@@ -559,12 +606,13 @@ and parseRelOpType (relOp : Linq.XElement) : PResult<RelOpType, _> =
         let! pdwAccumulativeCost = xAttr "PDWAccumulativeCost" relOp
 
         return {
-            OutputList = outputList
+            OutputList = columnsReferences
             Warnings = warnings
             MemoryFractions = memoryFractions
-            RunTimeInformation = None
-            RunTimePartitionSummary = None
-            InternalInfo = None
+            RunTimeInformation = runTimeInformation
+            RunTimePartitionSummary = runTimePartitionSummary
+            InternalInfo = internalInfoType
+            
             AvgRowSize = avgRowSize
             EstimateCPU = estimateCPU
             EstimateIO = estimateIO
@@ -606,12 +654,23 @@ let parseQueryPlanType (queryPlan : Linq.XElement) : PResult<QueryPlanType, _> =
         let! compileTime = xAttr "CompileTime" queryPlan
         let! compileCPU = xAttr "CompileCPU" queryPlan
         let! compileMemory = xAttr "CompileMemory" queryPlan
-        let! warnings = xElementP ("Warnings", ns) parseWarningsType queryPlan 
-        let! memoryGrantInfo = xElementP ("MemoryGrantInfo", ns) parseMemoryGrantType queryPlan
-        let! optimizerHardwareDependentProperties = xElementP ("OptimizerHardwareDependentProperties", ns) parseOptimizerHardwareDependentProperties queryPlan
-        let! optimizerStatsUsage = xElementP ("OptimizerStatsUsage", ns) parseOptimizerStatsUsage queryPlan
-        let! relOpType = xElementReqP ("RelOp", ns) parseRelOpType queryPlan
-        let! columnReferenceType = xElementP ("ParameterList", ns) (xElementsP ("ColumnReference", ns) parseColumnReferenceType) queryPlan
+
+        let xmlElements = xElementsAll queryPlan
+        let! (warnings, rest) = xElement (ensureName ("Warnings", ns) parseWarningsType) xmlElements
+        let! (memoryGrantInfo, rest) = xElement (ensureName ("MemoryGrantInfo", ns) parseMemoryGrantType) rest
+        let! (optimizerHardwareDependentProperties, rest) = 
+            xElement (ensureName ("OptimizerHardwareDependentProperties", ns) parseOptimizerHardwareDependentProperties) rest
+        let! (optimizerStatsUsage, rest) = xElement (ensureName ("OptimizerStatsUsage", ns) parseOptimizerStatsUsage) rest
+        let! (relOpType, rest) = xElementReq (ensureName ("RelOp", ns) parseRelOpType) rest
+        let! (parameterList', rest) = xElement (ensureName ("ParameterList", ns) POk) rest
+        let parameterList = 
+            match parameterList' with
+            | Some pList -> xElementsAll pList
+            | None -> []
+        let! (columnReferenceType, pRest) = 
+            xElementMany (ensureName ("ColumnReference", ns) parseColumnReferenceType) parameterList
+        do! xElementEnsureEmpty pRest
+        do! xElementEnsureEmpty rest
         return {
             DegreeOfParallelism = degreeOfParallelism
             NonParallelPlanReason = nonParallelPlanReason
@@ -625,14 +684,17 @@ let parseQueryPlanType (queryPlan : Linq.XElement) : PResult<QueryPlanType, _> =
             OptimizerHardwareDependentProperties = optimizerHardwareDependentProperties
             OptimizerStatsUsage = optimizerStatsUsage
             RelOp = relOpType
-            ParameterList = match columnReferenceType with Some cs -> cs | None -> []
+            ParameterList = columnReferenceType
         }
     }
 
-let parseReceiveOperation (receiveOperation : Linq.XElement) : PResult<ReceiveOperationType, _> =
+let parseReceivePlanType (receiveOperation : Linq.XElement) : PResult<ReceivePlanType, _> =
     PResult.builder {
         let! operationType = xAttrReq "OperationType" receiveOperation
-        let! queryPlan = xElementReqP ("QueryPlan", ns) parseQueryPlanType receiveOperation
+        
+        let xmlElements = xElementsAll receiveOperation
+        let! (queryPlan,rest) = xElementReq (ensureName ("QueryPlan", ns) parseQueryPlanType) xmlElements
+        do! xElementEnsureEmpty rest
         return {
             OperationType = operationType
             QueryPlan = queryPlan
@@ -649,18 +711,18 @@ let parseStmtSimple (stmtSimple : Linq.XElement) : PResult<StmtSimpleType, _> =
 
 let parseStmtCursor (stmtCursor : Linq.XElement) : PResult<StmtCursorType, _> =
     PResult.builder {
-        let! baseInfo = parseBaseStmtInfoType stmtCursor
+        let! (baseInfo, rest) = parseBaseStmtInfoType stmtCursor
         return failwith "NYI: StmtCursor parsing not yet implemented"
     }
 
 let parseStmtReceive (stmtReceive : Linq.XElement) : PResult<StmtReceiveType, _> =
     PResult.builder {
         let! (baseInfo, rest) = parseBaseStmtInfoType stmtReceive
-        let! operations = xElementsP ("Operation", ns) parseReceiveOperation stmtReceive
+        let! (receivePlans,rest) = xElementMany (ensureName ("ReceivePlan", ns) parseReceivePlanType) rest
         do! xElementEnsureEmpty rest
         return { 
             BaseInfo = baseInfo
-            Operations = operations
+            ReceivePlans = receivePlans
         }
     }
 
@@ -689,7 +751,10 @@ let parseExternalDistributedComputation (externalDistributedComputation : Linq.X
 
 let rec parseFunctionType (functionType : Linq.XElement) : PResult<FunctionType, _> =
     PResult.builder {
-        let! statements = xElementsP ("Statements", ns) parseStmtBlockType functionType
+        let xmlElements = xElementsAll functionType
+        let! (statements, rest) = xElementMany (ensureName ("Statements", ns) parseStmtBlockType) xmlElements
+        do! xElementEnsureEmpty rest
+
         let! procName = xAttrReq "ProcName" functionType
         let! isNativelyCompiled = xAttr "IsNativelyCompiled" functionType
         return {

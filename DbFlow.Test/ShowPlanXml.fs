@@ -154,8 +154,9 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
                             qp.Warnings 
                             |> Option.fold 
                                 (fun acc' ws -> 
-                                    ws.PlanAffectingConvert
-                                    |>List.fold (fun acc'' pac -> $"{pac.ConvertIssue} - {pac.Expression}" :: acc'') acc')
+                                    //ws.PlanAffectingConvert
+                                    //|>List.fold (fun acc'' pac -> $"{pac.ConvertIssue} - {pac.Expression}" :: acc'') 
+                                    acc')
                                 acc
                         qp.RelOp
                         |> foldRelOp

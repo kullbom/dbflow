@@ -23,8 +23,12 @@ module PResult =
     let builder = new CEBuilder()
 
 let Failf fmt = 
-    failwith "Error"
-    Printf.ksprintf Failure fmt
+    Printf.ksprintf 
+        (fun s -> 
+            //failwith s
+            Failure s)
+        //Failure 
+        fmt
 
 let forAll (f : 'a -> PResult<'b, _>) (xs : 'a list) : PResult<'b list, _> =
     let rec forAll' acc xs =
@@ -125,7 +129,9 @@ let inline ensureName name parser (e : System.Xml.Linq.XElement) =
 let xElementEnsureEmpty (es : System.Xml.Linq.XElement list) =
     match es with
     | [] -> POk ()
-    | e :: _ -> Failf "Expected no more elements, but found %A" e.Name
+    | e :: _ -> 
+        failwithf "Expected no more elements, but found %A" e.Name
+        Failf "Expected no more elements, but found %A" e.Name
 
 /// Parse the first element if the name matches 
 let xElement parser (es : System.Xml.Linq.XElement list) =

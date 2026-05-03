@@ -202,6 +202,112 @@ and ColumnReferenceType = {
     ParameterRuntimeValue: string option
 }
 
+
+// ========================================
+// Relational Operator Detail Types
+// ========================================
+
+and RelOpRelOpBaseType = {
+    DefinedValues : DefinedValuesListType option
+    InternalInfo : InternalInfoType option
+}
+(*
+<xsd:complexType name="RelOpType">
+		<xsd:sequence>
+			
+			<xsd:choice>
+				<xsd:element name="AdaptiveJoin" type="shp:AdaptiveJoinType" />
+				<!--				PDW						-->
+				<xsd:element name="Apply" type="shp:JoinType" />
+				<!--				/PDW					-->
+				<xsd:element name="Assert" type="shp:FilterType" />
+				<xsd:element name="BatchHashTableBuild" type="shp:BatchHashTableBuildType" />
+				<xsd:element name="Bitmap" type="shp:BitmapType" />
+				<xsd:element name="Collapse" type="shp:CollapseType" />
+				<xsd:element name="ComputeScalar" type="shp:ComputeScalarType" />
+				<xsd:element name="Concat" type="shp:ConcatType" />
+				<xsd:element name="ConstantScan" type="shp:ConstantScanType" />
+				<!--				PDW							-->
+				<xsd:element name="ConstTableGet" type="shp:GetType" />
+				<!--				/PDW							-->
+				<xsd:element name="CreateIndex" type="shp:CreateIndexType" />
+				<!--				PDW					-->
+				<xsd:element name="Delete" type="shp:DMLOpType" />
+				<!--				/PDW					-->
+				<xsd:element name="DeletedScan" type="shp:RowsetType" />
+				<xsd:element name="Extension" type="shp:UDXType" />
+				<xsd:element name="ExternalSelect" type="shp:ExternalSelectType" />
+				<xsd:element name="ExtExtractScan" type="shp:RemoteType" />
+				<xsd:element name="Filter" type="shp:FilterType" />
+				<xsd:element name="ForeignKeyReferencesCheck" type="shp:ForeignKeyReferencesCheckType" />
+				<!--				PDW					-->
+				<xsd:element name="GbAgg" type="shp:GbAggType" />
+				<xsd:element name="GbApply" type="shp:GbApplyType" />
+				<!--				/PDW					-->
+				<xsd:element name="Generic" type="shp:GenericType" />
+				<!--				PDW					-->
+				<xsd:element name="Get" type="shp:GetType" />
+				<!--				/PDW					-->
+				<xsd:element name="Hash" type="shp:HashType" />
+				<xsd:element name="IndexScan" type="shp:IndexScanType" />
+				<xsd:element name="InsertedScan" type="shp:RowsetType" />
+				<!--				PDW					-->
+				<xsd:element name="Insert" type="shp:DMLOpType" />
+				<xsd:element name="Join" type="shp:JoinType" />
+				<xsd:element name="LocalCube" type="shp:LocalCubeType"/>
+				<!--				/PDW					-->
+				<xsd:element name="LogRowScan" type="shp:RelOpBaseType" />
+				<xsd:element name="Merge" type="shp:MergeType" />
+				<xsd:element name="MergeInterval" type="shp:SimpleIteratorOneChildType" />
+				<!--				PDW					-->
+				<xsd:element name="Move" type="shp:MoveType" />
+				<!--				/PDW					-->
+				<xsd:element name="NestedLoops" type="shp:NestedLoopsType" />
+				<xsd:element name="OnlineIndex" type="shp:CreateIndexType" />
+				<xsd:element name="Parallelism" type="shp:ParallelismType" />
+				<xsd:element name="ParameterTableScan" type="shp:RelOpBaseType" />
+				<xsd:element name="PrintDataflow" type="shp:RelOpBaseType" />
+				<!--				PDW					-->
+				<xsd:element name="Project" type="shp:ProjectType" />
+				<!--				/PDW					-->
+				<xsd:element name="Put" type="shp:PutType" />
+				<xsd:element name="RemoteFetch" type="shp:RemoteFetchType" />
+				<xsd:element name="RemoteModify" type="shp:RemoteModifyType" />
+				<xsd:element name="RemoteQuery" type="shp:RemoteQueryType" />
+				<xsd:element name="RemoteRange" type="shp:RemoteRangeType" />
+				<xsd:element name="RemoteScan" type="shp:RemoteType" />
+				<xsd:element name="RowCountSpool" type="shp:SpoolType" />
+				<xsd:element name="ScalarInsert" type="shp:ScalarInsertType" />
+				<xsd:element name="Segment" type="shp:SegmentType" />
+				<xsd:element name="Sequence" type="shp:SequenceType" />
+				<xsd:element name="SequenceProject" type="shp:ComputeScalarType" />
+				<xsd:element name="SimpleUpdate" type="shp:SimpleUpdateType" />
+				<xsd:element name="Sort" type="shp:SortType" />
+				<xsd:element name="Split" type="shp:SplitType" />
+				<xsd:element name="Spool" type="shp:SpoolType" />
+				<xsd:element name="StreamAggregate" type="shp:StreamAggregateType" />
+				<xsd:element name="Switch" type="shp:SwitchType" />
+				<xsd:element name="TableScan" type="shp:TableScanType" />
+				<xsd:element name="TableValuedFunction" type="shp:TableValuedFunctionType" />
+				<xsd:element name="Top" type="shp:TopType" />
+				<xsd:element name="TopSort" type="shp:TopSortType" />
+				<xsd:element name="Update" type="shp:UpdateType" />
+				<!--				PDW					-->
+				<xsd:element name="Union" type="shp:ConcatType" />
+				<xsd:element name="UnionAll" type="shp:ConcatType" />
+				<!--				/PDW					-->
+				<xsd:element name="WindowSpool" type="shp:WindowType" />
+				<xsd:element name="WindowAggregate" type="shp:WindowAggregateType" />
+				<xsd:element name="XcsScan" type="shp:XcsScanType" />
+			</xsd:choice>
+		</xsd:sequence>
+		
+		<!-- For PDW cost Operators -->
+		<xsd:attribute name="PDWAccumulativeCost" type="xsd:double" use="optional" />
+	</xsd:complexType>
+	
+*)
+
 // ========================================
 // Scalar Operator Detail Types
 // ========================================
@@ -499,14 +605,14 @@ and StmtCursorType = {
     Operations: CursorOperationType list
 }
 
-and ReceiveOperationType = {
+and ReceivePlanType = {
     OperationType: string // "ReceivePlanSelect" | "ReceivePlanUpdate"
     QueryPlan: QueryPlanType
 }
 
 and StmtReceiveType = {
     BaseInfo: BaseStmtInfoType
-    Operations: ReceiveOperationType list
+    ReceivePlans: ReceivePlanType list
 }
 
 and StmtUseDbType = {

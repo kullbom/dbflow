@@ -106,7 +106,7 @@
 ## ...
 
 - [ ] Add support for ShowPlanXml 
-    - [x] Add support for parsing ShowPlanXml
+    - [ ] Add support for parsing ShowPlanXml
     - [ ] Change the XmlParser to always select all elements - and then apply som kind of parser to that based on the expectations (in the xsd...)
     - [ ] Go through all xsd:choice-elements of the xsd and make sure they are handled.
         - [ ] Add some kind of support xsd:choice-elements to the XmlParser. "xsd:choice" means that the element IS ONE of cases.
@@ -117,6 +117,7 @@
     - [ ] Add tests to validate ShowPlanXml
     - [ ] Make sure the performance is usable for code generation
 - [ ] Add support for fetching input and output of a query using `sys.sp_describe_first_result_set` and `sys.sp_describe_undeclared_parameters`
+
 
 ## Version 1.0.0
 
