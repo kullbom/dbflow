@@ -1,5 +1,4 @@
-﻿namespace DbFlow.SqlServer.ShowPlanXml
-
+namespace DbFlow.SqlServer.ShowPlanXml
 
 // ========================================
 // Basic Types
@@ -28,6 +27,10 @@ type ObjectType = {
     IndexKind: IndexKindType option
     CloneAccessScope: CloneAccessScopeType option
     Storage: StorageType option
+    OnlineInbuildIndex: int option
+    OnlineIndexBuildMappingIndex: int option
+    GraphWorkTableType: int option
+    GraphWorkTableIdentifier: int option
 }
 
 type InternalInfoType = {
@@ -82,18 +85,12 @@ type SpillOccurredType = {
 
 // Spill warning information
 type SpillToTempDbType = {
-    // Additional information, like spill I/O stats may go here when available
-    InternalInfo : InternalInfoType
-
     SpillLevel : uint64 option
     SpilledThreadCount : uint64 option
 }
 
 // Sort spill details
 type SortSpillDetailsType = {
-    // Additional information, like spill I/O stats may go here when available
-    InternalInfo : InternalInfoType
-
     GrantedMemoryKb : uint64 option
     UsedMemoryKb : uint64 option
     WritesToTempDb : uint64 option
@@ -102,9 +99,6 @@ type SortSpillDetailsType = {
 
 // Hash spill details
 type HashSpillDetailsType = {
-    // Additional information, like spill I/O stats may go here when available
-    InternalInfo : InternalInfoType
-
     GrantedMemoryKb : uint64 option
     UsedMemoryKb : uint64 option
     WritesToTempDb : uint64 option
@@ -113,18 +107,13 @@ type HashSpillDetailsType = {
 
 // Exchange spill details
 type ExchangeSpillDetailsType = {
-    // Additional information, like spill I/O stats may go here when available
-    InternalInfo : InternalInfoType
-    
     WritesToTempDb : uint64 option
 }
 
 // Query wait information
 type WaitWarningType = {
-    // Additional information, like spill I/O stats may go here when available
-    InternalInfo : InternalInfoType
-    
     WaitType : string // enum: "Memory Grant"
+    WaitTime : uint64 option
 }
 
 /// Provide warning information for memory grant.
@@ -133,7 +122,7 @@ type WaitWarningType = {
 /// GrantedMemory: Granted memory in KB
 /// MaxUsedMemory: Maximum used memory grant in KB
 type MemoryGrantWarningInfo = {
-    GrantWarningKind : string // enum: "Excessive Grant", "Used More Than Granted", "Grant Increase" 
+    GrantWarningKind : string
     RequestedMemory : uint64
     GrantedMemory : uint64
     MaxUsedMemory : uint64
@@ -158,6 +147,93 @@ type RunTimePartitionSummaryType = {
     PartitionsAccessed: PartitionsAccessedType
 }
 
+type WaitStatType = {
+    WaitType: string
+    WaitTimeMs: uint64
+    WaitCount: uint64
+}
+
+type WaitStatListType = {
+    WaitStats: WaitStatType list
+}
+
+type QueryExecTimeType = {
+    CpuTime: uint64
+    ElapsedTime: uint64
+    UdfCpuTime: uint64 option
+    UdfElapsedTime: uint64 option
+}
+
+type OptimizationReplayType = {
+    Script: string
+}
+
+type ThreadReservationType = {
+    NodeId: int option
+    ReservedThreads: int
+}
+
+type ThreadStatType = {
+    Branches: int
+    UsedThreads: int option
+    ThreadReservations: ThreadReservationType list
+}
+
+type MissingColumnType = {
+    Name: string
+    ColumnId: int
+}
+
+type ColumnGroupType = {
+    Usage: string // "EQUALITY" | "INEQUALITY" | "INCLUDE"
+    Columns: MissingColumnType list
+}
+
+type MissingIndexType = {
+    Database: string
+    Schema: string
+    Table: string
+    ColumnGroups: ColumnGroupType list
+}
+
+type MissingIndexGroupType = {
+    Impact: float
+    MissingIndexes: MissingIndexType list
+}
+
+type MissingIndexesType = {
+    MissingIndexGroups: MissingIndexGroupType list
+}
+
+type GuessedSelectivityType = {
+    Spatial: ObjectType
+}
+
+type ParameterizationType = {
+    Objects: ObjectType list
+}
+
+type UnmatchedIndexesType = {
+    Parameterization: ParameterizationType
+}
+
+type TraceFlag = {
+    Value: uint64
+    Scope: string // "Global" | "Session"
+}
+
+type TraceFlagListType = {
+    IsCompileTime: bool
+    TraceFlags: TraceFlag list
+}
+
+type ResourceEstimateType = {
+    NodeCount: uint64 option
+    Dop: float option
+    MemoryInBytes: float option
+    DiskWrittenInBytes: float option
+    Scalable: bool option
+}
 
 // ========================================
 // Mutually Recursive Types
@@ -202,111 +278,684 @@ and ColumnReferenceType = {
     ParameterRuntimeValue: string option
 }
 
+and SingleColumnReferenceType = {
+    ColumnReference: ColumnReferenceType
+}
 
+and ColumnReferenceListType = {
+    ColumnReferences: ColumnReferenceType list
+}
+
+and DefinedValueType = {
+    Value: ScalarType
+    SourceColumns: ColumnReferenceType list option
+    TargetColumns: ColumnReferenceType list option
+}
+
+and DefinedValuesListType = {
+    DefinedValues: DefinedValueType list
+}
+
+// ========================================
+// Seek Predicate Types
+// ========================================
+
+and ScanRangeType = {
+    RangeColumns: ColumnReferenceListType
+    RangeExpressions: ScalarExpressionListType
+    ScanType: CompareOpType
+}
+
+and SeekPredicateType = {
+    Prefix: ScanRangeType option
+    StartRange: ScanRangeType option
+    EndRange: ScanRangeType option
+    IsNotNull: SingleColumnReferenceType option
+}
+
+and SeekPredicateNewType = {
+    SeekKeys: SeekPredicateType list // 1-2
+}
+
+and SeekPredicatePartType = {
+    SeekPredicatesNew: SeekPredicateNewType list
+}
+
+and SeekPredicatesType =
+    | SeekPredicate of SeekPredicateType list
+    | SeekPredicateNew of SeekPredicateNewType list
+    | SeekPredicatePart of SeekPredicatePartType list
+
+/// This contains information related to the parameter sensitive predicate:
+/// Boundaries used to determine different ranges;
+/// Statistics information used to compute the boundaries;
+/// Predicate details.
+and ParameterSensitivePredicateType = {
+    StatisticsInfo: StatsInfoType list // 1 .. unbounded
+    Predicate: ScalarExpressionType
+    // Attributes
+    LowBoundery : float
+    HighBoundary : float
+}
+
+and DispatcherType = {
+    ParameterSensitivePredicate : ParameterSensitivePredicateType list // 1..3 
+}
 // ========================================
 // Relational Operator Detail Types
 // ========================================
 
-and RelOpRelOpBaseType = {
+and RelOpBaseType = {
     DefinedValues : DefinedValuesListType option
     InternalInfo : InternalInfoType option
 }
-(*
-<xsd:complexType name="RelOpType">
-		<xsd:sequence>
-			
-			<xsd:choice>
-				<xsd:element name="AdaptiveJoin" type="shp:AdaptiveJoinType" />
-				<!--				PDW						-->
-				<xsd:element name="Apply" type="shp:JoinType" />
-				<!--				/PDW					-->
-				<xsd:element name="Assert" type="shp:FilterType" />
-				<xsd:element name="BatchHashTableBuild" type="shp:BatchHashTableBuildType" />
-				<xsd:element name="Bitmap" type="shp:BitmapType" />
-				<xsd:element name="Collapse" type="shp:CollapseType" />
-				<xsd:element name="ComputeScalar" type="shp:ComputeScalarType" />
-				<xsd:element name="Concat" type="shp:ConcatType" />
-				<xsd:element name="ConstantScan" type="shp:ConstantScanType" />
-				<!--				PDW							-->
-				<xsd:element name="ConstTableGet" type="shp:GetType" />
-				<!--				/PDW							-->
-				<xsd:element name="CreateIndex" type="shp:CreateIndexType" />
-				<!--				PDW					-->
-				<xsd:element name="Delete" type="shp:DMLOpType" />
-				<!--				/PDW					-->
-				<xsd:element name="DeletedScan" type="shp:RowsetType" />
-				<xsd:element name="Extension" type="shp:UDXType" />
-				<xsd:element name="ExternalSelect" type="shp:ExternalSelectType" />
-				<xsd:element name="ExtExtractScan" type="shp:RemoteType" />
-				<xsd:element name="Filter" type="shp:FilterType" />
-				<xsd:element name="ForeignKeyReferencesCheck" type="shp:ForeignKeyReferencesCheckType" />
-				<!--				PDW					-->
-				<xsd:element name="GbAgg" type="shp:GbAggType" />
-				<xsd:element name="GbApply" type="shp:GbApplyType" />
-				<!--				/PDW					-->
-				<xsd:element name="Generic" type="shp:GenericType" />
-				<!--				PDW					-->
-				<xsd:element name="Get" type="shp:GetType" />
-				<!--				/PDW					-->
-				<xsd:element name="Hash" type="shp:HashType" />
-				<xsd:element name="IndexScan" type="shp:IndexScanType" />
-				<xsd:element name="InsertedScan" type="shp:RowsetType" />
-				<!--				PDW					-->
-				<xsd:element name="Insert" type="shp:DMLOpType" />
-				<xsd:element name="Join" type="shp:JoinType" />
-				<xsd:element name="LocalCube" type="shp:LocalCubeType"/>
-				<!--				/PDW					-->
-				<xsd:element name="LogRowScan" type="shp:RelOpBaseType" />
-				<xsd:element name="Merge" type="shp:MergeType" />
-				<xsd:element name="MergeInterval" type="shp:SimpleIteratorOneChildType" />
-				<!--				PDW					-->
-				<xsd:element name="Move" type="shp:MoveType" />
-				<!--				/PDW					-->
-				<xsd:element name="NestedLoops" type="shp:NestedLoopsType" />
-				<xsd:element name="OnlineIndex" type="shp:CreateIndexType" />
-				<xsd:element name="Parallelism" type="shp:ParallelismType" />
-				<xsd:element name="ParameterTableScan" type="shp:RelOpBaseType" />
-				<xsd:element name="PrintDataflow" type="shp:RelOpBaseType" />
-				<!--				PDW					-->
-				<xsd:element name="Project" type="shp:ProjectType" />
-				<!--				/PDW					-->
-				<xsd:element name="Put" type="shp:PutType" />
-				<xsd:element name="RemoteFetch" type="shp:RemoteFetchType" />
-				<xsd:element name="RemoteModify" type="shp:RemoteModifyType" />
-				<xsd:element name="RemoteQuery" type="shp:RemoteQueryType" />
-				<xsd:element name="RemoteRange" type="shp:RemoteRangeType" />
-				<xsd:element name="RemoteScan" type="shp:RemoteType" />
-				<xsd:element name="RowCountSpool" type="shp:SpoolType" />
-				<xsd:element name="ScalarInsert" type="shp:ScalarInsertType" />
-				<xsd:element name="Segment" type="shp:SegmentType" />
-				<xsd:element name="Sequence" type="shp:SequenceType" />
-				<xsd:element name="SequenceProject" type="shp:ComputeScalarType" />
-				<xsd:element name="SimpleUpdate" type="shp:SimpleUpdateType" />
-				<xsd:element name="Sort" type="shp:SortType" />
-				<xsd:element name="Split" type="shp:SplitType" />
-				<xsd:element name="Spool" type="shp:SpoolType" />
-				<xsd:element name="StreamAggregate" type="shp:StreamAggregateType" />
-				<xsd:element name="Switch" type="shp:SwitchType" />
-				<xsd:element name="TableScan" type="shp:TableScanType" />
-				<xsd:element name="TableValuedFunction" type="shp:TableValuedFunctionType" />
-				<xsd:element name="Top" type="shp:TopType" />
-				<xsd:element name="TopSort" type="shp:TopSortType" />
-				<xsd:element name="Update" type="shp:UpdateType" />
-				<!--				PDW					-->
-				<xsd:element name="Union" type="shp:ConcatType" />
-				<xsd:element name="UnionAll" type="shp:ConcatType" />
-				<!--				/PDW					-->
-				<xsd:element name="WindowSpool" type="shp:WindowType" />
-				<xsd:element name="WindowAggregate" type="shp:WindowAggregateType" />
-				<xsd:element name="XcsScan" type="shp:XcsScanType" />
-			</xsd:choice>
-		</xsd:sequence>
-		
-		<!-- For PDW cost Operators -->
-		<xsd:attribute name="PDWAccumulativeCost" type="xsd:double" use="optional" />
-	</xsd:complexType>
-	
-*)
+
+and RelOpType = {
+    // Sequence elements
+    OutputList: ColumnReferenceListType
+    Warnings: WarningsType option
+    MemoryFractions: MemoryFractionsType option
+    RunTimeInformation: RunTimeInformationType option
+    RunTimePartitionSummary: RunTimePartitionSummaryType option
+    InternalInfo: InternalInfoType option
+    RelOpBase: RelOpBaseType option
+
+    // Required attributes
+    AvgRowSize: float
+    EstimateCPU: float
+    EstimateIO: float
+    EstimateRebinds: float
+    EstimateRewinds: float
+    EstimateRows: float
+    LogicalOp: LogicalOpType
+    Parallel: bool
+    PhysicalOp: PhysicalOpType
+    EstimatedTotalSubtreeCost: float
+
+    // Optional attributes
+    EstimatedExecutionMode: ExecutionModeType option
+    GroupExecuted: bool option
+    EstimateRowsWithoutRowGoal: float option
+    EstimatedRowsRead: float option
+    NodeId: int option
+    RemoteDataAccess: bool option
+    Partitioned: bool option
+    IsAdaptive: bool option
+    AdaptiveThresholdRows: float option
+    TableCardinality: float option
+    StatsCollectionId: uint64 option
+    EstimatedJoinType: PhysicalOpType option
+    HyperScaleOptimizedQueryProcessing: string option
+    HyperScaleOptimizedQueryProcessingUnusedReason: string option
+    PDWAccumulativeCost: float option
+
+    // The specific operator details
+    OperatorDetails: RelOpDetails option
+}
+
+and RelOpDetails =
+    | AdaptiveJoin of AdaptiveJoinType
+    | Apply of JoinType
+    | Assert of FilterType
+    | BatchHashTableBuild of BatchHashTableBuildType
+    | Bitmap of BitmapType
+    | Collapse of CollapseType
+    | ComputeScalar of ComputeScalarType
+    | Concat of ConcatType
+    | ConstantScan of ConstantScanType
+    | ConstTableGet of GetType
+    | CreateIndex of CreateIndexType
+    | Delete of DMLOpType
+    | DeletedScan of RowsetType
+    | Extension of UDXType
+    | ExternalSelect of ExternalSelectType
+    | ExtExtractScan of RemoteType
+    | Filter of FilterType
+    | ForeignKeyReferencesCheck of ForeignKeyReferencesCheckType
+    | GbAgg of GbAggType
+    | GbApply of GbApplyType
+    | Generic of GenericType
+    | Get of GetType
+    | Hash of HashType
+    | IndexScan of IndexScanType
+    | InsertedScan of RowsetType
+    | Insert of DMLOpType
+    | Join of JoinType
+    | LocalCube of LocalCubeType
+    | LogRowScan
+    | Merge of MergeType
+    | MergeInterval of SimpleIteratorOneChildType
+    | Move of MoveType
+    | NestedLoops of NestedLoopsType
+    | OnlineIndex of CreateIndexType
+    | Parallelism of ParallelismType
+    | ParameterTableScan
+    | PrintDataflow
+    | Project of ProjectType
+    | Put of PutType
+    | RemoteFetch of RemoteFetchType
+    | RemoteModify of RemoteModifyType
+    | RemoteQuery of RemoteQueryType
+    | RemoteRange of RemoteRangeType
+    | RemoteScan of RemoteType
+    | RowCountSpool of SpoolType
+    | ScalarInsert of ScalarInsertType
+    | Segment of SegmentType
+    | Sequence of SequenceType
+    | SequenceProject of ComputeScalarType
+    | SimpleUpdate of SimpleUpdateType
+    | Sort of SortType
+    | Split of SplitType
+    | Spool of SpoolType
+    | StreamAggregate of StreamAggregateType
+    | Switch of SwitchType
+    | TableScan of TableScanType
+    | TableValuedFunction of TableValuedFunctionType
+    | Top of TopType
+    | TopSort of TopSortType
+    | Update of UpdateType
+    | Union of ConcatType
+    | UnionAll of ConcatType
+    | WindowSpool of WindowType
+    | WindowAggregate of WindowAggregateType
+    | XcsScan of XcsScanType
+
+// Base types for specific operators
+and SimpleIteratorOneChildType = {
+    Base: RelOpBaseType
+    RelOp: RelOpType
+}
+
+and FilterType = {
+    Base: RelOpBaseType
+    RelOp: RelOpType
+    Predicate: ScalarExpressionType
+    StartupExpression: bool
+}
+
+and ConstantScanType = {
+    Base: RelOpBaseType
+    Values: ScalarExpressionListType list
+}
+
+and RowsetType = {
+    Base: RelOpBaseType
+    Objects: ObjectType list
+}
+
+and TableScanType = {
+    RowsetBase: RowsetType
+    Predicate: ScalarExpressionType option
+    PartitionId: SingleColumnReferenceType option
+    IndexedViewInfo: IndexedViewInfoType option
+    Ordered: bool
+    ForcedIndex: bool option
+    ForceScan: bool option
+    NoExpandHint: bool option
+    Storage: StorageType option
+}
+
+and IndexScanType = {
+    RowsetBase: RowsetType
+    SeekPredicates: SeekPredicatesType option
+    Predicates: ScalarExpressionType list
+    PartitionId: SingleColumnReferenceType option
+    IndexedViewInfo: IndexedViewInfoType option
+    Lookup: bool option
+    Ordered: bool
+    ScanDirection: OrderType option
+    ForcedIndex: bool option
+    ForceSeek: bool option
+    ForceSeekColumnCount: int option
+    ForceScan: bool option
+    NoExpandHint: bool option
+    Storage: StorageType option
+    DynamicSeek: bool option
+    SBSFileUrl: string option
+}
+
+and XcsScanType = {
+    RowsetBase: RowsetType
+    Predicate: ScalarExpressionType option
+    PartitionId: SingleColumnReferenceType option
+    IndexedViewInfo: IndexedViewInfoType option
+    RelOp: RelOpType
+    Ordered: bool
+    ForcedIndex: bool option
+    ForceScan: bool option
+    NoExpandHint: bool option
+    Storage: StorageType option
+}
+
+and IndexedViewInfoType = {
+    Objects: ObjectType list
+}
+
+and OrderByType = {
+    OrderByColumns: OrderByColumnType list
+}
+
+and OrderByColumnType = {
+    ColumnReference: ColumnReferenceType
+    Ascending: bool
+}
+
+and TableValuedFunctionType = {
+    Base: RelOpBaseType
+    Object: ObjectType option
+    Predicate: ScalarExpressionType option
+    RelOp: RelOpType option
+    ParameterList: ScalarExpressionListType option
+}
+
+and HashType = {
+    Base: RelOpBaseType
+    HashKeysBuild: ColumnReferenceListType option
+    HashKeysProbe: ColumnReferenceListType option
+    BuildResidual: ScalarExpressionType option
+    ProbeResidual: ScalarExpressionType option
+    StarJoinInfo: StarJoinInfoType option
+    RelOps: RelOpType list // 1-2
+    BitmapCreator: bool option
+}
+
+and ComputeScalarType = {
+    Base: RelOpBaseType
+    RelOp: RelOpType
+    ComputeSequence: bool option
+}
+
+and ParallelismType = {
+    Base: RelOpBaseType
+    PartitionColumns: ColumnReferenceListType option
+    OrderBy: OrderByType option
+    HashKeys: ColumnReferenceListType option
+    ProbeColumn: SingleColumnReferenceType option
+    Predicate: ScalarExpressionType option
+    Activation: ActivationInfoType option
+    BrickRouting: BrickRoutingType option
+    RelOp: RelOpType
+    PartitioningType: PartitionType option
+    Remoting: bool option
+    LocalParallelism: bool option
+    InRow: bool option
+}
+
+and ActivationInfoType = {
+    Type: string
+    Object: ObjectType option
+    FragmentElimination: string option
+}
+
+and BrickRoutingType = {
+    Object: ObjectType option
+    FragmentIdColumn: SingleColumnReferenceType option
+}
+
+and StreamAggregateType = {
+    Base: RelOpBaseType
+    GroupBy: ColumnReferenceListType option
+    RollupInfo: RollupInfoType option
+    RelOp: RelOpType
+}
+
+and RollupInfoType = {
+    HighestLevel: int
+    RollupLevels: RollupLevelType list
+}
+
+and RollupLevelType = {
+    Level: int
+}
+
+and SortType = {
+    Base: RelOpBaseType
+    OrderBy: OrderByType
+    PartitionId: SingleColumnReferenceType option
+    RelOp: RelOpType
+    Distinct: bool
+}
+
+and BitmapType = {
+    Base: RelOpBaseType
+    HashKeys: ColumnReferenceListType
+    RelOp: RelOpType
+}
+
+and CollapseType = {
+    Base: RelOpBaseType
+    GroupBy: ColumnReferenceListType
+    RelOp: RelOpType
+}
+
+and ConcatType = {
+    Base: RelOpBaseType
+    RelOps: RelOpType list // 2+
+}
+
+and SwitchType = {
+    ConcatBase: ConcatType
+    Predicate: ScalarExpressionType option
+}
+
+and MergeType = {
+    Base: RelOpBaseType
+    InnerSideJoinColumns: ColumnReferenceListType option
+    OuterSideJoinColumns: ColumnReferenceListType option
+    Residual: ScalarExpressionType option
+    PassThru: ScalarExpressionType option
+    StarJoinInfo: StarJoinInfoType option
+    RelOps: RelOpType list // 2
+    ManyToMany: bool option
+}
+
+and NestedLoopsType = {
+    Base: RelOpBaseType
+    Predicate: ScalarExpressionType option
+    PassThru: ScalarExpressionType option
+    OuterReferences: ColumnReferenceListType option
+    PartitionId: SingleColumnReferenceType option
+    ProbeColumn: SingleColumnReferenceType option
+    StarJoinInfo: StarJoinInfoType option
+    RelOps: RelOpType list // 2
+    Optimized: bool
+    WithOrderedPrefetch: bool option
+    WithUnorderedPrefetch: bool option
+}
+
+and SegmentType = {
+    Base: RelOpBaseType
+    GroupBy: ColumnReferenceListType
+    SegmentColumn: SingleColumnReferenceType
+    RelOp: RelOpType
+}
+
+and SequenceType = {
+    Base: RelOpBaseType
+    RelOps: RelOpType list // 2+
+    IsGraphDBTransitiveClosure: bool option
+    GraphSequenceIdentifier: int option
+}
+
+and SplitType = {
+    Base: RelOpBaseType
+    ActionColumn: SingleColumnReferenceType option
+    RelOp: RelOpType
+}
+
+and TopType = {
+    Base: RelOpBaseType
+    TieColumns: ColumnReferenceListType option
+    OffsetExpression: ScalarExpressionType option
+    TopExpression: ScalarExpressionType option
+    RelOp: RelOpType
+    RowCount: bool option
+    Rows: int option
+    IsPercent: bool option
+    WithTies: bool option
+    TopLocation: string option
+}
+
+and UDXType = {
+    Base: RelOpBaseType
+    UsedUDXColumns: ColumnReferenceListType option
+    RelOp: RelOpType option
+    UDXName: string
+}
+
+and WindowType = {
+    Base: RelOpBaseType
+    RelOp: RelOpType option
+}
+
+and WindowAggregateType = {
+    Base: RelOpBaseType
+    RelOp: RelOpType option
+}
+
+and PutType = {
+    RemoteBase: RemoteQueryType
+    RelOp: RelOpType option
+    IsExternallyComputed: bool option
+    ShuffleType: string option
+    ShuffleColumn: string option
+}
+
+and SimpleUpdateType = {
+    RowsetBase: RowsetType
+    SeekPredicate: (SeekPredicateType * SeekPredicateNewType) option
+    SetPredicate: ScalarExpressionType option
+    DMLRequestSort: bool option
+}
+
+and UpdateType = {
+    RowsetBase: RowsetType
+    SetPredicates: SetPredicateElementType list
+    ProbeColumn: SingleColumnReferenceType option
+    ActionColumn: SingleColumnReferenceType option
+    OriginalActionColumn: SingleColumnReferenceType option
+    AssignmentMap: AssignmentMapType option
+    SourceTable: ParameterizationType option
+    TargetTable: ParameterizationType option
+    RelOp: RelOpType
+    WithOrderedPrefetch: bool option
+    WithUnorderedPrefetch: bool option
+    DMLRequestSort: bool option
+}
+
+and SetPredicateElementType = {
+    SetPredicateType: string option // "Update" | "Insert"
+    ScalarExpression: ScalarType
+}
+
+and CreateIndexType = {
+    RowsetBase: RowsetType
+    RelOp: RelOpType
+}
+
+and SpoolType = {
+    Base: RelOpBaseType
+    SeekPredicate: (SeekPredicateType * SeekPredicateNewType) option
+    RelOp: RelOpType option
+    Stack: bool option
+    PrimaryNodeId: int option
+}
+
+and BatchHashTableBuildType = {
+    Base: RelOpBaseType
+    RelOp: RelOpType
+    BitmapCreator: bool option
+}
+
+and ScalarInsertType = {
+    RowsetBase: RowsetType
+    SetPredicate: ScalarExpressionType option
+    DMLRequestSort: bool option
+}
+
+and TopSortType = {
+    SortBase: SortType
+    Rows: int
+    WithTies: bool option
+}
+
+and RemoteType = {
+    Base: RelOpBaseType
+    RemoteDestination: string option
+    RemoteSource: string option
+    RemoteObject: string option
+}
+
+and RemoteRangeType = {
+    RemoteBase: RemoteType
+    SeekPredicates: SeekPredicatesType option
+}
+
+and RemoteFetchType = {
+    RemoteBase: RemoteType
+    RelOp: RelOpType
+}
+
+and RemoteModifyType = {
+    RemoteBase: RemoteType
+    SetPredicate: ScalarExpressionType option
+    RelOp: RelOpType
+}
+
+and RemoteQueryType = {
+    RemoteBase: RemoteType
+    RemoteQuery: string option
+}
+
+and GenericType = {
+    Base: RelOpBaseType
+    RelOps: RelOpType list
+}
+
+and MoveType = {
+    Base: RelOpBaseType
+    DistributionKey: ColumnReferenceListType option
+    ResourceEstimate: ResourceEstimateType option
+    RelOps: RelOpType list
+    MoveType: string option
+    DistributionType: string option
+    IsDistributed: bool option
+    IsExternal: bool option
+    IsFull: bool option
+}
+
+and ExternalSelectType = {
+    Base: RelOpBaseType
+    RelOps: RelOpType list
+    MaterializeOperation: string option
+    DistributionType: string option
+    IsDistributed: bool option
+    IsExternal: bool option
+    IsFull: bool option
+}
+
+and ProjectType = {
+    Base: RelOpBaseType
+    RelOps: RelOpType list
+    IsNoOp: bool option
+}
+
+and JoinType = {
+    Base: RelOpBaseType
+    Predicates: ScalarExpressionType list
+    Probes: SingleColumnReferenceType list
+    RelOps: RelOpType list
+}
+
+and GbApplyType = {
+    Base: RelOpBaseType
+    Predicates: ScalarExpressionType list
+    AggFunctions: DefinedValuesListType option
+    RelOps: RelOpType list
+    JoinType: string option
+    AggType: string option
+}
+
+and GbAggType = {
+    Base: RelOpBaseType
+    GroupBy: ColumnReferenceListType option
+    AggFunctions: DefinedValuesListType option
+    RelOps: RelOpType list
+    IsScalar: bool option
+    AggType: string option
+    HintType: string option
+}
+
+and GroupingSetReferenceType = {
+    Value: string
+}
+
+and GroupingSetListType = {
+    GroupingSets: GroupingSetReferenceType list
+}
+
+and LocalCubeType = {
+    Base: RelOpBaseType
+    GroupBy: ColumnReferenceListType option
+    GroupingSets: GroupingSetListType option
+    RelOps: RelOpType list
+}
+
+and DMLOpType = {
+    Base: RelOpBaseType
+    AssignmentMap: AssignmentMapType option
+    SourceTable: ParameterizationType option
+    TargetTable: ParameterizationType option
+    RelOps: RelOpType list
+}
+
+and AssignmentMapType = {
+    Assigns: AssignType list
+}
+
+and AssignType = {
+    Target: AssignTargetType
+    Value: ScalarType
+}
+
+and AssignTargetType =
+    | ColumnRef of ColumnReferenceType
+    | ScalarOp of ScalarType
+
+and GetType = {
+    Base: RelOpBaseType
+    Bookmarks: ColumnReferenceListType option
+    OutputColumns: OutputColumnsType option
+    GeneratedData: ScalarExpressionListType option
+    RelOps: RelOpType list
+    NumRows: int option
+    IsExternal: bool option
+    IsDistributed: bool option
+    IsHashDistributed: bool option
+    IsReplicated: bool option
+    IsRoundRobin: bool option
+}
+
+and OutputColumnsType = {
+    DefinedValues: DefinedValuesListType option
+    Objects: ObjectType list
+}
+
+and ForeignKeyReferencesCheckType = {
+    Base: RelOpBaseType
+    RelOp: RelOpType
+    ForeignKeyReferenceChecks: ForeignKeyReferenceCheckType list
+    ForeignKeyReferencesCount: int option
+    NoMatchingIndexCount: int option
+    PartialMatchingIndexCount: int option
+}
+
+and ForeignKeyReferenceCheckType = {
+    IndexScan: IndexScanType
+}
+
+and AdaptiveJoinType = {
+    Base: RelOpBaseType
+    HashKeysBuild: ColumnReferenceListType option
+    HashKeysProbe: ColumnReferenceListType option
+    BuildResidual: ScalarExpressionType option
+    ProbeResidual: ScalarExpressionType option
+    StarJoinInfo: StarJoinInfoType option
+    Predicate: ScalarExpressionType option
+    PassThru: ScalarExpressionType option
+    OuterReferences: ColumnReferenceListType option
+    PartitionId: SingleColumnReferenceType option
+    RelOps: RelOpType list // 3
+    BitmapCreator: bool option
+    Optimized: bool
+    WithOrderedPrefetch: bool option
+    WithUnorderedPrefetch: bool option
+}
+
+and StarJoinInfoType = {
+    Root: bool option
+    OperationType: string // "Fetch" | "Index Intersection" | "Index Filter" | "Index Lookup"
+}
 
 // ========================================
 // Scalar Operator Detail Types
@@ -359,19 +1008,13 @@ and UDAggregateType = {
     ScalarOperators: ScalarType list
 }
 
-and AssignTargetType =
-    | ColumnRef of ColumnReferenceType
-    | ScalarOp of ScalarType
-
-and AssignType = {
+and AssignScalarType = {
     Target: AssignTargetType
     Value: ScalarType
-    SourceColumns: ColumnReferenceType list
-    TargetColumns: ColumnReferenceType list
 }
 
 and MultAssignType = {
-    Assigns: AssignType list
+    Assigns: AssignScalarType list
 }
 
 and ConditionalType = {
@@ -426,7 +1069,7 @@ and ScalarExpressionListType = {
 and ScalarOperatorKind =
     | Aggregate of AggregateType
     | Arithmetic of ArithmeticType
-    | Assign of AssignType
+    | Assign of AssignScalarType
     | Compare of CompareType
     | Const of ConstType
     | Convert of ConvertType
@@ -455,87 +1098,60 @@ and ScalarExpressionType = {
 // ========================================
 // Runtime Information
 // ========================================
-        
+
 and RunTimeCountersPerThread = {
     Thread: int
+    BrickId: int option
+    ActualRebinds: uint64 option
+    ActualRewinds: uint64 option
     ActualRows: uint64
+    RowRequalifications: uint64 option
+    ActualRowsRead: uint64 option
+    Batches: uint64 option
     ActualEndOfScans: uint64
     ActualExecutions: uint64
     ActualExecutionMode: ExecutionModeType option
+    TaskAddr: uint64 option
+    SchedulerId: uint64 option
+    FirstActiveTime: uint64 option
+    LastActiveTime: uint64 option
+    OpenTime: uint64 option
+    FirstRowTime: uint64 option
+    LastRowTime: uint64 option
+    CloseTime: uint64 option
     ActualElapsedms: uint64 option
     ActualCPUms: uint64 option
     ActualScans: uint64 option
     ActualLogicalReads: uint64 option
     ActualPhysicalReads: uint64 option
+    ActualPageServerReads: uint64 option
+    ActualReadAheads: uint64 option
+    ActualPageServerReadAheads: uint64 option
+    ActualLobLogicalReads: uint64 option
+    ActualLobPhysicalReads: uint64 option
+    ActualLobPageServerReads: uint64 option
+    ActualLobReadAheads: uint64 option
+    ActualLobPageServerReadAheads: uint64 option
+    SegmentReads: int option
+    SegmentSkips: int option
+    ActualLocallyAggregatedRows: uint64 option
+    InputMemoryGrant: uint64 option
+    OutputMemoryGrant: uint64 option
+    UsedMemoryGrant: uint64 option
+    IsInterleavedExecuted: bool option
+    ActualJoinType: PhysicalOpType option
+    HpcRowCount: uint64 option
+    HpcKernelElapsedUs: uint64 option
+    HpcHostToDeviceBytes: uint64 option
+    HpcDeviceToHostBytes: uint64 option
+    ActualPageServerPushedPageIDs: uint64 option
+    ActualPageServerRowsReturned: uint64 option
+    ActualPageServerRowsRead: uint64 option
+    ActualPageServerPushedReads: uint64 option
 }
 
 and RunTimeInformationType = {
     RunTimeCountersPerThread: RunTimeCountersPerThread list
-}
-
-
-// ========================================
-// Parameter sensitive plan optimization schema definition
-// ========================================
-
-/// This contains information related to the parameter sensitive predicate:
-/// Boundaries used to determine different ranges;
-/// Statistics information used to compute the boundaries;
-/// Predicate details.
-and ParameterSensitivePredicateType = {
-    StatisticsInfo: StatsInfoType list // 1 .. unbounded
-    Predicate: ScalarExpressionType
-    // Attributes
-    LowBoundery : float
-    HighBoundary : float
-}
-
-/// This is the dispatcher expression in XML format for the parameter sensitive plan.
-and DispatcherType = {
-    ParameterSensitivePredicate : ParameterSensitivePredicateType list // 1..3 
-}
-
-// ========================================
-// Relational Operators
-// ========================================
-
-and RelOpType = {
-    // Sequence elements
-    OutputList: ColumnReferenceType list
-    Warnings: WarningsType option
-    MemoryFractions: MemoryFractionsType option
-    RunTimeInformation: RunTimeInformationType option
-    RunTimePartitionSummary: RunTimePartitionSummaryType option
-    InternalInfo: InternalInfoType option
-
-    // Required attributes
-    AvgRowSize: float
-    EstimateCPU: float
-    EstimateIO: float
-    EstimateRebinds: float
-    EstimateRewinds: float
-    EstimateRows: float
-    LogicalOp: LogicalOpType
-    Parallel: bool
-    PhysicalOp: PhysicalOpType
-    EstimatedTotalSubtreeCost: float
-
-    // Optional attributes
-    EstimatedExecutionMode: ExecutionModeType option
-    GroupExecuted: bool option
-    EstimateRowsWithoutRowGoal: float option
-    EstimatedRowsRead: float option
-    NodeId: int option
-    RemoteDataAccess: bool option
-    Partitioned: bool option
-    IsAdaptive: bool option
-    AdaptiveThresholdRows: float option
-    TableCardinality: float option
-    StatsCollectionId: uint64 option
-    EstimatedJoinType: PhysicalOpType option
-    HyperScaleOptimizedQueryProcessing: string option
-    HyperScaleOptimizedQueryProcessingUnusedReason: string option
-    PDWAccumulativeCost: float option
 }
 
 // ========================================
@@ -544,18 +1160,35 @@ and RelOpType = {
 
 and QueryPlanType = {
     DegreeOfParallelism: int option
+    EffectiveDegreeOfParallelism: int option
     NonParallelPlanReason: string option
+    DOPFeedbackAdjusted: string option
     MemoryGrant: uint64 option
     CachedPlanSize: uint64 option
     CompileTime: uint64 option
     CompileCPU: uint64 option
     CompileMemory: uint64 option
+    UsePlan: bool option
+    ContainsInterleavedExecutionCandidates: bool option
+    ContainsInlineScalarTsqlUdfs: bool option
+    QueryVariantID: int option
+    DispatcherPlanHandle: string option
+    ExclusiveProfileTimeActive: bool option
+    InternalInfo: InternalInfoType option
+    OptimizationReplay: OptimizationReplayType option
+    ThreadStat: ThreadStatType option
+    MissingIndexes: MissingIndexesType option
+    GuessedSelectivity: GuessedSelectivityType option
+    UnmatchedIndexes: UnmatchedIndexesType option
     Warnings: WarningsType option
     MemoryGrantInfo: MemoryGrantType option
     OptimizerHardwareDependentProperties: OptimizerHardwareDependentPropertiesType option
     OptimizerStatsUsage: OptimizerStatsUsageType option
+    TraceFlags: TraceFlagListType list
+    WaitStats: WaitStatListType option
+    QueryTimeStats: QueryExecTimeType option
     RelOp: RelOpType
-    ParameterList: ColumnReferenceType list
+    ParameterList: ColumnReferenceListType option
 }
 
 // ========================================
@@ -567,18 +1200,33 @@ and BaseStmtInfoType = {
     StatementCompId: int option
     StatementEstRows: float option
     StatementId: int option
+    QueryCompilationReplay: int option
     StatementOptmLevel: string option
-    StatementOptmEarlyAbortReason: string option // "TimeOut" / "MemoryLimitExceeded" / "GoodEnoughPlanFound"
+    StatementOptmEarlyAbortReason: string option
     CardinalityEstimationModelVersion: string option
     StatementSubTreeCost: float option
     StatementText: string option
     StatementType: string option
+    TemplatePlanGuideDB: string option
+    TemplatePlanGuideName: string option
+    PlanGuideDB: string option
+    PlanGuideName: string option
+    ParameterizedText: string option
+    ParameterizedPlanHandle: string option
     QueryHash: string option
     QueryPlanHash: string option
     RetrievedFromCache: string option
     StatementSqlHandle: string option
+    DatabaseContextSettingsId: uint64 option
+    ParentObjectId: uint64 option
+    BatchSqlHandle: string option
+    StatementParameterizationType: int option
     SecurityPolicyApplied: bool option
     BatchModeOnRowStoreUsed: bool option
+    QueryStoreStatementHintId: uint64 option
+    QueryStoreStatementHintText: string option
+    QueryStoreStatementHintSource: string option
+    ContainsLedgerTables: bool option
 }
 
 and ExternalDistributedComputationType = {
@@ -587,12 +1235,17 @@ and ExternalDistributedComputationType = {
 
 and StmtSimpleType = {
     BaseInfo: BaseStmtInfoType
+    Dispatcher: DispatcherType option
     QueryPlan: QueryPlanType option
+    UDFs: FunctionType list
+    StoredProc: FunctionType option
 }
 
 and CursorOperationType = {
     OperationType: string // "FetchQuery" | "PopulateQuery" | "RefreshQuery"
+    Dispatcher: DispatcherType option
     QueryPlan: QueryPlanType
+    UDFs: FunctionType list
 }
 
 and StmtCursorType = {
@@ -605,14 +1258,14 @@ and StmtCursorType = {
     Operations: CursorOperationType list
 }
 
-and ReceivePlanType = {
+and ReceivePlanDetailType = {
     OperationType: string // "ReceivePlanSelect" | "ReceivePlanUpdate"
     QueryPlan: QueryPlanType
 }
 
 and StmtReceiveType = {
     BaseInfo: BaseStmtInfoType
-    ReceivePlans: ReceivePlanType list
+    ReceivePlans: ReceivePlanDetailType list
 }
 
 and StmtUseDbType = {
@@ -623,7 +1276,6 @@ and StmtUseDbType = {
 /// Shows the plan for the UDF or stored procedure
 and FunctionType = {
     Statements : StmtBlockType list
-
     ProcName : string
     IsNativelyCompiled : bool option
 }
@@ -633,17 +1285,17 @@ and StmtCondType = {
     BaseInfo: BaseStmtInfoType
     Condition: {| QueryPlan : QueryPlanType option; UDFs : FunctionType list |}
     Then: StmtBlockType list
-    Else: StmtBlockType list
+    Else: StmtBlockType list option
 }
 
 // The statement block that contains many statements
 and StmtBlockType =
+    | ExternalDistributedComputation of ExternalDistributedComputationType
     | StmtSimple of StmtSimpleType
     | StmtCond of StmtCondType
     | StmtCursor of StmtCursorType
     | StmtReceive of StmtReceiveType
     | StmtUseDb of StmtUseDbType
-    | ExternalDistributedComputation of ExternalDistributedComputationType
 
 and Batch = {
     Statements: StmtBlockType list
@@ -653,4 +1305,9 @@ type BatchSequence = {
     Batches: Batch list
 }
 
-
+type ShowPlanXML = {
+    Version: string
+    Build: string
+    ClusteredMode: bool option
+    BatchSequence: BatchSequence
+}

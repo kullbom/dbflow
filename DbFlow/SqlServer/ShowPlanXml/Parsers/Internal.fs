@@ -46,6 +46,10 @@ let parseObjectType (o : Linq.XElement) : PResult<ObjectType, _> =
         let! indexKind = xAttrP "IndexKind" parseIndexKind o
         let! cloneAccessScope = xAttrP "CloneAccessScope" parseCloneAccessScope o
         let! storage = xAttrP "Storage" parseStorage o
+        let! onlineInbuildIndex = xAttr "OnlineInbuildIndex" o
+        let! onlineIndexBuildMappingIndex = xAttr "OnlineIndexBuildMappingIndex"  o
+        let! graphWorkTableType = xAttr "GraphWorkTableType" o
+        let! graphWorkTableIdentifier = xAttr "GraphWorkTableIdentifier"  o
         return { 
             Server = server
             Database = database
@@ -58,6 +62,10 @@ let parseObjectType (o : Linq.XElement) : PResult<ObjectType, _> =
             IndexKind = indexKind
             CloneAccessScope = cloneAccessScope
             Storage = storage
+            OnlineInbuildIndex = onlineInbuildIndex
+            OnlineIndexBuildMappingIndex = onlineIndexBuildMappingIndex
+            GraphWorkTableType = graphWorkTableType
+            GraphWorkTableIdentifier = graphWorkTableIdentifier
         }
     }
 
@@ -224,42 +232,73 @@ let parseOptimizerStatsUsage (optimizerStatsUsage : Linq.XElement) : PResult<Opt
 
 let parseBaseStmtInfoType (stmtSimple : Linq.XElement) : PResult<BaseStmtInfoType * _, _> =
     PResult.builder {
-        let allElements = xElementsAll stmtSimple
-        let! (statementSetOptions, elements') = xElement (ensureName ("StatementSetOptions", ns) parseSetOptionsType) allElements
+        let! (statementSetOptions, rest) = xElement (ensureName ("StatementSetOptions", ns) parseSetOptionsType) (xElementsAll stmtSimple)
+        
         let! statementCompId = xAttr "StatementCompId" stmtSimple
         let! statementEstRows = xAttr "StatementEstRows" stmtSimple
         let! statementId = xAttr "StatementId" stmtSimple
+        let! queryCompilationReplay = xAttr "QueryCompilationReplay" stmtSimple
         let! statementOptmLevel = xAttr "StatementOptmLevel" stmtSimple
         let! statementOptmEarlyAbortReason = xAttr "StatementOptmEarlyAbortReason" stmtSimple
         let! cardinalityEstimationModelVersion = xAttr "CardinalityEstimationModelVersion" stmtSimple
         let! statementSubTreeCost = xAttr "StatementSubTreeCost" stmtSimple
         let! statementText = xAttr "StatementText" stmtSimple
         let! statementType = xAttr "StatementType" stmtSimple
+        let! templatePlanGuideDB = xAttr "TemplatePlanGuideDB" stmtSimple
+        let! templatePlanGuideName = xAttr "TemplatePlanGuideName" stmtSimple
+        let! planGuideDB = xAttr "PlanGuideDB" stmtSimple
+        let! planGuideName = xAttr "PlanGuideName" stmtSimple
+        let! parameterizedText = xAttr "ParameterizedText" stmtSimple
+        let! parameterizedPlanHandle = xAttr "ParameterizedPlanHandle" stmtSimple
         let! queryHash = xAttr "QueryHash" stmtSimple
         let! queryPlanHash = xAttr "QueryPlanHash" stmtSimple
         let! retrievedFromCache = xAttr "RetrievedFromCache" stmtSimple
         let! statementSqlHandle = xAttr "StatementSqlHandle" stmtSimple
+        let! databaseContextSettingsId = xAttr "DatabaseContextSettingsId" stmtSimple
+        let! parentObjectId = xAttr "ParentObjectId" stmtSimple
+        let! batchSqlHandle = xAttr "BatchSqlHandle" stmtSimple
+        let! statementParameterizationType = xAttr "StatementParameterizationType" stmtSimple
         let! securityPolicyApplied = xAttr "SecurityPolicyApplied" stmtSimple
         let! batchModeOnRowStoreUsed = xAttr "BatchModeOnRowStoreUsed" stmtSimple
+        let! queryStoreStatementHintId = xAttr "QueryStoreStatementHintId" stmtSimple
+        let! queryStoreStatementHintText = xAttr "QueryStoreStatementHintText" stmtSimple
+        let! queryStoreStatementHintSource = xAttr "QueryStoreStatementHintSource" stmtSimple
+        let! containsLedgerTables = xAttr "ContainsLedgerTables" stmtSimple
+
         return {
             StatementSetOptions = statementSetOptions
             StatementCompId = statementCompId
             StatementEstRows = statementEstRows
             StatementId = statementId
+            QueryCompilationReplay = queryCompilationReplay
             StatementOptmLevel = statementOptmLevel
             StatementOptmEarlyAbortReason = statementOptmEarlyAbortReason
             CardinalityEstimationModelVersion = cardinalityEstimationModelVersion
             StatementSubTreeCost = statementSubTreeCost
             StatementText = statementText
             StatementType = statementType
+            TemplatePlanGuideDB = templatePlanGuideDB
+            TemplatePlanGuideName = templatePlanGuideName
+            PlanGuideDB = planGuideDB
+            PlanGuideName = planGuideName
+            ParameterizedText = parameterizedText
+            ParameterizedPlanHandle = parameterizedPlanHandle
             QueryHash = queryHash
-            QueryPlanHash = queryPlanHash 
-            RetrievedFromCache = retrievedFromCache 
+            QueryPlanHash = queryPlanHash
+            RetrievedFromCache = retrievedFromCache
             StatementSqlHandle = statementSqlHandle
+            DatabaseContextSettingsId = databaseContextSettingsId
+            ParentObjectId = parentObjectId
+            BatchSqlHandle = batchSqlHandle
+            StatementParameterizationType = statementParameterizationType
             SecurityPolicyApplied = securityPolicyApplied
             BatchModeOnRowStoreUsed = batchModeOnRowStoreUsed
+            QueryStoreStatementHintId = queryStoreStatementHintId
+            QueryStoreStatementHintText = queryStoreStatementHintText
+            QueryStoreStatementHintSource = queryStoreStatementHintSource
+            ContainsLedgerTables = containsLedgerTables
         },
-        elements'
+        rest
     }
 
 let parseRunTimeInformation (runTimeInformation : Linq.XElement) : PResult<RunTimeInformationType, _> = Failf "NYI"
@@ -704,9 +743,18 @@ let parseReceivePlanType (receiveOperation : Linq.XElement) : PResult<ReceivePla
 let parseStmtSimple (stmtSimple : Linq.XElement) : PResult<StmtSimpleType, _> =
     PResult.builder {
         let! (baseInfo, rest) = parseBaseStmtInfoType stmtSimple
-        let! (queryPlanType, rest) = xElement (ensureName ("QueryPlan", ns) parseQueryPlanType) rest 
+        let! (dispatcher, rest) = xElement (ensureName ("Dispatcher", ns) parseDispatcherType) rest 
+        let! (queryPlan, rest) = xElement (ensureName ("QueryPlan", ns) parseQueryPlanType) rest 
+        let! (udfs, rest) = xElementMany (ensureName ("UDF", ns) parseFunctionType) rest 
+        let! (storedProc, rest) = xElement (ensureName ("StoredProc", ns) parseFunctionType) rest 
         do! xElementEnsureEmpty rest
-        return { BaseInfo = baseInfo; QueryPlan = queryPlanType }
+        return { 
+            BaseInfo = baseInfo; 
+            Dispatcher = dispatcher
+            QueryPlan = queryPlan 
+            UDFs = udfs
+            StoredProc = storedProc
+        }
     }
 
 let parseStmtCursor (stmtCursor : Linq.XElement) : PResult<StmtCursorType, _> =
@@ -802,7 +850,7 @@ and parseStmtCond (stmtCond: Linq.XElement) : PResult<StmtCondType, _> =
             BaseInfo = baseInfo
             Condition = condition
             Then = thenStmt
-            Else = match elseStmt with Some es -> es | None -> []
+            Else = elseStmt 
         }
     }
 

@@ -353,3 +353,117 @@ type SubqueryOperationType =
     | NE_ALL
     | NE_ANY
 
+// ========================================
+// Memory and Warning Enumerations
+// ========================================
+
+[<RequireQualifiedAccess>]
+type MemoryGrantWarningType =
+    | ExcessiveGrant
+    | UsedMoreThanGranted
+    | GrantIncrease
+
+[<RequireQualifiedAccess>]
+type MemoryGrantFeedbackInfoType =
+    | YesAdjusting
+    | YesStable
+    | NoFirstExecution
+    | NoAccurateGrant
+    | NoFeedbackDisabled
+    | YesPercentileAdjusting
+
+[<RequireQualifiedAccess>]
+type DOPFeedbackInfoType =
+    | YesAdjusting
+    | YesStable
+    | NoFeedback
+
+[<RequireQualifiedAccess>]
+type TraceFlagScopeType =
+    | Global
+    | Session
+
+// ========================================
+// Cursor Operation Type
+// ========================================
+
+[<RequireQualifiedAccess>]
+type CursorOperationType =
+    | FetchQuery
+    | PopulateQuery
+    | RefreshQuery
+
+[<RequireQualifiedAccess>]
+type CursorConcurrencyType =
+    | ReadOnly
+    | Pessimistic
+    | Optimistic
+
+// ========================================
+// Receive Plan Operation Type
+// ========================================
+
+[<RequireQualifiedAccess>]
+type ReceivePlanOperationType =
+    | ReceivePlanSelect
+    | ReceivePlanUpdate
+
+// ========================================
+// Column Group Usage Type
+// ========================================
+
+[<RequireQualifiedAccess>]
+type ColumnGroupUsageType =
+    | EQUALITY
+    | INEQUALITY
+    | INCLUDE
+
+// ========================================
+// Star Join Operation Type
+// ========================================
+
+[<RequireQualifiedAccess>]
+type StarJoinOperationType =
+    | Fetch
+    | IndexIntersection
+    | IndexFilter
+    | IndexLookup
+
+// ========================================
+// Activation Type (Parallelism)
+// ========================================
+
+[<RequireQualifiedAccess>]
+type ActivationType =
+    | CloneLocation
+    | Resource
+    | SingleBrick
+    | Region
+
+// ========================================
+// Conversion Warning Issue Type
+// ========================================
+
+[<RequireQualifiedAccess>]
+type ConversionWarningIssueType =
+    | CardinalityEstimate
+    | SeekPlan
+
+// ========================================
+// Wait Type
+// ========================================
+
+[<RequireQualifiedAccess>]
+type WaitTypeKind =
+    | MemoryGrant
+
+// ========================================
+// Statement Optimization Early Abort Reason
+// ========================================
+
+[<RequireQualifiedAccess>]
+type StatementOptmEarlyAbortReason =
+    | TimeOut
+    | MemoryLimitExceeded
+    | GoodEnoughPlanFound
+
