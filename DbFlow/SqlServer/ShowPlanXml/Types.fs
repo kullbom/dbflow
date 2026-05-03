@@ -278,18 +278,19 @@ and ColumnReferenceType = {
     ParameterRuntimeValue: string option
 }
 
+// TODO : ta bort
 and SingleColumnReferenceType = {
     ColumnReference: ColumnReferenceType
 }
-
+// TODO : ta bort
 and ColumnReferenceListType = {
     ColumnReferences: ColumnReferenceType list
 }
 
 and DefinedValueType = {
     Value: ScalarType
-    SourceColumns: ColumnReferenceType list option
-    TargetColumns: ColumnReferenceType list option
+    SourceColumns: ColumnReferenceListType option
+    TargetColumns: ColumnReferenceListType option
 }
 
 and DefinedValuesListType = {
@@ -358,7 +359,7 @@ and RelOpType = {
     RunTimeInformation: RunTimeInformationType option
     RunTimePartitionSummary: RunTimePartitionSummaryType option
     InternalInfo: InternalInfoType option
-    RelOpBase: RelOpBaseType option
+    OperatorDetails: RelOpDetails option
 
     // Required attributes
     AvgRowSize: float
@@ -389,8 +390,6 @@ and RelOpType = {
     HyperScaleOptimizedQueryProcessingUnusedReason: string option
     PDWAccumulativeCost: float option
 
-    // The specific operator details
-    OperatorDetails: RelOpDetails option
 }
 
 and RelOpDetails =
@@ -422,15 +421,15 @@ and RelOpDetails =
     | Insert of DMLOpType
     | Join of JoinType
     | LocalCube of LocalCubeType
-    | LogRowScan
+    //| LogRowScan
     | Merge of MergeType
     | MergeInterval of SimpleIteratorOneChildType
     | Move of MoveType
     | NestedLoops of NestedLoopsType
     | OnlineIndex of CreateIndexType
     | Parallelism of ParallelismType
-    | ParameterTableScan
-    | PrintDataflow
+    //| ParameterTableScan
+    //| PrintDataflow
     | Project of ProjectType
     | Put of PutType
     | RemoteFetch of RemoteFetchType
@@ -895,7 +894,9 @@ and AssignmentMapType = {
 
 and AssignType = {
     Target: AssignTargetType
-    Value: ScalarType
+    ScalarOperator: ScalarType
+    SourceColumns: ColumnReferenceType list
+    TargetColumns: ColumnReferenceType list
 }
 
 and AssignTargetType =
@@ -1008,13 +1009,8 @@ and UDAggregateType = {
     ScalarOperators: ScalarType list
 }
 
-and AssignScalarType = {
-    Target: AssignTargetType
-    Value: ScalarType
-}
-
 and MultAssignType = {
-    Assigns: AssignScalarType list
+    Assigns: AssignType list
 }
 
 and ConditionalType = {
@@ -1069,7 +1065,7 @@ and ScalarExpressionListType = {
 and ScalarOperatorKind =
     | Aggregate of AggregateType
     | Arithmetic of ArithmeticType
-    | Assign of AssignScalarType
+    | Assign of AssignType
     | Compare of CompareType
     | Const of ConstType
     | Convert of ConvertType

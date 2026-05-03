@@ -112,25 +112,25 @@ let parseAffectingConvertWarning (element : Linq.XElement) : PResult<AffectingCo
 let parseWarning (warning : Linq.XElement) : PResult<Warning, _> =
     match warning.Name.LocalName with
     | "SpillOccurred" -> 
-        Failf "NYI"
+        parseSpillOccurredWarning warning |> PResult.map Warning.SpillOccurred
     | "ColumnsWithNoStatistics" -> 
-        Failf "NYI"
+        parseColumnsWithNoStatisticsWarning warning |> PResult.map Warning.ColumnsWithNoStatistics
     | "ColumnsWithStaleStatistics" -> 
-        Failf "NYI"
+        parseColumnsWithStaleStatistics warning |> PResult.map Warning.ColumnsWithStaleStatistics
     | "SpillToTempDb" -> 
-        Failf "NYI"
+        parseSpillToTempDb warning |> PResult.map Warning.SpillToTempDb
     | "Wait" -> 
-        Failf "NYI"
+        parseWaitWarning warning |> PResult.map Warning.Wait
     | "PlanAffectingConvert" -> 
         parseAffectingConvertWarning warning |> PResult.map Warning.PlanAffectingConvert
     | "SortSpillDetails" -> 
-        Failf "NYI"
+        parseSortSpillDetailsWarning warning |> PResult.map Warning.SortSpillDetails
     | "HashSpillDetails" -> 
-        Failf "NYI"
+        parseHashSpillDetailsWarning warning |> PResult.map Warning.HashSpillDetails
     | "ExchangeSpillDetails" -> 
-        Failf "NYI"
+        parseExchangeSpillDetailsWarning warning |> PResult.map Warning.ExchangeSpillDetails 
     | "MemoryGrantWarning" -> 
-        Failf "NYI"
+        parseMemoryGrantWarning warning |> PResult.map Warning.MemoryGrantWarning
     
     | name -> 
         Failf "Expected warning but got '%s'" name
@@ -514,27 +514,17 @@ and parseAssignTargetType (element : Linq.XElement) : PResult<AssignTargetType, 
 
 and parseAssignType (assign : Linq.XElement) : PResult<AssignType, _> =
     PResult.builder {
-        let children = assign.Elements() |> Seq.toList
-        match children with
-        | [] -> return! Failf "Assign must have at least 2 children"
-        | [_] -> return! Failf "Assign must have at least 2 children"
-        | firstChild :: secondChild :: rest ->
-            let! target = parseAssignTargetType firstChild
-            let! value = parseScalarType secondChild
-            let! sourceColumns = 
-                rest 
-                |> List.filter (fun e -> e.Name.LocalName = "SourceColumn")
-                |> forAll parseColumnReferenceType
-            let! targetColumns = 
-                rest 
-                |> List.filter (fun e -> e.Name.LocalName = "TargetColumn")
-                |> forAll parseColumnReferenceType
-            return { 
-                Target = target
-                Value = value
-                SourceColumns = sourceColumns
-                TargetColumns = targetColumns 
-            }
+        let! (target, rest) = xElementReq parseAssignTargetType (xElementsAll assign)
+        let! (scalarOperator, rest) = xElementReq (ensureName ("ScalarOperator", ns) parseScalarType) rest
+        let! (sourceColumns, rest) = xElementMany (ensureName ("SourceColumn", ns) parseColumnReferenceType) rest
+        let! (targetColumns, rest) = xElementMany (ensureName ("TargetColumn", ns) parseColumnReferenceType) rest
+        do! xElementEnsureEmpty rest
+        return { 
+            Target = target
+            ScalarOperator = scalarOperator
+            SourceColumns = sourceColumns
+            TargetColumns = targetColumns 
+        }
     }
 
 and parseMultAssignType (multiAssign : Linq.XElement) : PResult<MultAssignType, _> =
@@ -568,54 +558,209 @@ and parseSubqueryType (subquery : Linq.XElement) : PResult<SubqueryType, _> =
         }
     }
 
+and parseScalarTypeKind (scalarKind : Linq.XElement) : PResult<ScalarOperatorKind, _> =
+    match scalarKind.Name.LocalName with
+    | "Aggregate" -> parseAggregateType scalarKind |> PResult.map ScalarOperatorKind.Aggregate
+    | "Arithmetic" -> parseArithmeticType scalarKind |> PResult.map ScalarOperatorKind.Arithmetic
+    | "Assign" -> parseAssignType scalarKind |> PResult.map ScalarOperatorKind.Assign
+    | "Compare" -> parseCompareType scalarKind |> PResult.map ScalarOperatorKind.Compare
+    | "Const" -> parseConstType scalarKind |> PResult.map ScalarOperatorKind.Const
+    | "Convert" -> parseConvertType scalarKind |> PResult.map ScalarOperatorKind.Convert
+    | "Identifier" -> parseIdentType scalarKind |> PResult.map ScalarOperatorKind.Identifier
+    | "IF" -> parseConditionalType scalarKind |> PResult.map ScalarOperatorKind.IF
+    | "Intrinsic" -> parseIntrinsicType scalarKind |> PResult.map ScalarOperatorKind.Intrinsic
+    | "Logical" -> parseLogicalType scalarKind |> PResult.map ScalarOperatorKind.Logical
+    | "MultipleAssign" -> parseMultAssignType scalarKind |> PResult.map ScalarOperatorKind.MultipleAssign
+    | "ScalarExpressionList" -> parseScalarExpressionListType scalarKind |> PResult.map ScalarOperatorKind.ScalarExpressionList
+    | "Sequence" -> parseScalarSequenceType scalarKind |> PResult.map ScalarOperatorKind.Sequence
+    | "Subquery" -> parseSubqueryType scalarKind |> PResult.map ScalarOperatorKind.Subquery
+    | "UDTMethod" -> parseUDTMethodType scalarKind |> PResult.map ScalarOperatorKind.UDTMethod
+    | "UserDefinedAggregate" -> parseUDAggregateType scalarKind |> PResult.map ScalarOperatorKind.UserDefinedAggregate
+    | "UserDefinedFunction" -> parseUDFType scalarKind |> PResult.map ScalarOperatorKind.UserDefinedFunction
+    | name -> Failf "Unknown scalar operator type: '%s'" name
+
 and parseScalarType (scalarOperator : Linq.XElement) : PResult<ScalarType, _> =
-    // TODO: Should be refactored
-    let parseChild () =
-        let childElements = scalarOperator.Elements() |> Seq.toList
-        match childElements with
-        | [] -> Failf "ScalarOperator must have at least one child element"
-        | child :: _ ->
-            match child.Name.LocalName with
-            | "Aggregate" -> parseAggregateType child |> PResult.map ScalarOperatorKind.Aggregate
-            | "Arithmetic" -> parseArithmeticType child |> PResult.map ScalarOperatorKind.Arithmetic
-            | "Assign" -> parseAssignType child |> PResult.map ScalarOperatorKind.Assign
-            | "Compare" -> parseCompareType child |> PResult.map ScalarOperatorKind.Compare
-            | "Const" -> parseConstType child |> PResult.map ScalarOperatorKind.Const
-            | "Convert" -> parseConvertType child |> PResult.map ScalarOperatorKind.Convert
-            | "Identifier" -> parseIdentType child |> PResult.map ScalarOperatorKind.Identifier
-            | "IF" -> parseConditionalType child |> PResult.map ScalarOperatorKind.IF
-            | "Intrinsic" -> parseIntrinsicType child |> PResult.map ScalarOperatorKind.Intrinsic
-            | "Logical" -> parseLogicalType child |> PResult.map ScalarOperatorKind.Logical
-            | "MultipleAssign" -> parseMultAssignType child |> PResult.map ScalarOperatorKind.MultipleAssign
-            | "ScalarExpressionList" -> parseScalarExpressionListType child |> PResult.map ScalarOperatorKind.ScalarExpressionList
-            | "Sequence" -> parseScalarSequenceType child |> PResult.map ScalarOperatorKind.Sequence
-            | "Subquery" -> parseSubqueryType child |> PResult.map ScalarOperatorKind.Subquery
-            | "UDTMethod" -> parseUDTMethodType child |> PResult.map ScalarOperatorKind.UDTMethod
-            | "UserDefinedAggregate" -> parseUDAggregateType child |> PResult.map ScalarOperatorKind.UserDefinedAggregate
-            | "UserDefinedFunction" -> parseUDFType child |> PResult.map ScalarOperatorKind.UserDefinedFunction
-            | name -> Failf "Unknown scalar operator type: '%s'" name
     PResult.builder {
-        let! kind = parseChild ()
         let! scalarString = xAttr "ScalarString" scalarOperator
-        let! internalInfo = xElementP ("InternalInfo", ns) parseInternalInfoType scalarOperator
+        
+        let! (kind, rest) = xElementReq parseScalarTypeKind (xElementsAll scalarOperator)
+        let! (internalInfo, rest) = xElement (ensureName ("InternalInfo", ns) parseInternalInfoType) rest
+        do! xElementEnsureEmpty rest
+
         return { 
-            Kind = kind
             ScalarString = scalarString
+            Kind = kind
             InternalInfo = internalInfo 
         }
     }
 
+and parseColumnReferenceListType (columnReferenceList : Linq.XElement) : PResult<ColumnReferenceListType, _> =
+    PResult.builder {
+        let! (columnReferences, rest) = xElementMany (ensureName ("ColumnReference", ns) parseColumnReferenceType) (xElementsAll columnReferenceList)
+        do! xElementEnsureEmpty rest
+        return { ColumnReferences = columnReferences }
+    }
+
+and parseSingleColumnReferenceType (singleColumnReference : Linq.XElement) : PResult<SingleColumnReferenceType, _> =
+    PResult.builder {
+        let! (columnReference, rest) = xElementReq (ensureName ("ColumnReference", ns) parseColumnReferenceType) (xElementsAll singleColumnReference)
+        do! xElementEnsureEmpty rest
+        return { ColumnReference = columnReference }
+    }
+
+and parseDefinedValueType (definedValue : Linq.XElement) : PResult<DefinedValueType, _> =
+    PResult.builder {
+        let! (value, rest) = xElementReq (ensureName ("Value", ns) parseScalarType) (xElementsAll definedValue)
+        let! (sourceColumns, rest) = xElement (ensureName ("SourceColumn", ns) parseColumnReferenceListType) rest
+        let! (targetColumns, rest) = xElement (ensureName ("TargetColumn", ns) parseColumnReferenceListType) rest
+        return { 
+            Value = value
+            SourceColumns = sourceColumns
+            TargetColumns = targetColumns
+        }
+    }
+and parseDefinedValuesListType (definedValuesList : Linq.XElement) : PResult<DefinedValuesListType, _> =
+    PResult.builder {
+        let! (definedValues, rest) = xElementMany (ensureName ("DefinedValue", ns) parseDefinedValueType) (xElementsAll definedValuesList)
+        do! xElementEnsureEmpty rest
+        return { DefinedValues = definedValues }
+    }
+
+and parseRelOpBase (relOp : Linq.XElement) : PResult<RelOpBaseType*_, _> =
+    PResult.builder {
+        let! (definedValues, rest) = xElement (ensureName ("DefinedValues", ns) parseDefinedValuesListType) (xElementsAll relOp)
+        let! (internalInfo, rest) = xElement (ensureName ("InternalInfo", ns) parseInternalInfoType) rest
+        return { 
+            DefinedValues = definedValues
+            InternalInfo = internalInfo
+        }, rest
+    }
+
+and parseStarJoinInfoType (starJoinInfo : Linq.XElement) : PResult<StarJoinInfoType, _> =
+    PResult.builder {
+        let! root = xAttr "Root" starJoinInfo
+        let! operationType = xAttrReq "OperationType" starJoinInfo
+        return { 
+            Root = root
+            OperationType = operationType
+        }
+    }
+and parseAdaptiveJoinType (adaptiveJoin : Linq.XElement) : PResult<AdaptiveJoinType, _> =
+    PResult.builder {
+        let! (relOpBase, rest) = parseRelOpBase adaptiveJoin 
+        let! (hashKeysBuild, rest) = xElement (ensureName ("HashKeysBuild", ns) parseColumnReferenceListType) rest
+        let! (hashKeysProbe, rest) = xElement (ensureName ("HashKeysProbe", ns) parseColumnReferenceListType) rest
+        let! (buildResidual, rest) = xElement (ensureName ("BuildResidual", ns) parseScalarExpressionType) rest 
+        let! (probeResidual, rest) = xElement (ensureName ("ProbeResidual", ns) parseScalarExpressionType) rest 
+        let! (starJoinInfo, rest) = xElement (ensureName ("StarJoinInfo", ns) parseStarJoinInfoType) rest
+        let! (predicate, rest) = xElement (ensureName ("Predicate", ns) parseScalarExpressionType) rest
+        let! (passThru, rest) = xElement (ensureName ("PassThru", ns) parseScalarExpressionType) rest
+        let! (outerReferences, rest) = xElement (ensureName ("OuterReference", ns) parseColumnReferenceListType) rest
+        let! (partitionId, rest) = xElement (ensureName ("PartitionId", ns) parseSingleColumnReferenceType) rest
+        let! (relOps, rest) = xElementMany (ensureName ("RelOp", ns) parseRelOpType) rest
+        do! xElementEnsureEmpty rest
+
+        let! bitmapCreator = xAttr "BitmapCreator" adaptiveJoin
+        let! optimized = xAttrReq "Optimized" adaptiveJoin
+        let! withOrderedPrefetch = xAttr "WithOrderedPrefetch" adaptiveJoin
+        let! withUnorderedPrefetch = xAttr "WithUnorderedPrefetch" adaptiveJoin
+        return { 
+            Base = relOpBase
+            HashKeysBuild = hashKeysBuild
+            HashKeysProbe = hashKeysProbe
+            BuildResidual = buildResidual
+            ProbeResidual = probeResidual
+            StarJoinInfo = starJoinInfo
+            Predicate = predicate
+            PassThru = passThru
+            OuterReferences = outerReferences
+            PartitionId = partitionId
+            RelOps = relOps // #3#
+
+            BitmapCreator = bitmapCreator
+            Optimized = optimized
+            WithOrderedPrefetch = withOrderedPrefetch
+            WithUnorderedPrefetch = withUnorderedPrefetch
+        }
+    }
+and parseRelOpDetails (relOpDetails : Linq.XElement) : PResult<RelOpDetails, _> =
+    match relOpDetails.Name.LocalName with
+    | "AdaptiveJoin" -> parseAdaptiveJoinType relOpDetails |> PResult.map RelOpDetails.AdaptiveJoin
+    | "Apply" -> parseJoinType relOpDetails |> PResult.map RelOpDetails.Apply
+    | "Assert" -> parseFilterType relOpDetails |> PResult.map RelOpDetails.Assert
+    | "BatchHashTableBuild" -> parseBatchHashTableBuildType relOpDetails |> PResult.map RelOpDetails.BatchHashTableBuild
+    | "Bitmap" -> parseBitmapType relOpDetails |> PResult.map RelOpDetails.Bitmap
+    | "Collapse" -> parseCollapseType relOpDetails |> PResult.map RelOpDetails.Collapse
+    | "ComputeScalar" -> parseComputeScalarType relOpDetails |> PResult.map RelOpDetails.ComputeScalar
+    | "Concat" -> parseConcatType relOpDetails |> PResult.map RelOpDetails.Concat
+    | "ConstantScan" -> parseConstantScanType relOpDetails |> PResult.map RelOpDetails.ConstantScan
+    | "ConstTableGet" -> parseGetType relOpDetails |> PResult.map RelOpDetails.ConstTableGet
+    | "CreateIndex" -> parseCreateIndexType relOpDetails |> PResult.map RelOpDetails.CreateIndex
+    | "Delete" -> parseDMLOpType relOpDetails |> PResult.map RelOpDetails.Delete
+    | "DeletedScan" -> parseRowsetType relOpDetails |> PResult.map RelOpDetails.DeletedScan
+    | "Extension" -> parseUDXType relOpDetails |> PResult.map RelOpDetails.Extension
+    | "ExternalSelect" -> parseExternalSelectType relOpDetails |> PResult.map RelOpDetails.ExternalSelect
+    | "ExtExtractScan" -> parseRemoteType relOpDetails |> PResult.map RelOpDetails.ExtExtractScan
+    | "Filter" -> parseFilterType relOpDetails |> PResult.map RelOpDetails.Filter
+    | "ForeignKeyReferencesCheck" -> parseForeignKeyReferencesCheckType relOpDetails |> PResult.map RelOpDetails.ForeignKeyReferencesCheck
+    | "GbAgg" -> parseGbAggType relOpDetails |> PResult.map RelOpDetails.GbAgg
+    | "GbApply" -> parseGbApplyType relOpDetails |> PResult.map RelOpDetails.GbApply
+    | "Generic" -> parseGenericType relOpDetails |> PResult.map RelOpDetails.Generic
+    | "Get" -> parseGetType relOpDetails |> PResult.map RelOpDetails.Get
+    | "Hash" -> parseHashType relOpDetails |> PResult.map RelOpDetails.Hash
+    | "IndexScan" -> parseIndexScanType relOpDetails |> PResult.map RelOpDetails.IndexScan
+    | "InsertedScan" -> parseRowsetType relOpDetails |> PResult.map RelOpDetails.InsertedScan
+    | "Insert" -> parseDMLOpType relOpDetails |> PResult.map RelOpDetails.Insert
+    | "Join" -> parseJoinType relOpDetails |> PResult.map RelOpDetails.Join
+    | "LocalCube" -> parseLocalCubeType relOpDetails |> PResult.map RelOpDetails.LocalCube
+    //| "LogRowScan" -> parseLogRowScanType relOpDetails |> PResult.map RelOpDetails.LogRowScan
+    | "Merge" -> parseMergeType relOpDetails |> PResult.map RelOpDetails.Merge
+    | "MergeInterval" -> parseSimpleIteratorOneChildType relOpDetails |> PResult.map RelOpDetails.MergeInterval
+    | "Move" -> parseMoveType relOpDetails |> PResult.map RelOpDetails.Move
+    | "NestedLoops" -> parseNestedLoopsType relOpDetails |> PResult.map RelOpDetails.NestedLoops
+    | "OnlineIndex" -> parseCreateIndexType relOpDetails |> PResult.map RelOpDetails.OnlineIndex
+    | "Parallelism" -> parseParallelismType relOpDetails |> PResult.map RelOpDetails.Parallelism
+    //| "ParameterTableScan" -> parseParameterTableScanType relOpDetails |> PResult.map RelOpDetails.ParameterTableScan
+    //| "PrintDataflow" -> parsePrintDataflowType relOpDetails |> PResult.map RelOpDetails.PrintDataflow
+    | "Project" -> parseProjectType relOpDetails |> PResult.map RelOpDetails.Project
+    | "Put" -> parsePutType relOpDetails |> PResult.map RelOpDetails.Put
+    | "RemoteFetch" -> parseRemoteFetchType relOpDetails |> PResult.map RelOpDetails.RemoteFetch
+    | "RemoteModify" -> parseRemoteModifyType relOpDetails |> PResult.map RelOpDetails.RemoteModify
+    | "RemoteQuery" -> parseRemoteQueryType relOpDetails |> PResult.map RelOpDetails.RemoteQuery
+    | "RemoteRange" -> parseRemoteRangeType relOpDetails |> PResult.map RelOpDetails.RemoteRange
+    | "RemoteScan" -> parseRemoteType relOpDetails |> PResult.map RelOpDetails.RemoteScan
+    | "RowCountSpool" -> parseSpoolType relOpDetails |> PResult.map RelOpDetails.RowCountSpool
+    | "ScalarInsert" -> parseScalarInsertType relOpDetails |> PResult.map RelOpDetails.ScalarInsert
+    | "Segment" -> parseSegmentType relOpDetails |> PResult.map RelOpDetails.Segment
+    | "Sequence" -> parseSequenceType relOpDetails |> PResult.map RelOpDetails.Sequence
+    | "SequenceProject" -> parseComputeScalarType relOpDetails |> PResult.map RelOpDetails.SequenceProject
+    | "SimpleUpdate" -> parseSimpleUpdateType relOpDetails |> PResult.map RelOpDetails.SimpleUpdate
+    | "Sort" -> parseSortType relOpDetails |> PResult.map RelOpDetails.Sort
+    | "Split" -> parseSplitType relOpDetails |> PResult.map RelOpDetails.Split
+    | "Spool" -> parseSpoolType relOpDetails |> PResult.map RelOpDetails.Spool
+    | "StreamAggregate" -> parseStreamAggregateType relOpDetails |> PResult.map RelOpDetails.StreamAggregate
+    | "Switch" -> parseSwitchType relOpDetails |> PResult.map RelOpDetails.Switch
+    | "TableScan" -> parseTableScanType relOpDetails |> PResult.map RelOpDetails.TableScan
+    | "TableValuedFunction" -> parseTableValuedFunctionType relOpDetails |> PResult.map RelOpDetails.TableValuedFunction
+    | "Top" -> parseTopType relOpDetails |> PResult.map RelOpDetails.Top
+    | "TopSort" -> parseTopSortType relOpDetails |> PResult.map RelOpDetails.TopSort
+    | "Update" -> parseUpdateType relOpDetails |> PResult.map RelOpDetails.Update
+    | "Union" -> parseConcatType relOpDetails |> PResult.map RelOpDetails.Union
+    | "UnionAll" -> parseConcatType relOpDetails |> PResult.map RelOpDetails.UnionAll
+    | "WindowSpool" -> parseWindowType relOpDetails |> PResult.map RelOpDetails.WindowSpool
+    | "WindowAggregate" -> parseWindowAggregateType relOpDetails |> PResult.map RelOpDetails.WindowAggregate
+    | "XcsScan" -> parseXcsScanType relOpDetails |> PResult.map RelOpDetails.XcsScan
+    | name -> Failf "Unknown RelOpDetails type: '%s'" name
 
 and parseRelOpType (relOp : Linq.XElement) : PResult<RelOpType, _> =
     PResult.builder {
-        let! (columnsReferences', rest) = xElementReq (ensureName ("OutputList", ns) (xElementsAll >> POk)) (xElementsAll relOp)
-        let! (columnsReferences, cRefRest) = xElementMany (ensureName ("ColumnReference", ns) parseColumnReferenceType) columnsReferences'
-        do! xElementEnsureEmpty cRefRest
+        let! (columnsReferences, rest) = xElementReq (ensureName ("OutputList", ns) parseColumnReferenceListType) (xElementsAll relOp)
         let! (warnings, rest) = xElement (ensureName ("Warnings", ns) parseWarningsType) rest
         let! (memoryFractions, rest) = xElement (ensureName ("MemoryFractions", ns) parseMemoryFractionsType) rest
         let! (runTimeInformation, rest) = xElement (ensureName ("RunTimeInformation", ns) parseRunTimeInformation) rest
         let! (runTimePartitionSummary, rest) = xElement (ensureName ("RunTimePartitionSummary", ns) parseRunTimePartitionSummary) rest
         let! (internalInfoType, rest) = xElement (ensureName ("InternalInfo", ns) parseInternalInfoType) rest
+        let! (operatorDetails, rest) = xElement parseRelOpDetails rest
         do! xElementEnsureEmpty rest
         
         let! avgRowSize = xAttrReq "AvgRowSize" relOp
@@ -651,6 +796,8 @@ and parseRelOpType (relOp : Linq.XElement) : PResult<RelOpType, _> =
             RunTimeInformation = runTimeInformation
             RunTimePartitionSummary = runTimePartitionSummary
             InternalInfo = internalInfoType
+            OperatorDetails = operatorDetails
+
             
             AvgRowSize = avgRowSize
             EstimateCPU = estimateCPU
@@ -687,12 +834,20 @@ and parseRelOpType (relOp : Linq.XElement) : PResult<RelOpType, _> =
 let parseQueryPlanType (queryPlan : Linq.XElement) : PResult<QueryPlanType, _> =
     PResult.builder {
         let! degreeOfParallelism = xAttr "DegreeOfParallelism" queryPlan
+        let! effectiveDegreeOfParallelism = xAttr "EffectiveDegreeOfParallelism" queryPlan
         let! nonParallelPlanReason = xAttr "NonParallelPlanReason" queryPlan
+        let! dopFeedbackAdjusted = xAttr "DOPFeedbackAdjusted" queryPlan
         let! memoryGrant = xAttr "MemoryGrant" queryPlan
         let! cachedPlanSize = xAttr "CachedPlanSize" queryPlan
         let! compileTime = xAttr "CompileTime" queryPlan
         let! compileCPU = xAttr "CompileCPU" queryPlan
         let! compileMemory = xAttr "CompileMemory" queryPlan
+        let! usePlan = xAttr "UsePlan" queryPlan
+        let! containsInterleavedExecutionCandidates = xAttr "ContainsInterleavedExecutionCandidates" queryPlan
+        let! containsInlineScalarTsqlUdfs = xAttr "ContainsInlineScalarTsqlUdfs" queryPlan
+        let! queryVariantID = xAttr "QueryVariantID" queryPlan
+        let! dispatcherPlanHandle = xAttr "DispatcherPlanHandle" queryPlan
+        let! exclusiveProfileTimeActive = xAttr "ExclusiveProfileTimeActive" queryPlan
 
         let xmlElements = xElementsAll queryPlan
         let! (warnings, rest) = xElement (ensureName ("Warnings", ns) parseWarningsType) xmlElements
@@ -701,29 +856,40 @@ let parseQueryPlanType (queryPlan : Linq.XElement) : PResult<QueryPlanType, _> =
             xElement (ensureName ("OptimizerHardwareDependentProperties", ns) parseOptimizerHardwareDependentProperties) rest
         let! (optimizerStatsUsage, rest) = xElement (ensureName ("OptimizerStatsUsage", ns) parseOptimizerStatsUsage) rest
         let! (relOpType, rest) = xElementReq (ensureName ("RelOp", ns) parseRelOpType) rest
-        let! (parameterList', rest) = xElement (ensureName ("ParameterList", ns) POk) rest
-        let parameterList = 
-            match parameterList' with
-            | Some pList -> xElementsAll pList
-            | None -> []
-        let! (columnReferenceType, pRest) = 
-            xElementMany (ensureName ("ColumnReference", ns) parseColumnReferenceType) parameterList
-        do! xElementEnsureEmpty pRest
+        let! (parameterList, rest) = xElement (ensureName ("ParameterList", ns) parseColumnReferenceListType) rest
         do! xElementEnsureEmpty rest
         return {
-            DegreeOfParallelism = degreeOfParallelism
+            DegreeOfParallelism = degreeOfParallelism   
+            EffectiveDegreeOfParallelism = effectiveDegreeOfParallelism
             NonParallelPlanReason = nonParallelPlanReason
+            DOPFeedbackAdjusted = dopFeedbackAdjusted
             MemoryGrant = memoryGrant
             CachedPlanSize = cachedPlanSize
             CompileTime = compileTime
             CompileCPU = compileCPU
             CompileMemory = compileMemory
+            UsePlan = usePlan
+            ContainsInterleavedExecutionCandidates = containsInterleavedExecutionCandidates
+            ContainsInlineScalarTsqlUdfs = containsInlineScalarTsqlUdfs
+            QueryVariantID = queryVariantID
+            DispatcherPlanHandle = dispatcherPlanHandle
+            ExclusiveProfileTimeActive = exclusiveProfileTimeActive
+
+            InternalInfo = internalInfo
+            OptimizationReplay = optimizationReplay
+            ThreadStat = threadStat
+            MissingIndexes = missingIndexes
+            GuessedSelectivity = guessedSelectivity
+            UnmatchedIndexes = unmatchedIndexes
             Warnings = warnings
-            MemoryGrantInfo = memoryGrantInfo 
+            MemoryGrantInfo = memoryGrantInfo
             OptimizerHardwareDependentProperties = optimizerHardwareDependentProperties
             OptimizerStatsUsage = optimizerStatsUsage
-            RelOp = relOpType
-            ParameterList = columnReferenceType
+            TraceFlags = traceFlags
+            WaitStats = waitStats
+            QueryTimeStats = queryTimeStats
+            RelOp = relOp
+            ParameterList = parameterList
         }
     }
 
