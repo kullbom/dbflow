@@ -99,6 +99,29 @@ let parseCLRFunctionType (clrFunction : Linq.XElement) : PResult<CLRFunctionType
         }
     }
 
+let parseSpillOccurredWarning (element : Linq.XElement) : PResult<SpillOccurredType, _> =
+    PResult.builder {
+        let! detail = xAttr "Detail" element
+        return { Detail = detail }
+    }
+
+let parseSpillToTempDb (element : Linq.XElement) : PResult<SpillToTempDbType, _> =
+    PResult.builder {
+        let! spillReason = xAttr "SpillReason" element
+        let! spilledThreadCount = xAttr "SpilledThreadCount" element
+        return { SpillLevel = spillReason; SpilledThreadCount = spilledThreadCount }
+    }
+
+let parseWaitWarning (element : Linq.XElement) : PResult<WaitWarningType, _> =
+    PResult.builder {
+        let! waitType = xAttrReq "WaitType" element
+        let! waitTime = xAttr "WaitTime" element
+        return { 
+            WaitType = waitType
+            WaitTime = waitTime
+        }
+    }
+    
 let parseAffectingConvertWarning (element : Linq.XElement) : PResult<AffectingConvertWarningType, _> =
     PResult.builder {
         let! convertIssue = xAttrReq "ConvertIssue" element
@@ -109,47 +132,51 @@ let parseAffectingConvertWarning (element : Linq.XElement) : PResult<AffectingCo
         }
     }
 
-let parseWarning (warning : Linq.XElement) : PResult<Warning, _> =
-    match warning.Name.LocalName with
-    | "SpillOccurred" -> 
-        parseSpillOccurredWarning warning |> PResult.map Warning.SpillOccurred
-    | "ColumnsWithNoStatistics" -> 
-        parseColumnsWithNoStatisticsWarning warning |> PResult.map Warning.ColumnsWithNoStatistics
-    | "ColumnsWithStaleStatistics" -> 
-        parseColumnsWithStaleStatistics warning |> PResult.map Warning.ColumnsWithStaleStatistics
-    | "SpillToTempDb" -> 
-        parseSpillToTempDb warning |> PResult.map Warning.SpillToTempDb
-    | "Wait" -> 
-        parseWaitWarning warning |> PResult.map Warning.Wait
-    | "PlanAffectingConvert" -> 
-        parseAffectingConvertWarning warning |> PResult.map Warning.PlanAffectingConvert
-    | "SortSpillDetails" -> 
-        parseSortSpillDetailsWarning warning |> PResult.map Warning.SortSpillDetails
-    | "HashSpillDetails" -> 
-        parseHashSpillDetailsWarning warning |> PResult.map Warning.HashSpillDetails
-    | "ExchangeSpillDetails" -> 
-        parseExchangeSpillDetailsWarning warning |> PResult.map Warning.ExchangeSpillDetails 
-    | "MemoryGrantWarning" -> 
-        parseMemoryGrantWarning warning |> PResult.map Warning.MemoryGrantWarning
-    
-    | name -> 
-        Failf "Expected warning but got '%s'" name
-
-let parseWarningsType (warningsType : Linq.XElement) : PResult<WarningsType, _> =
+let parseSortSpillDetailsWarning (element : Linq.XElement) : PResult<SortSpillDetailsType, _> =
     PResult.builder {
-        let warningElements = xElementsAll warningsType
-        let! (warnings, rest) = xElementMany parseWarning warningElements
-        do! xElementEnsureEmpty rest
-        let! noJoinPredicate = xAttr "NoJoinPredicate" warningsType
-        let! spatialGuess = xAttr "SpatialGuess" warningsType
-        let! unmatchedIndexes = xAttr "UnmatchedIndexes" warningsType
-        let! fullUpdateForOnlineIndexBuild = xAttr "FullUpdateForOnlineIndexBuild" warningsType
+        let! grantedMemoryKb = xAttr "GrantedMemoryKb" element
+        let! usedMemoryKb = xAttr "UsedMemoryKb" element
+        let! writesToTempDb = xAttr "WritesToTempDb" element
+        let! readsFromTempDb = xAttr "ReadsFromTempDb" element
         return { 
-            Warnings = warnings
-            NoJoinPredicate = noJoinPredicate
-            SpatialGuess = spatialGuess
-            UnmatchedIndexes = unmatchedIndexes
-            FullUpdateForOnlineIndexBuild = fullUpdateForOnlineIndexBuild
+            GrantedMemoryKb = grantedMemoryKb 
+            UsedMemoryKb = usedMemoryKb
+            WritesToTempDb = writesToTempDb 
+            ReadsFromTempDb = readsFromTempDb 
+        }
+    }
+
+let parseHashSpillDetailsWarning (element : Linq.XElement) : PResult<HashSpillDetailsType, _> =
+    PResult.builder {
+        let! grantedMemoryKb = xAttr "GrantedMemoryKb" element
+        let! usedMemoryKb = xAttr "UsedMemoryKb" element
+        let! writesToTempDb = xAttr "WritesToTempDb" element
+        let! readsFromTempDb = xAttr "ReadsFromTempDb" element
+        return { 
+            GrantedMemoryKb = grantedMemoryKb 
+            UsedMemoryKb = usedMemoryKb
+            WritesToTempDb = writesToTempDb 
+            ReadsFromTempDb = readsFromTempDb 
+        }
+    }
+
+let parseExchangeSpillDetailsWarning (element : Linq.XElement) : PResult<ExchangeSpillDetailsType, _> =
+    PResult.builder {
+        let! writesToTempDb = xAttr "WritesToTempDb" element
+        return { WritesToTempDb = writesToTempDb }
+    }
+
+let parseMemoryGrantWarning (element : Linq.XElement) : PResult<MemoryGrantWarningInfo, _> =
+    PResult.builder {
+        let! grantWarningKind = xAttrReq "GrantWarningKind" element
+        let! requestedMemory = xAttrReq "RequestedMemory" element
+        let! grantedMemory = xAttrReq "GrantedMemory" element
+        let! maxUsedMemory = xAttrReq "MaxUsedMemory" element
+        return { 
+            GrantWarningKind = grantWarningKind
+            RequestedMemory = requestedMemory
+            GrantedMemory = grantedMemory
+            MaxUsedMemory = maxUsedMemory 
         }
     }
 
@@ -309,6 +336,8 @@ let parseRunTimePartitionSummary (runTimePartitionSummary : Linq.XElement) : PRe
 // Single mutual recursion block covering:
 //   ColumnReference ↔ ScalarType ↔ SubqueryType ↔ RelOpType
 // ========================================
+
+
 
 let rec parseColumnReferenceType (columnReference : Linq.XElement) : PResult<ColumnReferenceType, _> =
     PResult.builder {
@@ -608,6 +637,49 @@ and parseSingleColumnReferenceType (singleColumnReference : Linq.XElement) : PRe
         return { ColumnReference = columnReference }
     }
 
+and parseWarning (warning : Linq.XElement) : PResult<Warning, _> =
+    match warning.Name.LocalName with
+    | "SpillOccurred" -> 
+        parseSpillOccurredWarning warning |> PResult.map Warning.SpillOccurred
+    | "ColumnsWithNoStatistics" -> 
+        parseColumnReferenceListType warning |> PResult.map Warning.ColumnsWithNoStatistics
+    | "ColumnsWithStaleStatistics" -> 
+        parseColumnReferenceListType warning |> PResult.map Warning.ColumnsWithStaleStatistics
+    | "SpillToTempDb" -> 
+        parseSpillToTempDb warning |> PResult.map Warning.SpillToTempDb
+    | "Wait" -> 
+        parseWaitWarning warning |> PResult.map Warning.Wait
+    | "PlanAffectingConvert" -> 
+        parseAffectingConvertWarning warning |> PResult.map Warning.PlanAffectingConvert
+    | "SortSpillDetails" -> 
+        parseSortSpillDetailsWarning warning |> PResult.map Warning.SortSpillDetails
+    | "HashSpillDetails" -> 
+        parseHashSpillDetailsWarning warning |> PResult.map Warning.HashSpillDetails
+    | "ExchangeSpillDetails" -> 
+        parseExchangeSpillDetailsWarning warning |> PResult.map Warning.ExchangeSpillDetails 
+    | "MemoryGrantWarning" -> 
+        parseMemoryGrantWarning warning |> PResult.map Warning.MemoryGrantWarning
+    
+    | name -> 
+        Failf "Expected warning but got '%s'" name
+
+and parseWarningsType (warningsType : Linq.XElement) : PResult<WarningsType, _> =
+    PResult.builder {
+        let warningElements = xElementsAll warningsType
+        let! (warnings, rest) = xElementMany parseWarning warningElements
+        do! xElementEnsureEmpty rest
+        let! noJoinPredicate = xAttr "NoJoinPredicate" warningsType
+        let! spatialGuess = xAttr "SpatialGuess" warningsType
+        let! unmatchedIndexes = xAttr "UnmatchedIndexes" warningsType
+        let! fullUpdateForOnlineIndexBuild = xAttr "FullUpdateForOnlineIndexBuild" warningsType
+        return { 
+            Warnings = warnings
+            NoJoinPredicate = noJoinPredicate
+            SpatialGuess = spatialGuess
+            UnmatchedIndexes = unmatchedIndexes
+            FullUpdateForOnlineIndexBuild = fullUpdateForOnlineIndexBuild
+        }
+    }
 and parseDefinedValueType (definedValue : Linq.XElement) : PResult<DefinedValueType, _> =
     PResult.builder {
         let! (value, rest) = xElementReq (ensureName ("Value", ns) parseScalarType) (xElementsAll definedValue)
@@ -645,6 +717,7 @@ and parseStarJoinInfoType (starJoinInfo : Linq.XElement) : PResult<StarJoinInfoT
             OperationType = operationType
         }
     }
+
 and parseAdaptiveJoinType (adaptiveJoin : Linq.XElement) : PResult<AdaptiveJoinType, _> =
     PResult.builder {
         let! (relOpBase, rest) = parseRelOpBase adaptiveJoin 
@@ -683,6 +756,7 @@ and parseAdaptiveJoinType (adaptiveJoin : Linq.XElement) : PResult<AdaptiveJoinT
             WithUnorderedPrefetch = withUnorderedPrefetch
         }
     }
+
 and parseRelOpDetails (relOpDetails : Linq.XElement) : PResult<RelOpDetails, _> =
     match relOpDetails.Name.LocalName with
     | "AdaptiveJoin" -> parseAdaptiveJoinType relOpDetails |> PResult.map RelOpDetails.AdaptiveJoin
@@ -831,6 +905,141 @@ and parseRelOpType (relOp : Linq.XElement) : PResult<RelOpType, _> =
 // Non-recursive parsers that depend on the block above
 // ========================================
 
+let parseOptimizationReplay (optimizationReplay : Linq.XElement) : PResult<OptimizationReplayType, _> =
+    PResult.builder {
+        let! script = xAttrReq "Script" optimizationReplay
+        return { Script = script }
+    }
+
+let parseThreadReservations (threadReservation : Linq.XElement) : PResult<ThreadReservationType, _> =
+    PResult.builder {
+        let! nodeId = xAttr "NodeId" threadReservation
+        let! reservedThreads = xAttrReq "ReservedThreads" threadReservation
+        return { 
+            NodeId = nodeId
+            ReservedThreads = reservedThreads
+        }
+    }
+
+let parseThreadStatType (threadStat : Linq.XElement) : PResult<ThreadStatType, _> =
+    PResult.builder {
+        let! branches = xAttrReq "ThreadId" threadStat
+        let! usedThreads = xAttr "UsedThreads" threadStat
+        let! (threadReservations, rest) = xElementMany (ensureName ("ThreadReservations", ns) parseThreadReservations) (xElementsAll threadStat)
+        do! xElementEnsureEmpty rest
+        return { 
+            Branches = branches
+            UsedThreads = usedThreads
+            ThreadReservations = threadReservations
+        }
+    }
+
+let parseMissingColumnType (missingColumn : Linq.XElement) : PResult<MissingColumnType, _> =
+    PResult.builder {
+        let! name = xAttrReq "Name" missingColumn
+        let! columnId = xAttrReq "ColumnId" missingColumn
+        return { Name = name; ColumnId = columnId }
+    }
+let parseColumnGroup (columnGroup : Linq.XElement) : PResult<ColumnGroupType, _> =
+    PResult.builder {
+        let! usage = xAttrReq "Usage" columnGroup
+        let! (columns, rest) = xElementMany (ensureName ("Column", ns) parseMissingColumnType) (xElementsAll columnGroup)
+        do! xElementEnsureEmpty rest
+        return { 
+            Usage = usage
+            Columns = columns
+        }
+    }
+let parseMissingIndexType (missingIndex : Linq.XElement) : PResult<MissingIndexType, _> =
+    PResult.builder {
+        let! database = xAttrReq "Database" missingIndex
+        let! schema = xAttrReq "Schema" missingIndex
+        let! table = xAttrReq "Table" missingIndex
+        let! (columnGroups, rest) = xElementMany (ensureName ("ColumnGroup", ns) parseColumnGroup) (xElementsAll missingIndex)
+        do! xElementEnsureEmpty rest
+        return { 
+            Database = database
+            Schema = schema
+            Table = table
+            ColumnGroups = columnGroups
+        }
+    }
+
+let parseMissingIndexGroup (missingIndexGroup : Linq.XElement) : PResult<MissingIndexGroupType, _> =
+    PResult.builder {
+        let! impact = xAttrReq "Impact" missingIndexGroup
+        let! (missingIndexes, rest) = xElementMany (ensureName ("MissingIndex", ns) parseMissingIndexType) (xElementsAll missingIndexGroup)
+        do! xElementEnsureEmpty rest
+        return { 
+            Impact = impact
+            MissingIndexes = missingIndexes
+        }
+    }
+
+let parseMissingIndexesType (missingIndexes : Linq.XElement) : PResult<MissingIndexesType, _> =
+    PResult.builder {
+        let! (missingIndexGroups, rest) = xElementMany (ensureName ("MissingIndexGroup", ns) parseMissingIndexGroup) (xElementsAll missingIndexes)
+        do! xElementEnsureEmpty rest
+        return { MissingIndexGroups = missingIndexGroups }
+    }
+
+let parseGuessedSelectivityType (guessedSelectivity : Linq.XElement) : PResult<GuessedSelectivityType, _> =
+    PResult.builder {
+        let! (spatial, rest) = xElementReq (ensureName ("Spatial", ns) parseObjectType) (xElementsAll guessedSelectivity)
+        do! xElementEnsureEmpty rest
+        return {  Spatial = spatial }
+    }
+
+let parseParameterizationType (parameterization : Linq.XElement) : PResult<ParameterizationType, _> =
+    PResult.builder {
+        let! (objects, rest) = xElementMany (ensureName ("Object", ns) parseObjectType) (xElementsAll parameterization)
+        do! xElementEnsureEmpty rest
+        return { Objects = objects }
+    }
+let parseUnmatchedIndexesType (unmatchedIndexes : Linq.XElement) : PResult<UnmatchedIndexesType, _> =
+    PResult.builder {
+        let! (parameterization, rest) = xElementReq (ensureName ("Parameterization", ns) parseParameterizationType) (xElementsAll unmatchedIndexes)
+        do! xElementEnsureEmpty rest
+        return { Parameterization = parameterization }
+    }
+
+let parseTraceFlag (traceFlag : Linq.XElement) : PResult<TraceFlag, _> =
+    PResult.builder {
+        let! value = xAttrReq "Value" traceFlag
+        let! scope = xAttrReq "Scope" traceFlag
+        return { Value = value; Scope = scope }
+    }
+let parseTraceFlagsType (traceFlags : Linq.XElement) : PResult<TraceFlagListType, _> =
+    PResult.builder {
+        let! isCompileTime = xAttrReq "IsCompileTime" traceFlags
+        let! (traceFlags, rest) = xElementMany (ensureName ("TraceFlag", ns) parseTraceFlag) (xElementsAll traceFlags)
+        do! xElementEnsureEmpty rest
+        return { IsCompileTime = isCompileTime; TraceFlags = traceFlags }
+    }
+
+let parseWaitStatType (waitStat : Linq.XElement) : PResult<WaitStatType, _> =
+    PResult.builder {
+        let! waitType = xAttrReq "WaitType" waitStat
+        let! waitTimeMs = xAttrReq "WaitTimeMs" waitStat
+        let! waitCount = xAttrReq "WaitCount" waitStat
+        return { WaitType = waitType; WaitTimeMs = waitTimeMs; WaitCount = waitCount }
+    }
+let parseWaitStatListType (waitStats : Linq.XElement) : PResult<WaitStatListType, _> =
+    PResult.builder {
+        let! (waitStats, rest) = xElementMany (ensureName ("Wait", ns) parseWaitStatType) (xElementsAll waitStats)
+        do! xElementEnsureEmpty rest
+        return { WaitStats = waitStats }
+    }
+
+let parseQueryTimeStatsType (queryTimeStats : Linq.XElement) : PResult<QueryExecTimeType, _> =
+    PResult.builder {
+        let! cpuTime = xAttrReq "QueryExecutionTimeMs" queryTimeStats
+        let! elapsedTime = xAttrReq "QueryCompilationTimeMs" queryTimeStats
+        let! udfCpuTime = xAttr "UdfCpuTime" queryTimeStats
+        let! udfElapsedTime = xAttr "UdfElapsedTime" queryTimeStats
+        return { CpuTime = cpuTime; ElapsedTime = elapsedTime; UdfCpuTime = udfCpuTime; UdfElapsedTime = udfElapsedTime }
+    }
+
 let parseQueryPlanType (queryPlan : Linq.XElement) : PResult<QueryPlanType, _> =
     PResult.builder {
         let! degreeOfParallelism = xAttr "DegreeOfParallelism" queryPlan
@@ -849,13 +1058,21 @@ let parseQueryPlanType (queryPlan : Linq.XElement) : PResult<QueryPlanType, _> =
         let! dispatcherPlanHandle = xAttr "DispatcherPlanHandle" queryPlan
         let! exclusiveProfileTimeActive = xAttr "ExclusiveProfileTimeActive" queryPlan
 
-        let xmlElements = xElementsAll queryPlan
-        let! (warnings, rest) = xElement (ensureName ("Warnings", ns) parseWarningsType) xmlElements
+        let! (internalInfo, rest) = xElement (ensureName ("InternalInfo", ns) parseInternalInfoType) (xElementsAll queryPlan)
+        let! (optimizationReplay, rest) = xElement (ensureName ("OptimizationReplay", ns) parseOptimizationReplay) rest
+        let! (threadStat, rest) = xElement (ensureName ("ThreadStat", ns) parseThreadStatType) rest
+        let! (missingIndexes, rest) = xElement (ensureName ("MissingIndexes", ns) parseMissingIndexesType) rest
+        let! (guessedSelectivity, rest) = xElement (ensureName ("GuessedSelectivity", ns) parseGuessedSelectivityType) rest
+        let! (unmatchedIndexes, rest) = xElement (ensureName ("UnmatchedIndexes", ns) parseUnmatchedIndexesType) rest
+        let! (warnings, rest) = xElement (ensureName ("Warnings", ns) parseWarningsType) rest
         let! (memoryGrantInfo, rest) = xElement (ensureName ("MemoryGrantInfo", ns) parseMemoryGrantType) rest
         let! (optimizerHardwareDependentProperties, rest) = 
             xElement (ensureName ("OptimizerHardwareDependentProperties", ns) parseOptimizerHardwareDependentProperties) rest
         let! (optimizerStatsUsage, rest) = xElement (ensureName ("OptimizerStatsUsage", ns) parseOptimizerStatsUsage) rest
-        let! (relOpType, rest) = xElementReq (ensureName ("RelOp", ns) parseRelOpType) rest
+        let! (traceFlags, rest) = xElementMany (ensureName ("TraceFlags", ns) parseTraceFlagsType) rest
+        let! (waitStats, rest) = xElement (ensureName ("WaitStats", ns) parseWaitStatListType) rest
+        let! (queryTimeStats, rest) = xElement (ensureName ("QueryTimeStats", ns) parseQueryTimeStatsType) rest
+        let! (relOp, rest) = xElementReq (ensureName ("RelOp", ns) parseRelOpType) rest
         let! (parameterList, rest) = xElement (ensureName ("ParameterList", ns) parseColumnReferenceListType) rest
         do! xElementEnsureEmpty rest
         return {
@@ -893,10 +1110,14 @@ let parseQueryPlanType (queryPlan : Linq.XElement) : PResult<QueryPlanType, _> =
         }
     }
 
-let parseReceivePlanType (receiveOperation : Linq.XElement) : PResult<ReceivePlanType, _> =
+let parseReceivePlanType (receiveOperation : Linq.XElement) : PResult<ReceivePlanDetailType, _> =
     PResult.builder {
-        let! operationType = xAttrReq "OperationType" receiveOperation
-        
+        let! operationType' = xAttrReq "OperationType" receiveOperation
+        let! operationType =    
+            match operationType' with
+            | "ReceivePlanSelect" -> ReceivePlanOperationType.ReceivePlanSelect |> POk
+            | "ReceivePlanUpdate" -> ReceivePlanOperationType.ReceivePlanUpdate |> POk
+            | opType -> Failf "Unknown ReceivePlan OperationType: '%s'" opType
         let xmlElements = xElementsAll receiveOperation
         let! (queryPlan,rest) = xElementReq (ensureName ("QueryPlan", ns) parseQueryPlanType) xmlElements
         do! xElementEnsureEmpty rest
@@ -906,22 +1127,30 @@ let parseReceivePlanType (receiveOperation : Linq.XElement) : PResult<ReceivePla
         }
     }
 
-let parseStmtSimple (stmtSimple : Linq.XElement) : PResult<StmtSimpleType, _> =
+let parseParameterSensitivePredicateType (parameterSensitivePredicate : Linq.XElement) : PResult<ParameterSensitivePredicateType, _> =
     PResult.builder {
-        let! (baseInfo, rest) = parseBaseStmtInfoType stmtSimple
-        let! (dispatcher, rest) = xElement (ensureName ("Dispatcher", ns) parseDispatcherType) rest 
-        let! (queryPlan, rest) = xElement (ensureName ("QueryPlan", ns) parseQueryPlanType) rest 
-        let! (udfs, rest) = xElementMany (ensureName ("UDF", ns) parseFunctionType) rest 
-        let! (storedProc, rest) = xElement (ensureName ("StoredProc", ns) parseFunctionType) rest 
+        let! lowBoundery = xAttrReq "LowBoundery" parameterSensitivePredicate
+        let! highBoundery = xAttrReq "HighBoundery" parameterSensitivePredicate
+        let! (statisticsInfo, rest) = xElementMany1 (ensureName ("StatisticsInfo", ns) parseStatsInfo) (xElementsAll parameterSensitivePredicate)
+        let! (predicate, rest) = xElementReq (ensureName ("Predicate", ns) parseScalarExpressionType) rest
         do! xElementEnsureEmpty rest
         return { 
-            BaseInfo = baseInfo; 
-            Dispatcher = dispatcher
-            QueryPlan = queryPlan 
-            UDFs = udfs
-            StoredProc = storedProc
+            StatisticsInfo = statisticsInfo
+            Predicate = predicate
+            LowBoundery = lowBoundery
+            HighBoundary = highBoundery
         }
     }
+let parseDispatcherType (dispatcher : Linq.XElement) : PResult<DispatcherType, _> =
+    PResult.builder {
+        let! (parameterSensitivePredicats, rest) = 
+            xElementMany (ensureName ("ParameterSensitivePredicate", ns) parseParameterSensitivePredicateType) (xElementsAll dispatcher)
+        do! xElementEnsureEmpty rest
+        return { 
+            ParameterSensitivePredicate = parameterSensitivePredicats
+        }
+    }
+
 
 let parseStmtCursor (stmtCursor : Linq.XElement) : PResult<StmtCursorType, _> =
     PResult.builder {
@@ -963,7 +1192,24 @@ let parseExternalDistributedComputation (externalDistributedComputation : Linq.X
 // Mutual recursion for statement block types
 // ========================================
 
-let rec parseFunctionType (functionType : Linq.XElement) : PResult<FunctionType, _> =
+let rec parseStmtSimple (stmtSimple : Linq.XElement) : PResult<StmtSimpleType, _> =
+    PResult.builder {
+        let! (baseInfo, rest) = parseBaseStmtInfoType stmtSimple
+        let! (dispatcher, rest) = xElement (ensureName ("Dispatcher", ns) parseDispatcherType) rest 
+        let! (queryPlan, rest) = xElement (ensureName ("QueryPlan", ns) parseQueryPlanType) rest 
+        let! (udfs, rest) = xElementMany (ensureName ("UDF", ns) parseFunctionType) rest 
+        let! (storedProc, rest) = xElement (ensureName ("StoredProc", ns) parseFunctionType) rest 
+        do! xElementEnsureEmpty rest
+        return { 
+            BaseInfo = baseInfo; 
+            Dispatcher = dispatcher
+            QueryPlan = queryPlan 
+            UDFs = udfs
+            StoredProc = storedProc
+        }
+    }
+
+and parseFunctionType (functionType : Linq.XElement) : PResult<FunctionType, _> =
     PResult.builder {
         let xmlElements = xElementsAll functionType
         let! (statements, rest) = xElementMany (ensureName ("Statements", ns) parseStmtBlockType) xmlElements

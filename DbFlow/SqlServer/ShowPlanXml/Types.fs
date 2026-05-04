@@ -240,8 +240,8 @@ type ResourceEstimateType = {
 // ========================================
 type Warning =
     | SpillOccurred of SpillOccurredType
-    | ColumnsWithNoStatistics of ColumnReferenceType list
-    | ColumnsWithStaleStatistics of ColumnReferenceType list
+    | ColumnsWithNoStatistics of ColumnReferenceListType
+    | ColumnsWithStaleStatistics of ColumnReferenceListType
     | SpillToTempDb of SpillToTempDbType
     | Wait of WaitWarningType
     | PlanAffectingConvert of AffectingConvertWarningType 
@@ -1255,7 +1255,7 @@ and StmtCursorType = {
 }
 
 and ReceivePlanDetailType = {
-    OperationType: string // "ReceivePlanSelect" | "ReceivePlanUpdate"
+    OperationType: ReceivePlanOperationType 
     QueryPlan: QueryPlanType
 }
 

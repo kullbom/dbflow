@@ -117,7 +117,7 @@
     - [ ] Add tests to validate ShowPlanXml
     - [ ] Make sure the performance is usable for code generation
 - [ ] Add support for fetching input and output of a query using `sys.sp_describe_first_result_set` and `sys.sp_describe_undeclared_parameters`
-
+- [ ] Investigate https://github.com/microsoft/SqlScriptDOM
 
 ## Version 1.0.0
 
