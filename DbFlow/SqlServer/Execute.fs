@@ -92,6 +92,9 @@ let clone logger (options : ScriptOptions) (sourceDb : DatabaseSchema) (targetCo
         Internal.collectScriptsFromSchema options 
         |> Logger.logTime logger "Collect scripts" sourceDb
     
+    if 0 = Map.count sourceDb.Dependencies 
+    then Logger.infoWithTime "WARNING: no dependencies found - missing privileges to read from sys.sql_expression_dependencies?" logger
+
     let resolvedScripts =
         Dependent.resolveOrder (fun d -> d.Content) sourceDb.Dependencies
         |> Logger.logTime logger "Resolve scripts dependencies" collectedScripts

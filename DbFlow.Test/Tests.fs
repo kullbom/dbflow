@@ -163,7 +163,7 @@ type ``SqlLocalDb_exe`` () =
 
     //[<Fact>]
     member _.``Scripts from Db`` () =
-        let dbName = ""
+        let dbName = "Foo"
         let dbConnStr = $""
         let outputFolder = __SOURCE_DIRECTORY__ + "\\SqlLocalDbTest\\"
 
@@ -174,6 +174,8 @@ type ``SqlLocalDb_exe`` () =
             dbConn.Open ()
             SqlServer.Execute.readSchema logger readOptions dbConn
 
-        SqlServer.Execute.generateScriptFiles scriptOptions schema outputFolder
+        use clone = Execute.cloneToLocal logger LocalDbOptions.Default scriptOptions schema
+        //SqlServer.Execute.generateScriptFiles scriptOptions schema outputFolder
+        ()
 
         

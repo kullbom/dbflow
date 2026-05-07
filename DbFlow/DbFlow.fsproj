@@ -5,7 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>DbFlow</Title>
-    <Version>0.10.0</Version>
+    <Version>0.10.1</Version>
     <Copyright>2025-2026 Johan Kullbom</Copyright>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>.net;f#;sql;mssqlserver</PackageTags>
@@ -15,7 +15,7 @@
     <RepositoryType>git</RepositoryType>
 	<Description>DbFlow is a library that helps with schema oriented database tasks</Description>
 	<PackageReleaseNotes>
-		- Added possibility to control the internal connection string used to connect to a local SqlServer database
+		- Added warning when no dependencies can be read. Changed default order of som scripts.
 	</PackageReleaseNotes>
   </PropertyGroup>
 

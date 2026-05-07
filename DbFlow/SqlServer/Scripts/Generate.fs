@@ -38,6 +38,7 @@ type SchemaScriptPart =
     | DatabaseDefinition of ScriptContent
     | SchemaDefinition of ScriptContent
     | UserDefinedTypeDefinition of ScriptContent
+    | FunctionDefinitions of {| Contains : int list; DependsOn : int list; Script : ScriptContent |}
     | ObjectDefinitions of {| Contains : int list; DependsOn : int list; Script : ScriptContent |}
     | XmlSchemaCollectionDefinition of ScriptContent
 
@@ -591,7 +592,7 @@ let generateTriggerScript (opt : ScriptOptions) (tr : Trigger) =
         ObjectDefinitions {| Contains = [tr.Object.ObjectId]; DependsOn = [tr.Parent.ObjectId]; Script = sc |}
     
 
-let generateProcedureScript (opt : ScriptOptions) (p : Procedure) =
+let generateProcedureScript isFunction (opt : ScriptOptions) (p : Procedure) =
     ScriptContent.empty
     |>+ "SET QUOTED_IDENTIFIER ON "
     |>+ "GO"
@@ -606,7 +607,10 @@ let generateProcedureScript (opt : ScriptOptions) (p : Procedure) =
 
     |> XProperties.procedure opt p
 
-    |> fun sc -> ObjectDefinitions {| Contains = [p.Object.ObjectId]; DependsOn = []; Script = sc |}
+    |> fun sc -> 
+        if isFunction
+        then FunctionDefinitions {| Contains = [p.Object.ObjectId]; DependsOn = []; Script = sc |}
+        else ObjectDefinitions {| Contains = [p.Object.ObjectId]; DependsOn = []; Script = sc |}
 
 let generateSynonymScript (opt : ScriptOptions) (synonym : Synonym) =
     ScriptContent.empty
@@ -695,8 +699,9 @@ let generateScripts (opt : ScriptOptions) (schema : DatabaseSchema) f seed =
                             | DatabaseDefinition script -> true, -1, [], [], script
                             | SchemaDefinition script -> false, 1, [],[], script
                             | UserDefinedTypeDefinition script -> false, 2,  [],[], script
-                            | ObjectDefinitions x -> false, 3, x.Contains, x.DependsOn, x.Script
-                            | XmlSchemaCollectionDefinition script -> false, 4, [], [], script
+                            | FunctionDefinitions x -> false, 3, x.Contains, x.DependsOn, x.Script
+                            | ObjectDefinitions x -> false, 4, x.Contains, x.DependsOn, x.Script
+                            | XmlSchemaCollectionDefinition script -> false, 5, [], [], script
                         isDatabaseDefinition,
                         {
                             Contains = Set.ofList containsObjects
@@ -774,7 +779,7 @@ let generateScripts (opt : ScriptOptions) (schema : DatabaseSchema) f seed =
     
     |> dataForFolder "functions" 
         (db.Procedures |> List.filter  (fun p -> Schema.includeObjectsInScripts p.Object.Schema && (p.Object.ObjectType <> ObjectType.SqlStoredProcedure)))
-        (fun p -> objectFilename p.Object.Schema.Name p.Name) generateProcedureScript
+        (fun p -> objectFilename p.Object.Schema.Name p.Name) (generateProcedureScript true)
 
     |> dataForFolder "check_constraints" 
         (db.Tables 
@@ -799,7 +804,7 @@ let generateScripts (opt : ScriptOptions) (schema : DatabaseSchema) f seed =
 
     |> dataForFolder "procedures" 
         (db.Procedures |> List.filter  (fun p -> Schema.includeObjectsInScripts p.Object.Schema && (p.Object.ObjectType = ObjectType.SqlStoredProcedure)))
-        (fun p -> objectFilename p.Object.Schema.Name p.Name) generateProcedureScript
+        (fun p -> objectFilename p.Object.Schema.Name p.Name) (generateProcedureScript false)
 
     |> dataForFolder "synonyms" 
         db.Synonyms
