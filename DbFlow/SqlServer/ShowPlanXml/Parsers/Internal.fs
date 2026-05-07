@@ -1186,6 +1186,292 @@ and parseForeignKeyReferencesCheckType (fkCheck : Linq.XElement) : PResult<Forei
         }
     }
 
+and parseGbAggType (gbAgg : Linq.XElement) : PResult<GbAggType, _> =
+    PResult.builder {
+        let! (relOpBase, rest) = parseRelOpBase gbAgg 
+        let! (groupBy, rest) = xElement (ensureName ("GroupBy", ns) parseColumnReferenceListType) rest
+        let! (aggFunctions, rest) = xElement (ensureName ("Aggregate", ns) parseDefinedValuesListType) rest
+        let! (relOps, rest) = xElementMany (ensureName ("RelOp", ns) parseRelOpType) rest
+        do! xElementEnsureEmpty rest
+        
+        let! isScalar = xAttr "IsScalar" gbAgg
+        let! aggType = xAttr "AggType" gbAgg
+        let! hintType = xAttr "HintType" gbAgg
+
+        return { 
+            Base = relOpBase
+            GroupBy = groupBy
+            AggFunctions = aggFunctions
+            RelOps = relOps
+            
+            IsScalar = isScalar
+            AggType = aggType
+            HintType = hintType
+        }
+    }
+
+and parseGbApplyType (gbApply : Linq.XElement) : PResult<GbApplyType, _> =
+    PResult.builder {
+        let! (relOpBase, rest) = parseRelOpBase gbApply 
+        let! (predicates, rest) = xElementMany (ensureName ("Predicate", ns) parseScalarExpressionType) rest
+        let! (aggFunctions, rest) = xElement (ensureName ("AggFunctions", ns) parseDefinedValuesListType) rest
+        let! (relOps, rest) = xElementMany (ensureName ("RelOp", ns) parseRelOpType) rest
+        do! xElementEnsureEmpty rest
+        
+        let! joinType = xAttr "JoinType" gbApply
+        let! aggType = xAttr "AggType" gbApply
+        return { 
+            Base = relOpBase
+            Predicates = predicates
+            AggFunctions = aggFunctions
+            RelOps = relOps
+    
+            JoinType = joinType
+            AggType = aggType
+        }
+    }
+
+and parseGenericType (generic : Linq.XElement) : PResult<GenericType, _> =
+    PResult.builder {
+        let! (relOpBase, rest) = parseRelOpBase generic 
+        let! (relOps, rest) = xElementMany (ensureName ("RelOp", ns) parseRelOpType) rest
+        do! xElementEnsureEmpty rest
+        
+        return { 
+            Base = relOpBase
+            RelOps = relOps
+        }
+    }
+
+and parseHashType (hash : Linq.XElement) : PResult<HashType, _> =
+    PResult.builder {
+        let! (relOpBase, rest) = parseRelOpBase hash 
+        let! (hashKeysBuild, rest) = xElement (ensureName ("HashKeysBuild", ns) parseColumnReferenceListType) rest
+        let! (hashKeysProbe, rest) = xElement (ensureName ("HashKeysProbe", ns) parseColumnReferenceListType) rest
+        let! (buildResidual, rest) = xElement (ensureName ("BuildResidual", ns) parseScalarExpressionType) rest
+        let! (probeResidual, rest) = xElement (ensureName ("ProbeResidual", ns) parseScalarExpressionType) rest
+        let! (starJoinInfo, rest) = xElement (ensureName ("StarJoinInfo", ns) parseStarJoinInfoType) rest
+        let! (relOps, rest) = xElementMany (ensureName ("RelOp", ns) parseRelOpType) rest
+        do! xElementEnsureEmpty rest
+        
+        let! bitmapCreator = xAttr "BitmapCreator" hash
+        return { 
+            Base = relOpBase
+            HashKeysBuild = hashKeysBuild
+            HashKeysProbe = hashKeysProbe
+            BuildResidual = buildResidual
+            ProbeResidual = probeResidual
+            StarJoinInfo = starJoinInfo
+            RelOps = relOps // 1-2
+            
+            BitmapCreator = bitmapCreator
+        }
+    }
+
+and parseGroupingSetReferenceType (groupingSetReference : Linq.XElement) : PResult<GroupingSetReferenceType, _> =
+    PResult.builder {
+        let! value = xAttrReq "Value" groupingSetReference
+        return { Value = value }
+    }
+and parseGroupingSetListType (groupingSetList : Linq.XElement) : PResult<GroupingSetListType, _> =
+    PResult.builder {
+        let! (groupingSets, rest) = xElementMany (ensureName ("GroupingSet", ns) parseGroupingSetReferenceType) (xElementsAll groupingSetList)
+        do! xElementEnsureEmpty rest
+        return { GroupingSets = groupingSets }
+    }
+
+and parseLocalCubeType (localCube : Linq.XElement) : PResult<LocalCubeType, _> =
+    PResult.builder {
+        let! (relOpBase, rest) = parseRelOpBase localCube 
+        let! (groupBy, rest) = xElement (ensureName ("GroupBy", ns) parseColumnReferenceListType) rest
+        let! (groupingSets, rest) = xElement (ensureName ("GroupingSets", ns) parseGroupingSetListType) rest
+        let! (relOps, rest) = xElementMany (ensureName ("RelOp", ns) parseRelOpType) rest
+        do! xElementEnsureEmpty rest
+        
+        return { 
+            Base = relOpBase
+            GroupBy = groupBy
+            GroupingSets = groupingSets
+            RelOps = relOps
+        }
+    }
+
+and parseMergeType (merge : Linq.XElement) : PResult<MergeType, _> =
+    PResult.builder {
+        let! (relOpBase, rest) = parseRelOpBase merge 
+        let! (innerSideJoinColumns, rest) = xElement (ensureName ("InnerSideJoinColumns", ns) parseColumnReferenceListType) rest
+        let! (outerSideJoinColumns, rest) = xElement (ensureName ("OuterSideJoinColumns", ns) parseColumnReferenceListType) rest
+        let! (residual, rest) = xElement (ensureName ("Residual", ns) parseScalarExpressionType) rest
+        let! (passThru, rest) = xElement (ensureName ("PassThru", ns) parseScalarExpressionType) rest
+        let! (starJoinInfo, rest) = xElement (ensureName ("StarJoinInfo", ns) parseStarJoinInfoType) rest
+        let! (relOps, rest) = xElementMany (ensureName ("RelOp", ns) parseRelOpType) rest
+        do! xElementEnsureEmpty rest
+        
+        let! manyToMany = xAttr "ManyToMany" merge
+        return { 
+            Base = relOpBase
+            InnerSideJoinColumns = innerSideJoinColumns
+            OuterSideJoinColumns = outerSideJoinColumns
+            Residual = residual
+            PassThru = passThru
+            StarJoinInfo = starJoinInfo
+            RelOps = relOps
+
+            ManyToMany = manyToMany
+        }
+    }
+
+and parseSimpleIteratorOneChildType (simpleIteratorOneChild : Linq.XElement) : PResult<SimpleIteratorOneChildType, _> =
+    PResult.builder {
+        let! (relOpBase, rest) = parseRelOpBase simpleIteratorOneChild 
+        let! (relOp, rest) = xElementReq (ensureName ("RelOp", ns) parseRelOpType) rest
+        do! xElementEnsureEmpty rest
+        
+        return { 
+            Base = relOpBase
+            RelOp = relOp
+        }
+    }
+
+and parseResourceEstimateType (resourceEstimate : Linq.XElement) : PResult<ResourceEstimateType, _> =
+    PResult.builder {
+        let! nodeCount = xAttr "NodeCount" resourceEstimate
+        let! dop = xAttr "Dop" resourceEstimate
+        let! memoryInBytes = xAttr "MemoryInBytes" resourceEstimate
+        let! diskWrittenInBytes = xAttr "DiskWrittenInBytes" resourceEstimate
+        let! scalable = xAttr "Scalable" resourceEstimate
+        return { 
+            NodeCount = nodeCount
+            Dop = dop
+            MemoryInBytes = memoryInBytes
+            DiskWrittenInBytes = diskWrittenInBytes
+            Scalable = scalable
+        }
+    }
+
+and parseMoveType (move : Linq.XElement) : PResult<MoveType, _> =
+    PResult.builder {
+        let! (relOpBase, rest) = parseRelOpBase move 
+        let! (distributionKey, rest) = xElement (ensureName ("DistributionKey", ns) parseColumnReferenceListType) rest
+        let! (resourceEstimate, rest) = xElement (ensureName ("ResourceEstimate", ns) parseResourceEstimateType) rest
+        let! (relOps, rest) = xElementMany (ensureName ("RelOp", ns) parseRelOpType) rest
+        do! xElementEnsureEmpty rest
+
+        let! moveType = xAttr "MoveType" move
+        let! distributionType = xAttr "DistributionType" move
+        let! isDistributed = xAttr "IsDistributed" move
+        let! isExternal = xAttr "IsExternal" move
+        let! isFull = xAttr "IsFull" move
+        return { 
+            Base = relOpBase
+            DistributionKey = distributionKey
+            ResourceEstimate = resourceEstimate
+            RelOps = relOps
+            
+            MoveType = moveType
+            DistributionType = distributionType
+            IsDistributed = isDistributed
+            IsExternal = isExternal
+            IsFull = isFull
+        }
+    }
+
+and parseNestedLoopsType (nestedLoops : Linq.XElement) : PResult<NestedLoopsType, _> =
+    PResult.builder {
+        let! (relOpBase, rest) = parseRelOpBase nestedLoops 
+        let! (predicate, rest) = xElement (ensureName ("Predicate", ns) parseScalarExpressionType) rest
+        let! (passThru, rest) = xElement (ensureName ("PassThru", ns) parseScalarExpressionType) rest
+        let! (outerReferences, rest) = xElement (ensureName ("OuterReferences", ns) parseColumnReferenceListType) rest
+        let! (partitionId, rest) = xElement (ensureName ("PartitionId", ns) parseSingleColumnReferenceType) rest
+        let! (probeColumn, rest) = xElement (ensureName ("ProbeColumn", ns) parseSingleColumnReferenceType) rest
+        let! (starJoinInfo, rest) = xElement (ensureName ("StarJoinInfo", ns) parseStarJoinInfoType) rest
+        let! (relOps, rest) = xElementMany (ensureName ("RelOp", ns) parseRelOpType) rest
+        do! xElementEnsureEmpty rest
+        
+        let! optimized = xAttrReq "Optimized" nestedLoops
+        let! withOrderedPrefetch = xAttr "WithOrderedPrefetch" nestedLoops
+        let! withUnorderedPrefetch = xAttr "WithUnorderedPrefetch" nestedLoops
+        return { 
+            Base = relOpBase
+            Predicate = predicate
+            PassThru = passThru
+            OuterReferences = outerReferences
+            PartitionId = partitionId
+            ProbeColumn = probeColumn
+            StarJoinInfo = starJoinInfo
+            RelOps = relOps // 2
+            
+            Optimized = optimized
+            WithOrderedPrefetch = withOrderedPrefetch
+            WithUnorderedPrefetch = withUnorderedPrefetch
+        }
+    }
+
+and parseOrderByColumnType (orderByColumn : Linq.XElement) : PResult<OrderByColumnType, _> =
+    PResult.builder {
+        let! (columnReference, rest) = xElementReq (ensureName ("ColumnReference", ns) parseColumnReferenceType) (xElementsAll orderByColumn)
+        do! xElementEnsureEmpty rest
+        let! ascending = xAttrReq "Ascending" orderByColumn
+        return { ColumnReference = columnReference; Ascending = ascending }
+    }
+
+and parseOrderByType (orderBy : Linq.XElement) : PResult<OrderByType, _> =
+    PResult.builder {
+        let! (orderByColumns, rest) = xElementMany (ensureName ("OrderColumn", ns) parseOrderByColumnType) (xElementsAll orderBy)
+        do! xElementEnsureEmpty rest
+        return { OrderByColumns = orderByColumns }
+    }
+
+and parseActivationInfoType (activationInfo : Linq.XElement) : PResult<ActivationInfoType, _> =
+    PResult.builder {
+        let! object = 
+            xAttr "Object" activationInfo
+            |> PResult.bind (function
+                | Some "" -> Some ObjectType |> POk
+                | None -> POk None)
+        let! type_ = xAttrReq "Type" activationInfo
+        let! fragmentElimination = xAttr "FragmentElimination" activationInfo
+        return { 
+            Object = object 
+            Type = type_
+            FragmentElimination = fragmentElimination 
+        }
+    }
+
+and parseParallelismType (parallelism : Linq.XElement) : PResult<ParallelismType, _> =
+    PResult.builder {
+        let! (relOpBase, rest) = parseRelOpBase parallelism 
+        let! (partitionColumns, rest) = xElement (ensureName ("PartitionColumns", ns) parseColumnReferenceListType) rest
+        let! (orderBy, rest) = xElement (ensureName ("OrderBy", ns) parseOrderByType) rest
+        let! (hashKeys, rest) = xElement (ensureName ("HashKeys", ns) parseColumnReferenceListType) rest
+        let! (probeColumn, rest) = xElement (ensureName ("ProbeColumn", ns) parseSingleColumnReferenceType) rest
+        let! (predicate, rest) = xElement (ensureName ("Predicate", ns) parseScalarExpressionType) rest
+        let! (activation, rest) = xElement (ensureName ("Activation", ns) parseActivationInfoType) rest
+        let! (brickRouting, rest) = xElement (ensureName ("BrickRouting", ns) parseBrickRoutingType) rest
+        let! (relOp, rest) = xElementReq (ensureName ("RelOp", ns) parseRelOpType) rest
+        let! (partitioningType, rest) = xElement (ensureName ("PartitioningType", ns) parsePartitionType) rest
+        do! xElementEnsureEmpty rest
+        
+        let! remoting = xAttr "Remoting" parallelism
+        let! localParallelism = xAttr "LocalParallelism" parallelism
+        let! inRow = xAttr "InRow" parallelism
+        return { 
+            Base = relOpBase
+            PartitionColumns = partitionColumns
+            OrderBy = orderBy
+            HashKeys = hashKeys
+            ProbeColumn = probeColumn
+            Predicate = predicate
+            Activation = activation
+            BrickRouting = brickRouting
+            RelOp = relOp
+            PartitioningType = partitioningType
+        
+            Remoting = remoting
+            LocalParallelism = localParallelism
+            InRow = inRow
+        }
+    }
 
 and parseRelOpDetails (relOpDetails : Linq.XElement) : PResult<RelOpDetails, _> =
     match relOpDetails.Name.LocalName with
@@ -1217,15 +1503,15 @@ and parseRelOpDetails (relOpDetails : Linq.XElement) : PResult<RelOpDetails, _> 
     | "Insert" -> parseDMLOpType relOpDetails |> PResult.map RelOpDetails.Insert
     | "Join" -> parseJoinType relOpDetails |> PResult.map RelOpDetails.Join
     | "LocalCube" -> parseLocalCubeType relOpDetails |> PResult.map RelOpDetails.LocalCube
-    //| "LogRowScan" -> parseLogRowScanType relOpDetails |> PResult.map RelOpDetails.LogRowScan
+    | "LogRowScan" -> parseRelOpBase relOpDetails |>  PResult.bind (function r, [] -> RelOpDetails.LogRowScan r |> POk | _ , rest -> Failf "LogRowScan should not have child elements, but had %d" (List.length rest))
     | "Merge" -> parseMergeType relOpDetails |> PResult.map RelOpDetails.Merge
     | "MergeInterval" -> parseSimpleIteratorOneChildType relOpDetails |> PResult.map RelOpDetails.MergeInterval
     | "Move" -> parseMoveType relOpDetails |> PResult.map RelOpDetails.Move
     | "NestedLoops" -> parseNestedLoopsType relOpDetails |> PResult.map RelOpDetails.NestedLoops
     | "OnlineIndex" -> parseCreateIndexType relOpDetails |> PResult.map RelOpDetails.OnlineIndex
     | "Parallelism" -> parseParallelismType relOpDetails |> PResult.map RelOpDetails.Parallelism
-    //| "ParameterTableScan" -> parseParameterTableScanType relOpDetails |> PResult.map RelOpDetails.ParameterTableScan
-    //| "PrintDataflow" -> parsePrintDataflowType relOpDetails |> PResult.map RelOpDetails.PrintDataflow
+    | "ParameterTableScan" -> parseRelOpBase relOpDetails |>  PResult.bind (function r, [] -> RelOpDetails.ParameterTableScan r |> POk | _ , rest -> Failf "ParameterTableScan should not have child elements, but had %d" (List.length rest)) 
+    | "PrintDataflow" -> parseRelOpBase relOpDetails |>  PResult.bind (function r, [] -> RelOpDetails.PrintDataflow r |> POk | _ , rest -> Failf "PrintDataflow should not have child elements, but had %d" (List.length rest))
     | "Project" -> parseProjectType relOpDetails |> PResult.map RelOpDetails.Project
     | "Put" -> parsePutType relOpDetails |> PResult.map RelOpDetails.Put
     | "RemoteFetch" -> parseRemoteFetchType relOpDetails |> PResult.map RelOpDetails.RemoteFetch

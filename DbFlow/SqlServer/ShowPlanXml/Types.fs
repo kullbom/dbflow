@@ -421,15 +421,15 @@ and RelOpDetails =
     | Insert of DMLOpType
     | Join of JoinType
     | LocalCube of LocalCubeType
-    //| LogRowScan
+    | LogRowScan of RelOpBaseType
     | Merge of MergeType
     | MergeInterval of SimpleIteratorOneChildType
     | Move of MoveType
     | NestedLoops of NestedLoopsType
     | OnlineIndex of CreateIndexType
     | Parallelism of ParallelismType
-    //| ParameterTableScan
-    //| PrintDataflow
+    | ParameterTableScan of RelOpBaseType
+    | PrintDataflow of RelOpBaseType
     | Project of ProjectType
     | Put of PutType
     | RemoteFetch of RemoteFetchType
@@ -581,8 +581,9 @@ and ParallelismType = {
 }
 
 and ActivationInfoType = {
-    Type: string
     Object: ObjectType option
+    
+    Type: string
     FragmentElimination: string option
 }
 
