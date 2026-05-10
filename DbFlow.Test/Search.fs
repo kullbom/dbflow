@@ -1,4 +1,4 @@
-﻿namespace DbFlow.Tests.Units
+﻿namespace DbFlow.Tests
 
 open Xunit
 

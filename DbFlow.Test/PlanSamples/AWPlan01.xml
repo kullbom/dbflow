@@ -1,0 +1,127 @@
+﻿<ShowPlanXML xmlns="http://schemas.microsoft.com/sqlserver/2004/07/showplan" Version="1.539" Build="15.0.4382.1">
+	<BatchSequence>
+		<Batch>
+			<Statements>
+				<StmtSimple StatementText="SELECT TOP 2 * FROM [SalesLT].[Customer] WHERE [EmailAddress] = &apos;foobar&apos;&#xd;&#xa;                     OPTION (FAST 10000)" StatementId="1" StatementCompId="1" StatementType="SELECT" RetrievedFromCache="false" StatementSubTreeCost="0.00328368" StatementEstRows="1" SecurityPolicyApplied="false" StatementOptmLevel="FULL" QueryHash="0xDC4092D980EBB22D" QueryPlanHash="0x2429CDA04AC9C88B" StatementOptmEarlyAbortReason="GoodEnoughPlanFound" CardinalityEstimationModelVersion="150">
+					<StatementSetOptions QUOTED_IDENTIFIER="true" ARITHABORT="false" CONCAT_NULL_YIELDS_NULL="true" ANSI_NULLS="true" ANSI_PADDING="true" ANSI_WARNINGS="true" NUMERIC_ROUNDABORT="false"></StatementSetOptions>
+					<QueryPlan NonParallelPlanReason="NoParallelPlansInDesktopOrExpressEdition" CachedPlanSize="24" CompileTime="0" CompileCPU="0" CompileMemory="184">
+						<MemoryGrantInfo SerialRequiredMemory="0" SerialDesiredMemory="0" GrantedMemory="0" MaxUsedMemory="0"></MemoryGrantInfo>
+						<OptimizerHardwareDependentProperties EstimatedAvailableMemoryGrant="835605" EstimatedPagesCached="417802" EstimatedAvailableDegreeOfParallelism="4" MaxCompileMemory="22803016"></OptimizerHardwareDependentProperties>
+						<TraceFlags IsCompileTime="1">
+							<TraceFlag Value="8017" Scope="Global"></TraceFlag>
+						</TraceFlags>
+						<RelOp NodeId="0" PhysicalOp="Top" LogicalOp="Top" EstimateRows="1" EstimateRowsWithoutRowGoal="1" EstimateIO="0" EstimateCPU="1e-07" AvgRowSize="757" EstimatedTotalSubtreeCost="0.00328368" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+							<OutputList>
+								<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="CustomerID"></ColumnReference>
+								<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="NameStyle"></ColumnReference>
+								<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="Title"></ColumnReference>
+								<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="FirstName"></ColumnReference>
+								<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="MiddleName"></ColumnReference>
+								<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="LastName"></ColumnReference>
+								<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="Suffix"></ColumnReference>
+								<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="CompanyName"></ColumnReference>
+								<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="SalesPerson"></ColumnReference>
+								<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="EmailAddress"></ColumnReference>
+								<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="Phone"></ColumnReference>
+								<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="PasswordHash"></ColumnReference>
+								<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="PasswordSalt"></ColumnReference>
+								<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="rowguid"></ColumnReference>
+								<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="ModifiedDate"></ColumnReference>
+							</OutputList>
+							<Top RowCount="0" IsPercent="0" WithTies="0">
+								<TopExpression>
+									<ScalarOperator ScalarString="(2)">
+										<Const ConstValue="(2)"></Const>
+									</ScalarOperator>
+								</TopExpression>
+								<RelOp NodeId="1" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" EstimateRows="1" EstimatedRowsRead="1" EstimateIO="0.003125" EstimateCPU="0.0001581" AvgRowSize="757" EstimatedTotalSubtreeCost="0.0032831" TableCardinality="0" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+									<OutputList>
+										<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="CustomerID"></ColumnReference>
+										<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="NameStyle"></ColumnReference>
+										<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="Title"></ColumnReference>
+										<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="FirstName"></ColumnReference>
+										<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="MiddleName"></ColumnReference>
+										<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="LastName"></ColumnReference>
+										<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="Suffix"></ColumnReference>
+										<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="CompanyName"></ColumnReference>
+										<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="SalesPerson"></ColumnReference>
+										<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="EmailAddress"></ColumnReference>
+										<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="Phone"></ColumnReference>
+										<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="PasswordHash"></ColumnReference>
+										<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="PasswordSalt"></ColumnReference>
+										<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="rowguid"></ColumnReference>
+										<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="ModifiedDate"></ColumnReference>
+									</OutputList>
+									<IndexScan Ordered="0" ForcedIndex="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+										<DefinedValues>
+											<DefinedValue>
+												<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="CustomerID"></ColumnReference>
+											</DefinedValue>
+											<DefinedValue>
+												<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="NameStyle"></ColumnReference>
+											</DefinedValue>
+											<DefinedValue>
+												<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="Title"></ColumnReference>
+											</DefinedValue>
+											<DefinedValue>
+												<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="FirstName"></ColumnReference>
+											</DefinedValue>
+											<DefinedValue>
+												<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="MiddleName"></ColumnReference>
+											</DefinedValue>
+											<DefinedValue>
+												<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="LastName"></ColumnReference>
+											</DefinedValue>
+											<DefinedValue>
+												<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="Suffix"></ColumnReference>
+											</DefinedValue>
+											<DefinedValue>
+												<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="CompanyName"></ColumnReference>
+											</DefinedValue>
+											<DefinedValue>
+												<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="SalesPerson"></ColumnReference>
+											</DefinedValue>
+											<DefinedValue>
+												<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="EmailAddress"></ColumnReference>
+											</DefinedValue>
+											<DefinedValue>
+												<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="Phone"></ColumnReference>
+											</DefinedValue>
+											<DefinedValue>
+												<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="PasswordHash"></ColumnReference>
+											</DefinedValue>
+											<DefinedValue>
+												<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="PasswordSalt"></ColumnReference>
+											</DefinedValue>
+											<DefinedValue>
+												<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="rowguid"></ColumnReference>
+											</DefinedValue>
+											<DefinedValue>
+												<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="ModifiedDate"></ColumnReference>
+											</DefinedValue>
+										</DefinedValues>
+										<Object Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Index="[PK_Customer_CustomerID]" IndexKind="Clustered" Storage="RowStore"></Object>
+										<Predicate>
+											<ScalarOperator ScalarString="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b].[SalesLT].[Customer].[EmailAddress]=N&apos;foobar&apos;">
+												<Compare CompareOp="EQ">
+													<ScalarOperator>
+														<Identifier>
+															<ColumnReference Database="[_8e0ecbdd_3cab_449d_8ba4_a1c693f3ae0b]" Schema="[SalesLT]" Table="[Customer]" Column="EmailAddress"></ColumnReference>
+														</Identifier>
+													</ScalarOperator>
+													<ScalarOperator>
+														<Const ConstValue="N&apos;foobar&apos;"></Const>
+													</ScalarOperator>
+												</Compare>
+											</ScalarOperator>
+										</Predicate>
+									</IndexScan>
+								</RelOp>
+							</Top>
+						</RelOp>
+					</QueryPlan>
+				</StmtSimple>
+			</Statements>
+		</Batch>
+	</BatchSequence>
+</ShowPlanXML>

@@ -694,19 +694,20 @@ let generateScripts (opt : ScriptOptions) (schema : DatabaseSchema) f seed =
             |> List.fold 
                 (fun acc' x -> 
                     let (isDatabaseDefinition, script) =
-                        let (isDatabaseDefinition, priority, containsObjects, dependsOn, script) =
+                        let (isDatabaseDefinition, hardPriority, softPriority, containsObjects, dependsOn, script) =
                             match generator opt x with
-                            | DatabaseDefinition script -> true, -1, [], [], script
-                            | SchemaDefinition script -> false, 1, [],[], script
-                            | UserDefinedTypeDefinition script -> false, 2,  [],[], script
-                            | FunctionDefinitions x -> false, 3, x.Contains, x.DependsOn, x.Script
-                            | ObjectDefinitions x -> false, 4, x.Contains, x.DependsOn, x.Script
-                            | XmlSchemaCollectionDefinition script -> false, 5, [], [], script
+                            | DatabaseDefinition script -> true, -1, 0, [], [], script
+                            | SchemaDefinition script -> false, 1, 0, [],[], script
+                            | UserDefinedTypeDefinition script -> false, 2, 0, [],[], script
+                            | FunctionDefinitions x -> false, 3, 0, x.Contains, x.DependsOn, x.Script
+                            | ObjectDefinitions x -> false, 3, 1, x.Contains, x.DependsOn, x.Script
+                            | XmlSchemaCollectionDefinition script -> false, 4, 0, [], [], script
                         isDatabaseDefinition,
                         {
                             Contains = Set.ofList containsObjects
                             DependsOn = Set.ofList dependsOn
-                            Priority = priority
+                            HardPriority = hardPriority
+                            SoftPriority = softPriority
                             
                             Content  = { 
                                 Subdirectory = match subfolderName with "" -> None | s -> Some s; 

@@ -7,7 +7,7 @@ open DbFlow.SqlServer
 
 open Microsoft.Data.SqlClient
 
-type Tests () = 
+type CloneAndCopyData () = 
     [<Fact>]
     let ``Clone db`` () =
         let silentLogger = Logger.create ignore
@@ -17,36 +17,35 @@ type Tests () =
         let scriptOptions = ScriptOptions.Default 
     
         let dbFolder = __SOURCE_DIRECTORY__ + "\\Samples\\test_db\\scripts"
-        let initScript =
+        let additionalInitializationScript =
             "DECLARE @DB VARCHAR(255) = DB_NAME()
              EXEC('ALTER DATABASE [' + @DB + '] COLLATE Latin1_General_CI_AS')"
-        Helpers.withLocalDbFromScripts logger localDbOptions (Some initScript) dbFolder
+        
+        Helpers.withLocalDbFromScripts logger localDbOptions (Some additionalInitializationScript) dbFolder
             (fun testConnStr ->
                 let dbSchema =
                     use testDbConn = new SqlConnection (testConnStr)
                     testDbConn.Open ()
                     Execute.readSchema silentLogger readOptions 
-                    |> Logger.logTime logger "read schema" testDbConn 
+                    |> Logger.logTime logger "Read schema" testDbConn 
     
                 use localDb = new LocalTempDb(silentLogger, localDbOptions)
                 
-                (
+                let () =
                     use localDbConn = new SqlConnection (localDb.ConnectionString)
                     localDbConn.Open ()
                         
                     Execute.clone silentLogger scriptOptions dbSchema
-                    |> Logger.logTime logger "clone schema" localDbConn
-                )
+                    |> Logger.logTime logger "Clone schema" localDbConn
+                
 
-                (
+                let () =
                     use localDbConn = new SqlConnection (localDb.ConnectionString)
                     localDbConn.Open ()
                 
                     DbTr.nonQuery "INSERT INTO TestTablePadding (Id, Content) VALUES ('012345', 'Content 5')" []
                     |> DbTr.commit_ localDbConn
-
-                )
-                )
+                ())
         ()
         
     [<Fact>]

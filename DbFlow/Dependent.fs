@@ -6,18 +6,22 @@ type Dependent<'identity, 'a when 'identity : comparison> = {
     Contains : 'identity Set  
     DependsOn : 'identity Set
 
-    Priority : int
+    // HardPriority is prioritized above the dependencies
+    HardPriority : int
+    // SoftPriority is prioritized below the dependencies (a kind of default priority if there are no dependencies)
+    SoftPriority : int
 }
 
 module Dependent =
-    let create content contains_objects depends_on priority = 
+    let create content contains_objects depends_on hardPriority softPriority = 
         {
             Content = content  
             
             Contains = contains_objects |> Set.ofList
             DependsOn = depends_on |> Set.ofList
 
-            Priority = priority
+            HardPriority = hardPriority
+            SoftPriority = softPriority
         }
 
     // Objects needs to be created in correct order. 
@@ -67,8 +71,8 @@ module Dependent =
     
     let resolveOrder' idKey dependants =
         dependants
-        |> List.groupBy (fun s -> s.Priority)
-        |> List.map (fun (prio, ss) -> prio, resolveOrder'' idKey ss)
+        |> List.groupBy (fun s -> s.HardPriority)
+        |> List.map (fun (prio, ss) -> prio, resolveOrder'' idKey (ss |> List.sortBy (fun s -> s.SoftPriority)))
         |> List.sortBy (fun (prio,_) -> prio)
         |> List.collect (fun (_prio, ss) -> ss)
     

@@ -59,15 +59,15 @@ module private LocalTempDb =
 
 /// Creates a local temporary (random guid name) database
 type LocalTempDb(logger, options : LocalDbOptions) =
-    let dbName = "_" + Guid.NewGuid().ToString().Replace('-', '_')
+    let dbName = "dbflow_" + Guid.NewGuid().ToString().Replace('-', '_')
     
     let cs initialCatalog =
         options.ConnectionString initialCatalog
 
     let path = Path.Combine(Directory.GetCurrentDirectory(), "Data")
     let di = DirectoryInfo(path)
-    let dbFile = Path.Combine(di.FullName, $"TestDb_{dbName}.mdf")
-    let logFile = Path.Combine(di.FullName, $"TestDb_{dbName}_log.ldf")
+    let dbFile = Path.Combine(di.FullName, $"{dbName}.mdf")
+    let logFile = Path.Combine(di.FullName, $"{dbName}_log.ldf")
 
     let connectionString = cs dbName
 
