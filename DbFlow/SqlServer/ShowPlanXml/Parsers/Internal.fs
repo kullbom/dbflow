@@ -2577,7 +2577,7 @@ let rec parseStmtSimple (stmtSimple : Linq.XElement) : Result<StmtSimpleType, _>
 and parseFunctionType (functionType : Linq.XElement) : Result<FunctionType, _> =
     Result.builder {
         let xmlElements = xElementsAll functionType
-        let! (statements, rest) = xElementMany (nameGuard ("Statements", ns) parseStmtBlockType) xmlElements
+        let! (statements, rest) = xElementReq (nameGuard ("Statements", ns) parseStatements) xmlElements
         do! ensureEmpty rest
 
         let! procName = xAttrReq "ProcName" functionType

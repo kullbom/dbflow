@@ -1,0 +1,188 @@
+<ShowPlanXML xmlns="http://schemas.microsoft.com/sqlserver/2004/07/showplan" Version="1.481" Build="14.0.3520.4">
+	<BatchSequence>
+		<Batch>
+			<Statements>
+				<StmtSimple StatementText="DECLARE @clientNr Numeric(7,0) = 0&#xa;" StatementId="1" StatementCompId="1" StatementType="ASSIGN" RetrievedFromCache="false"></StmtSimple>
+				<StmtSimple StatementText="DECLARE @contractNr Numeric(9,0) = 0&#xa;" StatementId="2" StatementCompId="2" StatementType="ASSIGN" RetrievedFromCache="false"></StmtSimple>
+				<StmtSimple StatementText="DECLARE @time Datetime = &apos;1900-01-01 00:00:00&apos;&#xa;&#xa;" StatementId="3" StatementCompId="3" StatementType="ASSIGN" RetrievedFromCache="false"></StmtSimple>
+				<StmtSimple StatementText="EXEC [dbo].[ContractContractTypeGet] @clientNr, @contractNr, @time" StatementId="4" StatementCompId="4" StatementType="EXECUTE PROC" RetrievedFromCache="false">
+					<StoredProc ProcName="dbo.ContractContractTypeGet">
+						<Statements>
+							<StmtSimple StatementText="&#xd;&#xa;&#xd;&#xa;CREATE PROCEDURE [ContractContractTypeGet]&#xd;&#xa;&#x9;@clientNr [numeric](7,0),   -- NULL&#xd;&#xa;&#x9;@contractNr [numeric](9,0), -- NULL &#xd;&#xa;&#x9;@time datetime              -- NULL &#xd;&#xa;AS&#xd;&#xa;BEGIN&#xd;&#xa;&#x9;SET NOCOUNT ON;&#xd;&#xa;&#xd;&#xa;&#x9;" StatementId="5" StatementCompId="6" StatementType="SET ON/OFF" RetrievedFromCache="false"></StmtSimple>
+							<StmtCond StatementText="IF @time IS NULL" StatementId="6" StatementCompId="7" StatementType="COND" RetrievedFromCache="false">
+								<Condition></Condition>
+								<Then>
+									<Statements>
+										<StmtSimple StatementText=" &#xd;&#xa;&#x9;BEGIN&#xd;&#xa;&#x9;&#x9; SET @time = getdate()&#xd;&#xa;&#x9;" StatementId="7" StatementCompId="8" StatementType="ASSIGN" RetrievedFromCache="false"></StmtSimple>
+									</Statements>
+								</Then>
+							</StmtCond>
+							<StmtSimple StatementText="END &#xd;&#xa;&#xd;&#xa;    SELECT ClientNr, ContractNr, ContractTypeCode, StartDate, EndDate &#xd;&#xa;&#x9;FROM [ContractContractType]&#xd;&#xa;&#x9;WHERE (@clientNr IS NULL &#xd;&#xa;&#x9;       OR (ClientNr = @clientNr AND ContractNr = @contractNr))&#xd;&#xa;&#x9;  AND StartDate &lt;= @time &#xd;&#xa;&#x9;  AND (EndDate IS NULL OR EndDate &gt; @time)" StatementId="8" StatementCompId="10" StatementType="SELECT" RetrievedFromCache="false" StatementSubTreeCost="6.94895" StatementEstRows="176378" SecurityPolicyApplied="false" StatementOptmLevel="FULL" QueryHash="0x7FFDE71B14066001" QueryPlanHash="0x4AF2ADAB2B726B9B" CardinalityEstimationModelVersion="140">
+								<StatementSetOptions QUOTED_IDENTIFIER="true" ARITHABORT="false" CONCAT_NULL_YIELDS_NULL="true" ANSI_NULLS="true" ANSI_PADDING="true" ANSI_WARNINGS="true" NUMERIC_ROUNDABORT="false"></StatementSetOptions>
+								<QueryPlan NonParallelPlanReason="MaxDOPSetToOne" CachedPlanSize="24" CompileTime="19" CompileCPU="3" CompileMemory="376">
+									<MissingIndexes>
+										<MissingIndexGroup Impact="81.0879">
+											<MissingIndex Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]">
+												<ColumnGroup Usage="INEQUALITY">
+													<Column Name="[StartDate]" ColumnId="3"></Column>
+													<Column Name="[EndDate]" ColumnId="4"></Column>
+												</ColumnGroup>
+												<ColumnGroup Usage="INCLUDE">
+													<Column Name="[ContractTypeCode]" ColumnId="6"></Column>
+												</ColumnGroup>
+											</MissingIndex>
+										</MissingIndexGroup>
+									</MissingIndexes>
+									<MemoryGrantInfo SerialRequiredMemory="0" SerialDesiredMemory="0"></MemoryGrantInfo>
+									<OptimizerHardwareDependentProperties EstimatedAvailableMemoryGrant="1048576" EstimatedPagesCached="262144" EstimatedAvailableDegreeOfParallelism="1" MaxCompileMemory="25140808"></OptimizerHardwareDependentProperties>
+									<OptimizerStatsUsage>
+										<StatisticsInfo LastUpdate="2026-05-08T04:37:11.78" ModificationCount="0" SamplingPercent="11.988" Statistics="[_WA_Sys_00000002_7B1CF1D7]" Table="[ContractContractType]" Schema="[dbo]" Database="[D-SBS-Fenix]"></StatisticsInfo>
+										<StatisticsInfo LastUpdate="2026-05-08T04:37:11.09" ModificationCount="0" SamplingPercent="11.988" Statistics="[PK_ContractContractType]" Table="[ContractContractType]" Schema="[dbo]" Database="[D-SBS-Fenix]"></StatisticsInfo>
+										<StatisticsInfo LastUpdate="2026-05-08T04:37:12.50" ModificationCount="0" SamplingPercent="12.4072" Statistics="[_WA_Sys_00000006_7B1CF1D7]" Table="[ContractContractType]" Schema="[dbo]" Database="[D-SBS-Fenix]"></StatisticsInfo>
+										<StatisticsInfo LastUpdate="2026-05-08T04:37:11.67" ModificationCount="0" SamplingPercent="12.1271" Statistics="[IX_ContractContractType_UniqueEndDate]" Table="[ContractContractType]" Schema="[dbo]" Database="[D-SBS-Fenix]"></StatisticsInfo>
+										<StatisticsInfo LastUpdate="2026-05-08T04:37:11.32" ModificationCount="0" SamplingPercent="12.4072" Statistics="[IX_ContractContractType_ByType]" Table="[ContractContractType]" Schema="[dbo]" Database="[D-SBS-Fenix]"></StatisticsInfo>
+										<StatisticsInfo LastUpdate="2026-05-08T04:37:12.10" ModificationCount="0" SamplingPercent="12.1271" Statistics="[_WA_Sys_00000004_7B1CF1D7]" Table="[ContractContractType]" Schema="[dbo]" Database="[D-SBS-Fenix]"></StatisticsInfo>
+										<StatisticsInfo LastUpdate="2026-05-08T04:37:11.48" ModificationCount="0" SamplingPercent="11.988" Statistics="[IX_ContractContractType_Unique_PrevEndDate]" Table="[ContractContractType]" Schema="[dbo]" Database="[D-SBS-Fenix]"></StatisticsInfo>
+									</OptimizerStatsUsage>
+									<RelOp NodeId="0" PhysicalOp="Index Scan" LogicalOp="Index Scan" EstimateRows="176378" EstimatedRowsRead="1.04757e+006" EstimateIO="5.79646" EstimateCPU="1.15249" AvgRowSize="46" EstimatedTotalSubtreeCost="6.94895" TableCardinality="1.04757e+006" Parallel="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row">
+										<OutputList>
+											<ColumnReference Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Column="ClientNr"></ColumnReference>
+											<ColumnReference Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Column="ContractNr"></ColumnReference>
+											<ColumnReference Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Column="StartDate"></ColumnReference>
+											<ColumnReference Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Column="EndDate"></ColumnReference>
+											<ColumnReference Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Column="ContractTypeCode"></ColumnReference>
+										</OutputList>
+										<IndexScan Ordered="0" ForcedIndex="0" ForceSeek="0" ForceScan="0" NoExpandHint="0" Storage="RowStore">
+											<DefinedValues>
+												<DefinedValue>
+													<ColumnReference Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Column="ClientNr"></ColumnReference>
+												</DefinedValue>
+												<DefinedValue>
+													<ColumnReference Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Column="ContractNr"></ColumnReference>
+												</DefinedValue>
+												<DefinedValue>
+													<ColumnReference Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Column="StartDate"></ColumnReference>
+												</DefinedValue>
+												<DefinedValue>
+													<ColumnReference Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Column="EndDate"></ColumnReference>
+												</DefinedValue>
+												<DefinedValue>
+													<ColumnReference Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Column="ContractTypeCode"></ColumnReference>
+												</DefinedValue>
+											</DefinedValues>
+											<Object Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Index="[IX_ContractContractType_ByType]" IndexKind="NonClustered" Storage="RowStore"></Object>
+											<Predicate>
+												<ScalarOperator ScalarString="[D-SBS-Fenix].[dbo].[ContractContractType].[StartDate]&lt;=[@time] AND ([D-SBS-Fenix].[dbo].[ContractContractType].[EndDate] IS NULL OR [D-SBS-Fenix].[dbo].[ContractContractType].[EndDate]&gt;[@time]) AND ([@clientNr] IS NULL OR [D-SBS-Fenix].[dbo].[ContractContractType].[ClientNr]=[@clientNr] AND [D-SBS-Fenix].[dbo].[ContractContractType].[ContractNr]=[@contractNr])">
+													<Logical Operation="AND">
+														<ScalarOperator>
+															<Compare CompareOp="LE">
+																<ScalarOperator>
+																	<Identifier>
+																		<ColumnReference Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Column="StartDate"></ColumnReference>
+																	</Identifier>
+																</ScalarOperator>
+																<ScalarOperator>
+																	<Identifier>
+																		<ColumnReference Column="@time"></ColumnReference>
+																	</Identifier>
+																</ScalarOperator>
+															</Compare>
+														</ScalarOperator>
+														<ScalarOperator>
+															<Logical Operation="OR">
+																<ScalarOperator>
+																	<Compare CompareOp="IS">
+																		<ScalarOperator>
+																			<Identifier>
+																				<ColumnReference Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Column="EndDate"></ColumnReference>
+																			</Identifier>
+																		</ScalarOperator>
+																		<ScalarOperator>
+																			<Const ConstValue="NULL"></Const>
+																		</ScalarOperator>
+																	</Compare>
+																</ScalarOperator>
+																<ScalarOperator>
+																	<Compare CompareOp="GT">
+																		<ScalarOperator>
+																			<Identifier>
+																				<ColumnReference Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Column="EndDate"></ColumnReference>
+																			</Identifier>
+																		</ScalarOperator>
+																		<ScalarOperator>
+																			<Identifier>
+																				<ColumnReference Column="@time"></ColumnReference>
+																			</Identifier>
+																		</ScalarOperator>
+																	</Compare>
+																</ScalarOperator>
+															</Logical>
+														</ScalarOperator>
+														<ScalarOperator>
+															<Logical Operation="OR">
+																<ScalarOperator>
+																	<Identifier>
+																		<ColumnReference Column="ConstExpr1002">
+																			<ScalarOperator>
+																				<Compare CompareOp="IS">
+																					<ScalarOperator>
+																						<Identifier>
+																							<ColumnReference Column="@clientNr"></ColumnReference>
+																						</Identifier>
+																					</ScalarOperator>
+																					<ScalarOperator>
+																						<Const ConstValue="NULL"></Const>
+																					</ScalarOperator>
+																				</Compare>
+																			</ScalarOperator>
+																		</ColumnReference>
+																	</Identifier>
+																</ScalarOperator>
+																<ScalarOperator>
+																	<Logical Operation="AND">
+																		<ScalarOperator>
+																			<Compare CompareOp="EQ">
+																				<ScalarOperator>
+																					<Identifier>
+																						<ColumnReference Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Column="ClientNr"></ColumnReference>
+																					</Identifier>
+																				</ScalarOperator>
+																				<ScalarOperator>
+																					<Identifier>
+																						<ColumnReference Column="@clientNr"></ColumnReference>
+																					</Identifier>
+																				</ScalarOperator>
+																			</Compare>
+																		</ScalarOperator>
+																		<ScalarOperator>
+																			<Compare CompareOp="EQ">
+																				<ScalarOperator>
+																					<Identifier>
+																						<ColumnReference Database="[D-SBS-Fenix]" Schema="[dbo]" Table="[ContractContractType]" Column="ContractNr"></ColumnReference>
+																					</Identifier>
+																				</ScalarOperator>
+																				<ScalarOperator>
+																					<Identifier>
+																						<ColumnReference Column="@contractNr"></ColumnReference>
+																					</Identifier>
+																				</ScalarOperator>
+																			</Compare>
+																		</ScalarOperator>
+																	</Logical>
+																</ScalarOperator>
+															</Logical>
+														</ScalarOperator>
+													</Logical>
+												</ScalarOperator>
+											</Predicate>
+										</IndexScan>
+									</RelOp>
+								</QueryPlan>
+							</StmtSimple>
+						</Statements>
+					</StoredProc>
+				</StmtSimple>
+			</Statements>
+		</Batch>
+	</BatchSequence>
+</ShowPlanXML>

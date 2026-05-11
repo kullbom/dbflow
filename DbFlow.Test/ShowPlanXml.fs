@@ -177,9 +177,9 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
 
         ()
 
-    //[<Fact>]
+    [<Fact>]
     let ``Parse specific local sample plan`` () =
-        parseSamplePlans localSamplesFolder "Xyz_Plan00081.xml"
+        parseSamplePlans localSamplesFolder "Test_Plan001.xml"
 
     [<Fact>]
     let ``Parse all local sample plans`` () =
