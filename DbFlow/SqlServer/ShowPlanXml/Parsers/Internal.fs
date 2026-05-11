@@ -9,6 +9,19 @@ open DbFlow.SqlServer.Experimental.ShowPlanXml.Parsers.Primitives
 let ns = "http://schemas.microsoft.com/sqlserver/2004/07/showplan"
 
 // ========================================
+// Known but undocumented additions to what is specified in the latest xsd:
+//
+// - ... -> QueryPlan -> CardinalityFeedback
+// 
+// ========================================
+
+let parseUndocumentedElement (e : Linq.XElement) : Result<unit, _> =
+    // Some elements in the actual XML plans are not documented - in those cases the following "parser" is used to simply ignore the elements 
+    Ok ()
+
+
+
+// ========================================
 // Simple parsers - no circular dependencies
 // ========================================
 
@@ -2418,6 +2431,8 @@ let parseQueryPlanType (queryPlan : Linq.XElement) : Result<QueryPlanType, _> =
         let! (optimizerHardwareDependentProperties, rest) = 
             xElement (nameGuard ("OptimizerHardwareDependentProperties", ns) parseOptimizerHardwareDependentProperties) rest
         let! (optimizerStatsUsage, rest) = xElement (nameGuard ("OptimizerStatsUsage", ns) parseOptimizerStatsUsage) rest
+        // "CardinalityFeedback" is not documented by Microsoft and is not part of the official XSD
+        let! (_cardinalityFeedback, rest) = xElement (nameGuard ("CardinalityFeedback", ns) parseUndocumentedElement) rest
         let! (traceFlags, rest) = xElementMany (nameGuard ("TraceFlags", ns) parseTraceFlagsType) rest
         let! (waitStats, rest) = xElement (nameGuard ("WaitStats", ns) parseWaitStatListType) rest
         let! (queryTimeStats, rest) = xElement (nameGuard ("QueryTimeStats", ns) parseQueryTimeStatsType) rest

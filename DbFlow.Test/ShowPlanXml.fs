@@ -21,7 +21,7 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
             testDbConn.Open ()
                
             DbTr.readList 
-                "SELECT TOP 10000 
+                "SELECT TOP 100000 
             		q.query_id,
             	    qt.query_sql_text AS QueryText,
             	    p.plan_id,
@@ -36,7 +36,7 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
                     planId, planXml)
             |> DbTr.commit_ testDbConn
         for (planId, planXml) in result do
-            let fileName = sprintf "%sXyzPlan%05d.xml" localSamplesFolder planId
+            let fileName = sprintf "%sXyz_Plan%05d.xml" localSamplesFolder planId
             System.IO.File.WriteAllText (fileName, planXml)
             output "Wrote plan %d to file %s" planId fileName
         ()
@@ -129,11 +129,11 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
                 )
 
 
-    let parseSamplePlans samplesFolder =
+    let parseSamplePlans samplesFolder filter =
         let sw = System.Diagnostics.Stopwatch ()
         sw.Start ()
         let files = 
-            System.IO.Directory.GetFiles(samplesFolder, "*.xml") |> List.ofArray
+            System.IO.Directory.GetFiles(samplesFolder, filter) |> List.ofArray
             |> List.map (fun f -> f, System.IO.File.ReadAllText f)
         output "%d samples found" files.Length
         let timeReadDir = sw.ElapsedMilliseconds 
@@ -177,11 +177,15 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
 
         ()
 
+    //[<Fact>]
+    let ``Parse specific local sample plan`` () =
+        parseSamplePlans localSamplesFolder "Xyz_Plan00081.xml"
+
     [<Fact>]
     let ``Parse all local sample plans`` () =
-        parseSamplePlans localSamplesFolder
+        parseSamplePlans localSamplesFolder "*.xml"
 
     [<Fact>]
     let ``Parse all regression sample plans`` () =
         let regressionSamplePlans = __SOURCE_DIRECTORY__ + "\\..\\..\dbflow-regression\\ShowPlanXmlSamples\\"
-        parseSamplePlans localSamplesFolder
+        parseSamplePlans localSamplesFolder "*.xml"

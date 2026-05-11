@@ -5,7 +5,7 @@
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>DbFlow</Title>
-		<Version>0.11.0</Version>
+		<Version>0.11.1</Version>
 		<Copyright>2025-2026 Johan Kullbom</Copyright>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageTags>.net;f#;sql;mssqlserver</PackageTags>
@@ -15,9 +15,7 @@
 		<RepositoryType>git</RepositoryType>
 		<Description>DbFlow is a library that helps with schema oriented database tasks</Description>
 		<PackageReleaseNotes>
-			- Added experimental support for ShowPlanXml and "QueryMeta" to analyze query plans and extract metadata.
-			- Fixed a bug in the schema comparison logic that caused incorrect results in some cases.
-			- Updated dependencies to the latest versions, including Microsoft.Data.SqlClient 7.0.1 and FSharp.Core 10.1.203.
+			- Added support for undocumented element "CardinalityFeedback" in ShowPlan XML
 		</PackageReleaseNotes>
 	</PropertyGroup>
 

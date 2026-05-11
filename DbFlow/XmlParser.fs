@@ -48,9 +48,9 @@ let nameGuard' xname parser (e : System.Xml.Linq.XElement) =
     then 
         match parser e with 
         | Ok x -> Ok x
-        | Error e -> 
-            failwithf "Error parsing element %A: %s" xname e   
-            Error e
+        | Error m -> 
+            failwithf "Error parsing element %A: %s" xname m   
+            Error m
     else Errorf "Expected element %A but found %A" xname e.Name
 
 let inline nameGuard name parser (e : System.Xml.Linq.XElement) =
