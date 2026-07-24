@@ -104,7 +104,7 @@ type XmlIndexSecondaryType = { PrimaryIndexName : string; SecondaryType : string
 
 type Index = {
     Parent : OBJECT // The object to which this index belongs
-    Object : OBJECT option
+    Object : OBJECT option // Is None when there is no key constraint for the index 
 
     Name : string option
     IndexId : int

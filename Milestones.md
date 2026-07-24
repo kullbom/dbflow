@@ -120,6 +120,10 @@
 - [x] BUGFIX: The comparision of schemas did not handle procedures with the same name but in different schemas.
 
 
+## Version 0.12.0 - 2026-07-24
+
+- [x] Added option to skip schema AUTHORIZATION in scripts
+
 ## ...
 
 - [ ] Fix async problem with System.IO.Directory.Delete. Sometimes the test fails. Use some kind of "global locking" or similar to avoid this problem.
