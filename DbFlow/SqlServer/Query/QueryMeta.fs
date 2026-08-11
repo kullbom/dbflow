@@ -94,7 +94,7 @@ module QueryMeta =
             readerSP 
                 "sys.sp_describe_undeclared_parameters" 
                 [
-                    "tsql", sqlQuery //(NCHAR,forSql)
+                    ("tsql", sqlQuery) //(NCHAR,forSql)
                 ]
                 (fun acc r -> 
                     let dataType =

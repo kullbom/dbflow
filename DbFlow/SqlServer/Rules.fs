@@ -1,5 +1,7 @@
 ﻿namespace DbFlow.SqlServer
 
+open DbFlow
+
 type ColumnKey = { schema : string; parent : string ; name : string }
 type ObjectKey = { schema : string; name : string }
 
@@ -63,8 +65,8 @@ module Rule =
                     |> function 
                         | [] -> Ok () 
                         | errors -> 
-                            let errStr = System.String.Join(", ", errors |> List.toArray) 
-                            $"{errStr}" |> Error)
+                            errors |> List.toArray |> Array.joinBy ", " id
+                            |> Error)
         }
 
     let ``Postfix datetime with 'Utc'`` exclude = 
@@ -86,8 +88,8 @@ module Rule =
                     |> function 
                         | [] -> Ok () 
                         | errors -> 
-                            let errStr = System.String.Join(", ", errors |> List.toArray) 
-                            $"{errStr}" |> Error)
+                            errors |> List.toArray |> Array.joinBy ", " id
+                            |> Error)
         }
 
     let ``No ansi padding OFF - THIS IS PROBABLY NOT HOW TO DO IT...`` exclude = 
@@ -106,11 +108,48 @@ module Rule =
                     |> function 
                         | [] -> Ok () 
                         | errors -> 
-                            let errStr = System.String.Join(", ", errors |> List.toArray) 
-                            $"{errStr}" |> Error)
+                            errors |> List.toArray |> Array.joinBy ", " id
+                            |> Error)
         }
 
-    // TODO: Add rule(s?) to disallow system named contraints, keys and indexes ...
+    let ``No system named objects`` (exclude : RuleExclusion) =
+        { 
+            Title = "No system named objects"
+            Description = "Using system named objects makes it hard to adjust or remove them later on."
+            Reference = None
+            CheckRule = 
+                (fun db ->
+                    let addObject (o : Schema.OBJECT) acc =
+                        let oKey = { schema = o.Schema.Name; name = o.Name.[0..o.Name.LastIndexOf "_"] }
+                        if Set.contains oKey exclude.Objects
+                        then acc
+                        else Schema.OBJECT.fullName o :: acc
+                    let addIndex (i : Schema.Index) acc =
+                        match i.Object with
+                        | Some o -> addObject o acc
+                        | None -> 
+                            match i.Name with
+                            | Some n -> n :: acc
+                            | None -> $"Index {i.IndexId} of {Schema.OBJECT.fullName i.Parent}" :: acc
+                        
+                    db.Tables 
+                    |> List.fold 
+                        (fun acc0 t -> 
+                            let acc1 =
+                                t.DefaultConstraints |> Array.fold (fun acc' dc -> if dc.IsSystemNamed then addObject dc.Object acc' else acc') acc0
+                            let acc2 =
+                                t.CheckConstraints |> Array.fold (fun acc' cc -> if cc.IsSystemNamed then addObject cc.Object acc' else acc') acc1
+                            let acc3 =
+                                t.ForeignKeys |> Array.fold (fun acc' fk -> if fk.IsSystemNamed then addObject fk.Object acc' else acc') acc2
+                            t.Indexes 
+                            |> Array.fold (fun acc' i -> if i.IsSystemNamed then addIndex i acc' else acc') acc3)
+                        []
+                    |> function
+                        | [] -> Ok ()
+                        | systemNamedObjects -> 
+                            systemNamedObjects |> List.toArray |> Array.joinBy ", " id
+                            |> Error)
+            }
 
     let ALL (exclusions : RuleExclusion) =
         let exclusions' = { exclusions with Objects = Set.add { schema = "dbo"; name = "SchemaVersions" } exclusions.Objects }
@@ -118,4 +157,5 @@ module Rule =
             ``DATETIME2 - not DATETIME`` exclusions'
             ``Postfix datetime with 'Utc'`` exclusions'
             //``No ansi padding OFF`` exclusions'
+            ``No system named objects`` exclusions'
         ]

@@ -54,7 +54,7 @@ module private LocalTempDb =
 
                 DEALLOCATE  KillCursor
             """
-            ["@dbname", dbName]
+            [("@dbname", dbName)]
 
 
 /// Creates a local temporary (random guid name) database

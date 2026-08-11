@@ -27,6 +27,7 @@ type ReadOptions = {
 type ScriptOptions = {
     SkipCompatibilityLevel : bool
     SkipUnsupportedExtendedProperties : bool
+    SkipSchemaAuthorization : bool
     TypenameFormatter : string -> string
 }
     with 
@@ -34,7 +35,8 @@ type ScriptOptions = {
         static member Default = 
                 { 
                     SkipCompatibilityLevel = false; 
-                    SkipUnsupportedExtendedProperties = false; 
+                    SkipUnsupportedExtendedProperties = false;
+                    SkipSchemaAuthorization = false;
                     TypenameFormatter = ScriptOptions.defaultTypenameFormatter 
                 }
 

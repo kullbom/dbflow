@@ -66,7 +66,8 @@ type ``Test suite`` () =
         let localDbOptions = LocalDbOptions.Default
         let readOptions = { ReadOptions.Default with CheckReferencesOnLoad = true; }
         let scriptOptions = { ScriptOptions.Default with SkipCompatibilityLevel = true; }
-        Common.fullTestSuite logger localDbOptions readOptions scriptOptions (Rule.ALL RuleExclusion.none) samplesFolder db
+        let exclude = ["dbo.UQ__TestTabl__"; "dbo.UQ__TestTabl__"; "dbo.PK__TestTabl__"; "dbo.PK__TestTabl__"; "dbo.DF__TestTable__ColWi__"; "dbo.DF__TestTable__ColWi__"; "dbo.PK__TableB__"; "dbo.PK__TableA__"]
+        Common.fullTestSuite logger localDbOptions readOptions scriptOptions (Rule.ALL (RuleExclusion.create exclude)) samplesFolder db
 
     // AdventureWorks in different versions - the scripts are modified to be compatible with DbUp
     // source: https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure?view=sql-server-ver17&tabs=ssms
@@ -74,7 +75,7 @@ type ``Test suite`` () =
     [<Theory>]
     [<InlineData("2008r2-lt")>]
     [<InlineData("2012-oltp-lt")>]
-    [<InlineData("2014-2022")>]
+    [<InlineData("2014-2022")>] // THIS IS KNOWN TO FAIL 2026-07-24 - BECAUSE OF LACKING SUPPORT FOR XML SCHEMAS
     member x.AdventureWorks (ver : string) =
         let localDbOptions = LocalDbOptions.Default
         let readOptions = { ReadOptions.Default with CheckReferencesOnLoad = false; }

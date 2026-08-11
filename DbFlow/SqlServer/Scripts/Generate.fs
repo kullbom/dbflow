@@ -80,13 +80,13 @@ module XProperties =
             (true, sc)
         |> snd
     
-    let database (opt : ScriptOptions) xProperties = collectXProps opt xProperties ["NULL", "NULL";]
+    let database (opt : ScriptOptions) xProperties = collectXProps opt xProperties [("NULL", "NULL")]
     
     let xmlSchemaCollection (opt : ScriptOptions) (xmlSchema : XmlSchemaCollection) =
         collectXProps opt xmlSchema.XProperties 
-            ["N'SCHEMA'", $"[{xmlSchema.Schema.Name}]"; "N'XML SCHEMA COLLECTION'", $"[{xmlSchema.Name}]";]
+            ["N'SCHEMA'", $"[{xmlSchema.Schema.Name}]"; "N'XML SCHEMA COLLECTION'", $"[{xmlSchema.Name}]"]
 
-    let schema (opt : ScriptOptions) (s : Schema) = collectXProps opt s.XProperties ["N'SCHEMA'", $"[{s.Name}]";]
+    let schema (opt : ScriptOptions) (s : Schema) = collectXProps opt s.XProperties [("N'SCHEMA'", $"[{s.Name}]")]
     
     let procedure (opt : ScriptOptions) (p : Procedure) =
         let pType =
@@ -245,9 +245,9 @@ let generateSettingsScript (opt : ScriptOptions) (schema : DatabaseSchema) =
 
 let generateSchemaScript (opt : ScriptOptions) (schema : Schema) =
     ScriptContent.empty
-    |>+ match schema.PrincipalName with 
-        | Some principalName -> $"CREATE SCHEMA [{schema.Name}] AUTHORIZATION [{principalName}]" 
-        | None -> $"CREATE SCHEMA [{schema.Name}]"
+    |>+ match opt.SkipSchemaAuthorization, schema.PrincipalName with 
+        | false, Some principalName -> $"CREATE SCHEMA [{schema.Name}] AUTHORIZATION [{principalName}]" 
+        | _ -> $"CREATE SCHEMA [{schema.Name}]"
     |>+ "GO"
 
     |> XProperties.schema opt schema
