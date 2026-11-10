@@ -15,7 +15,9 @@
 		<RepositoryType>git</RepositoryType>
 		<Description>DbFlow is a library that helps with schema oriented database tasks</Description>
 		<PackageReleaseNotes>
-			- Added option to skip schema AUTHORIZATION in scripts
+			- Add support for fetching "text plans" (QueryMeta.Sys.estimatedTextPlan - "SET SHOWPLAN_TEXT ON")
+			- Add support for fetching "full plans" (QueryMeta.Sys.estimatedPlan - "SET SHOWPLAN_ALL ON")
+			- Update vulnerabilities in dependencies (NuGet packages)
 		</PackageReleaseNotes>
 	</PropertyGroup>
 
