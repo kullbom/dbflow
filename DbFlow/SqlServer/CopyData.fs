@@ -112,6 +112,7 @@ module Internal =
                     $"SELECT {allColumnsStr}
                       FROM #{tempTableName} keys
                       INNER JOIN {sourceTableName} source ON {joinCondition}"
+                    System.Data.CommandBehavior.Default
                     System.Data.CommandType.Text
                     []
                     (fun dataReader ->            

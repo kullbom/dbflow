@@ -59,7 +59,7 @@ module Helpers =
             let fileContent0 = System.IO.File.ReadAllText (System.IO.Path.Combine(dir0, file))
             let fileContent1 = System.IO.File.ReadAllText (System.IO.Path.Combine(dir1, file))
             match dirName with
-            // The order of constraints and keys does not seems to be deterministic
+            // The order of constraints and keys does not seem to be deterministic
             | "check_constraints"
             | "foreign_keys"
             | "defaults" ->
@@ -70,7 +70,7 @@ module Helpers =
                 then Assert.Fail $"The content of {dirName}\\{file} is not the same"
 
             | "tables" ->
-                // In table definitions the key order does not seems to be deterministic
+                // In table definitions the key order does not seem to be deterministic
                 let (content0, inlineKeys0, standAloneKeys0, doc0) = separateTableScript fileContent0    
                 let (content1, inlineKeys1, standAloneKeys1, doc1) = separateTableScript fileContent1
 
@@ -118,14 +118,14 @@ module Helpers =
             compareScriptFolder logger dir subdir0 subdir1
             
     
-    let withLocalDb logger options f =
+    let useLocalDb logger options f =
         use localDb = new SqlServer.LocalTempDb(logger, options)
         let localDbConnectionString = localDb.ConnectionString
         Logger.infoWithTime $"New local db: {localDbConnectionString}" logger
         f localDbConnectionString
 
-    let withLocalDbFromScripts logger options additionalInitializationScript scriptFolder f =
-        withLocalDb logger options
+    let useLocalDbFromScripts logger options additionalInitializationScript scriptFolder f =
+        useLocalDb logger options
             (fun connectionStr ->
                 match additionalInitializationScript with
                 | None -> ()
@@ -134,8 +134,55 @@ module Helpers =
                     dbConn.Open ()
                     DbTr.nonQuery s [] |> DbTr.exe dbConn
                     SqlConnection.ClearPool dbConn
-                Execute.performDbUpgrade logger connectionStr scriptFolder
+                
+                let scripts = 
+                    Execute.collectScriptsFromFolder 
+                    |> Logger.logTime logger "Upgrade - Collect scripts in folder" scriptFolder
+
+                Execute.performDbUpgrade logger connectionStr scripts
 
                 f connectionStr)
+
+    let useSchemaSourceFromFolderScripts logger options (scriptFolder : string) f =
+        let dbName = "dbflow_sc_" + LocalDb.getDbHash [scriptFolder]
+        
+        let scripts = 
+            Execute.collectScriptsFromFolder 
+            |> Logger.logTime logger "Upgrade - Collect scripts in folder" scriptFolder
+
+        let scriptHash = LocalDb.getDbHash scripts
+
+        Logger.infoWithTime $"Using schema cache db: {dbName} with hash: {scriptHash}" logger
+
+        if options.UseLocalSchemaCache
+        then
+            match LocalDb.getDb dbName options with
+            | Some db when db.SchemaVersionHash = Some scriptHash ->
+                Logger.infoWithTime $"Database {dbName} exists and is up to date" logger
+                f (options.ConnectionString db.DBName)
+            | Some db ->
+                Logger.infoWithTime $"Database {dbName} exists but is not up to date" logger
+                LocalDb.killDb logger db
+                let db = LocalDb.createDb logger dbName options
+                Execute.performDbUpgrade logger (options.ConnectionString db.DBName) scripts
+                (use conn = new SqlConnection(options.ConnectionString db.DBName)
+                 conn.Open ()
+                 LocalDb.setDatabaseExtendedProperty "DbFlow_SchemaVersionHash" scriptHash
+                 |> DbTr.exe conn)
+                f (options.ConnectionString db.DBName)
+            | None ->
+                let db = LocalDb.createDb logger dbName options
+                Execute.performDbUpgrade logger (options.ConnectionString db.DBName) scripts
+                (use conn = new SqlConnection(options.ConnectionString db.DBName)
+                 conn.Open ()
+                 LocalDb.setDatabaseExtendedProperty "DbFlow_SchemaVersionHash" scriptHash
+                 |> DbTr.exe conn)            
+                f (options.ConnectionString db.DBName)
+        else
+            Logger.infoWithTime $"Using temporary local db: {dbName}" logger
+            useLocalDb logger options
+                (fun connectionStr ->
+                    Execute.performDbUpgrade logger connectionStr scripts
+                    f connectionStr)
 
     

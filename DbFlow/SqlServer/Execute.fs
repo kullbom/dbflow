@@ -52,22 +52,22 @@ module Internal =
                 else settingsScripts, script :: scripts)
             ([],[])
 
-    let collectScriptsFromFolder (scriptsFolder : string)=
-        let stripName =
-            let fLength = scriptsFolder.Length
-            fun (s : string) -> s.Substring fLength
-        let rec collectAllScripts acc currentFolder =
-            let acc' =
-                System.IO.Directory.GetFiles currentFolder
-                |> Array.fold   
-                    (fun acc' f -> 
-                        (stripName f, System.IO.File.ReadAllText f) :: acc')
-                    acc
-            System.IO.Directory.GetDirectories currentFolder
-            |> Array.fold collectAllScripts acc'
-        collectAllScripts [] scriptsFolder
-        |> List.sortBy fst
-        |> List.map snd
+let collectScriptsFromFolder (scriptsFolder : string) =
+    let stripName =
+        let fLength = scriptsFolder.Length
+        fun (s : string) -> s.Substring fLength
+    let rec collectAllScripts acc currentFolder =
+        let acc' =
+            System.IO.Directory.GetFiles currentFolder
+            |> Array.fold   
+                (fun acc' f -> 
+                    (stripName f, System.IO.File.ReadAllText f) :: acc')
+                acc
+        System.IO.Directory.GetDirectories currentFolder
+        |> Array.fold collectAllScripts acc'
+    collectAllScripts [] scriptsFolder
+    |> List.sortBy fst
+    |> List.map snd
 
 /// Read the schema of a database given a connection
 let readSchema logger (options : ReadOptions) connection =
@@ -152,11 +152,7 @@ let compare (d0 : DatabaseSchema) (d1 : DatabaseSchema) =
 
 
 /// Db upgrade (experimental)
-let performDbUpgrade logger connectionStr scriptFolder =
-    let scripts = 
-        Internal.collectScriptsFromFolder 
-        |> Logger.logTime logger "Upgrade - Collect scripts in folder" scriptFolder
-    
+let performDbUpgrade logger connectionStr scripts =
     let updateTransaction =
         (fun () -> 
             scripts

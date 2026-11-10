@@ -32,7 +32,7 @@ module Common =
         
         
     let fullTestSuite logger localDbOptions readOptions scriptOptions rules directory (dbName : string) =
-        Helpers.withLocalDbFromScripts logger localDbOptions None (directory + $"{dbName}\\scripts")
+        Helpers.useLocalDbFromScripts logger localDbOptions None (directory + $"{dbName}\\scripts")
             (fun connectionString ->
                 let dbFlowOutputDir = directory + $"{dbName}\\dbflow_output"
                 let dbFlowOutputDir2 = directory + $"{dbName}\\dbflow_output2"

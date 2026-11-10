@@ -124,6 +124,20 @@
 
 - [x] Added option to skip schema AUTHORIZATION in scripts
 
+## Version 0.13.0 - 2026-11-10
+
+- [x] Add support for fetching "text plans" (QueryMeta.Sys.estimatedTextPlan - "SET SHOWPLAN_TEXT ON") 
+- [x] Add support for fetching "full plans" (QueryMeta.Sys.estimatedPlan - "SET SHOWPLAN_ALL ON")  
+- [x] Update vulnerabilities in dependencies (NuGet packages)
+
+## Version 0.14.0
+
+- [ ] Drop support for net8
+- [ ] Add support for useSchemaSource : SchemaCloneOptions -> (Connection -> 'a) -> 'a where SchemaCloneOptions contains a AllowLocalCache : bool (and a SampleSize?) 
+    - [ ] Add method to know the schema "version" (hash of full schema?) of a database
+    - [ ] Local cache should validate that version and recreate the db when needed 
+
+
 ## ...
 
 - [ ] Fix async problem with System.IO.Directory.Delete. Sometimes the test fails. Use some kind of "global locking" or similar to avoid this problem.

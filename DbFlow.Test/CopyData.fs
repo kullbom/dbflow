@@ -21,7 +21,7 @@ type CloneAndCopyData () =
             "DECLARE @DB VARCHAR(255) = DB_NAME()
              EXEC('ALTER DATABASE [' + @DB + '] COLLATE Latin1_General_CI_AS')"
         
-        Helpers.withLocalDbFromScripts logger localDbOptions (Some additionalInitializationScript) dbFolder
+        Helpers.useLocalDbFromScripts logger localDbOptions (Some additionalInitializationScript) dbFolder
             (fun testConnStr ->
                 let dbSchema =
                     use testDbConn = new SqlConnection (testConnStr)
@@ -58,7 +58,7 @@ type CloneAndCopyData () =
     
         let dbFolder = __SOURCE_DIRECTORY__ + "\\Samples\\adventure-works-2012-oltp-lt\\scripts"
 
-        Helpers.withLocalDbFromScripts logger localDbOptions None dbFolder
+        Helpers.useLocalDbFromScripts logger localDbOptions None dbFolder
             (fun testConnStr ->
                 let dbSchema =
                     use testDbConn = new SqlConnection (testConnStr)

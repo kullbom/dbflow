@@ -42,10 +42,16 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
         ()
             
     let testPlanIssues (logger : Logger) localDbConn expectedIssues sqlQuery =
-        let result = 
+        let planResult = 
             QueryMeta.Sys.estimatedPlan sqlQuery
+            |> DbTr.commit_ localDbConn
+        let textResult = 
+            QueryMeta.Sys.estimatedPlan sqlQuery
+            |> DbTr.commit_ localDbConn
+        let xmlResult = 
+            QueryMeta.Sys.estimatedXmlPlan sqlQuery
             |> DbTr.tryCommit_ localDbConn
-        match result with
+        match xmlResult with
         | Ok r -> 
             let plan = Plan.parseString r
             let problems =
@@ -62,10 +68,10 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
     [<Fact>]
     let ``Get plans [SalesLT].[Customer]`` () =
         let logger = Logger.create outputHelper.WriteLine
-        let localDbOptions = LocalDbOptions.Default
+        let localDbOptions = { LocalDbOptions.Default with UseLocalSchemaCache = true }
         let samplesFolder = __SOURCE_DIRECTORY__ + "\\Samples\\"
         let dbName = "adventure-works-2012-oltp-lt"
-        Helpers.withLocalDbFromScripts logger localDbOptions None (samplesFolder + $"{dbName}\\scripts")
+        Helpers.useSchemaSourceFromFolderScripts logger localDbOptions (samplesFolder + $"{dbName}\\scripts")
             (fun connectionString ->
                 use localDbConn = new SqlConnection (connectionString)
                 localDbConn.Open ()
@@ -108,10 +114,10 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
     [<Fact>]
     let ``Get plans [SalesLT].[ProductModel]`` () =
         let logger = Logger.create outputHelper.WriteLine
-        let localDbOptions = LocalDbOptions.Default
+        let localDbOptions = { LocalDbOptions.Default with UseLocalSchemaCache = true }
         let samplesFolder = __SOURCE_DIRECTORY__ + "\\Samples\\"
         let dbName = "adventure-works-2012-oltp-lt"
-        Helpers.withLocalDbFromScripts logger localDbOptions None (samplesFolder + $"{dbName}\\scripts")
+        Helpers.useSchemaSourceFromFolderScripts logger localDbOptions (samplesFolder + $"{dbName}\\scripts")
             (fun connectionString ->
                 use localDbConn = new SqlConnection (connectionString)
                 localDbConn.Open ()
@@ -148,24 +154,16 @@ type ``Sql Query Plans`` (outputHelper:ITestOutputHelper) =
         
         let timePlanParse = sw.ElapsedMilliseconds 
 
-        let errors =
+        let (errors, issues) =
             plans
             |> List.fold
-                (fun acc (file, planXml, plan) -> 
+                (fun (errors', issues') (file, planXml, plan) -> 
                     match plan with 
-                    | Ok _ -> acc 
-                    | Error e -> (file, e) :: acc)
-                []
-        
-        let issues =
-            plans
-            |> List.fold
-                (fun acc (file, planXml, plan) -> 
-                    match plan with 
-                    | Ok p -> Abstractions.foldQueryPlanIssues (fun acc qp i -> (file, Abstractions.issueString qp i) :: acc) acc p
-                    | Error _ -> acc)
-                []
-        
+                    | Ok p -> 
+                        errors', 
+                        Abstractions.foldQueryPlanIssues (fun acc qp i -> (file, Abstractions.issueString qp i) :: acc) issues' p
+                    | Error e -> (file, e) :: errors', issues')
+                ([], [])        
         
         output "Time to read files: %d ms" timeReadDir
         output "Time to parse plans: %d ms" timePlanParse

@@ -2,6 +2,8 @@
 
 // Should probably be specific for db vendor
 type LocalDbOptions = {
+    UseLocalSchemaCache : bool
+    DbFolderPath : unit -> string 
     /// A function that given a database name, returns a connection string to connect to the local database server.
     /// Default is: "Server=(LocalDB)\\mssqllocaldb;Initial Catalog={dbName};Integrated Security=true"
     ConnectionString : string ->  string
@@ -9,6 +11,8 @@ type LocalDbOptions = {
     with
         static member Default = 
                 { 
+                    UseLocalSchemaCache = false
+                    DbFolderPath = fun () -> System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Data")
                     ConnectionString = 
                         fun dbName ->  
                             $"Server=(LocalDB)\\mssqllocaldb;Initial Catalog={dbName};Integrated Security=true"

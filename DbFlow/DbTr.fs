@@ -11,6 +11,8 @@ module Readers =
     let readInt16 n (r : System.Data.IDataReader) = r.GetInt16 (r.GetOrdinal n)
     let readInt32 n (r : System.Data.IDataReader) = r.GetInt32 (r.GetOrdinal n)
     let readInt64 n (r : System.Data.IDataReader) = r.GetInt64 (r.GetOrdinal n)
+    let readFloat32 n (r : System.Data.IDataReader) = r.GetFloat (r.GetOrdinal n)
+    let readFloat64 n (r : System.Data.IDataReader) = r.GetDouble (r.GetOrdinal n)
     let readDateTime n (r : System.Data.IDataReader) = r.GetDateTime (r.GetOrdinal n)
     let nullable n f (r : System.Data.IDataReader) = if r.IsDBNull (r.GetOrdinal n) then None else Some (f n r)
 
@@ -61,7 +63,7 @@ module DbTr =
                     raise (Exception($"Batch failed: {cmdText}", e)))
 
     /// Custom reader - traversing the data reader is up to the user    
-    let reader' cmdText cmdType parameters f =
+    let reader' cmdText cmdBehavior cmdType parameters f =
         DbTr
             (fun ctx -> 
                 let cmd = ctx.Connection.CreateCommand()
@@ -75,21 +77,37 @@ module DbTr =
                     p.ParameterName <- parameterName
                     p.Value <- parameterValue
                     cmd.Parameters.Add(p) |> ignore
-                use dataReader = cmd.ExecuteReader() 
+                use dataReader = cmd.ExecuteReader(cmdBehavior) 
                 f dataReader)
 
-    let foldResult cmdText cmdType parameters f seed =
-        reader' cmdText cmdType parameters
-            (fun dataReader ->
-                let mutable acc = seed
-                let f' = OptimizedClosures.FSharpFunc<_,_,_>.Adapt(f)
-                while (dataReader.Read()) do
-                    acc <- f'.Invoke(acc, dataReader)
-                acc)
 
-    /// Reader - folds that data of the data reader calling the fold function once per row of data
+    let foldReaderResult' f seed (dataReader : IDataReader) =
+        let mutable acc = seed
+        let f' = OptimizedClosures.FSharpFunc<_,_,_>.Adapt(f)
+        while (dataReader.Read()) do
+            acc <- f'.Invoke(acc, dataReader)
+        acc
+
+    let foldResult cmdText cmdType parameters f seed =
+        reader' cmdText CommandBehavior.SingleResult cmdType parameters (foldReaderResult' f seed)
+
+    let foldMultipleResults cmdText cmdType parameters f seed =
+        reader' cmdText CommandBehavior.Default cmdType parameters 
+            (fun dataReader -> 
+                let rec foldNextResult i acc = 
+                    let acc' = foldReaderResult' (f i) seed dataReader
+                    if dataReader.NextResult() 
+                    then foldNextResult (i + 1) acc'
+                    else acc'
+                foldNextResult 0 seed)
+
+    /// Reader - folds the data of the single result set of the data reader calling the fold 
+    /// function once per row of data
     let reader cmdText parameters f seed =
         foldResult cmdText CommandType.Text parameters f seed
+
+    let readerMulti cmdText parameters f seed =
+        foldMultipleResults cmdText CommandType.Text parameters f seed
 
     let readList cmdText parameters f =
         reader cmdText parameters (fun acc r -> f r :: acc) [] |> map List.rev
@@ -103,6 +121,14 @@ module DbTr =
     let readSet cmdText parameters f =
         reader cmdText parameters (fun s r -> Set.add (f r) s) Set.empty
 
+    let readSingle cmdText parameters f =
+        reader cmdText parameters 
+            (fun acc r -> 
+                match acc with
+                | Ok _ -> failwithf "Expected single row but got more than one row for query: %s" cmdText
+                | Error _ -> Ok (f r)) 
+            (Error (sprintf "Expected single row but got none for query: %s" cmdText))
+        |> map (function Ok x -> x | Error e -> failwith e)
 
     let readerSP spName parameters f seed =
         foldResult spName CommandType.StoredProcedure parameters f seed
@@ -118,6 +144,15 @@ module DbTr =
 
     let readSetSP spName parameters f =
         readerSP spName parameters (fun s r -> Set.add (f r) s) Set.empty
+
+    let readSingleSP spName parameters f =
+        readerSP spName parameters 
+            (fun acc r -> 
+                match acc with
+                | Ok _ -> failwithf "Expected single row but got more than one row for stored procedure: %s" spName    
+                | Error _ -> Ok (f r)) 
+            (Error (sprintf "Expected single row but got none for stored procedure: %s" spName))
+        |> map (function Ok x -> x | Error e -> failwith e)
 
     /// Commit a transaction
     let commit (c : IDbConnection) (i : System.Data.IsolationLevel) (DbTr t) =
